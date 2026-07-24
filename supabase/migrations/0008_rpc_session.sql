@@ -69,7 +69,7 @@ begin
     p_max_score_target,
     p_court_count,
     p_rounds_planned,
-    'IN_PROGRESS',
+    'ACTIVE',
     now(),
     v_profile_id
   )
