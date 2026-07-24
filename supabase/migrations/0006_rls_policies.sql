@@ -25,7 +25,8 @@ create policy communities_delete on communities for delete to authenticated
 -- ─────────────── 2. profiles ───────────────
 create policy profiles_select on profiles for select to authenticated
   using (
-    id = public.current_profile_id()
+    auth_user_id = auth.uid()
+    or id = public.current_profile_id()
     or exists (
       select 1 from community_members a
       join community_members b on a.community_id = b.community_id
