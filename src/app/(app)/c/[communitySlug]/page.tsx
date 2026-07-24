@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { requireProfile } from '@/server/guards';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { Activity, Award, UserCheck, Calendar } from 'lucide-react';
 
 export default async function CommunityDashboardPage({
@@ -30,8 +31,35 @@ export default async function CommunityDashboardPage({
     .eq('community_id', community.id)
     .eq('is_active', true);
 
+  // Fetch member role
+  const { data: membership } = await supabase
+    .from('community_members')
+    .select('role')
+    .eq('community_id', community.id)
+    .eq('profile_id', profile.id)
+    .maybeSingle();
+
+  const isAdmin = membership?.role === 'ADMIN';
+
   return (
     <div className="space-y-6">
+      {/* Title & Action Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white">{community.name}</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Community Hub and matchmaking dashboard.</p>
+        </div>
+        {isAdmin && (
+          <Link
+            href={`/c/${communitySlug}/sessions/new`}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-500 transition-all shadow-sm cursor-pointer"
+          >
+            <Activity className="h-4 w-4" />
+            Start Session
+          </Link>
+        )}
+      </div>
+
       {/* Overview Stat Cards */}
       <div className="grid gap-6 sm:grid-cols-3">
         <div className="flex items-center gap-4 p-5 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
