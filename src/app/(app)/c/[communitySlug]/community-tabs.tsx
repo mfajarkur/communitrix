@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Calendar,
@@ -50,12 +50,31 @@ export default function CommunityTabs({
 }: CommunityTabsProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'leaderboard' | 'members' | 'info'>('dashboard');
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab && ['dashboard', 'leaderboard', 'members', 'info'].includes(tab)) {
+        setActiveTab(tab as any);
+      }
+    }
+  }, []);
+
+  const handleTabChange = (tab: 'dashboard' | 'leaderboard' | 'members' | 'info') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Dynamic Tab Switcher */}
       <div className="flex border-b border-zinc-200 dark:border-zinc-800">
         <button
-          onClick={() => setActiveTab('dashboard')}
+          onClick={() => handleTabChange('dashboard')}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'dashboard'
               ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'
@@ -66,7 +85,7 @@ export default function CommunityTabs({
           Dashboard
         </button>
         <button
-          onClick={() => setActiveTab('leaderboard')}
+          onClick={() => handleTabChange('leaderboard')}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'leaderboard'
               ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'
@@ -77,7 +96,7 @@ export default function CommunityTabs({
           Leaderboard
         </button>
         <button
-          onClick={() => setActiveTab('members')}
+          onClick={() => handleTabChange('members')}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'members'
               ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'
@@ -88,7 +107,7 @@ export default function CommunityTabs({
           Members
         </button>
         <button
-          onClick={() => setActiveTab('info')}
+          onClick={() => handleTabChange('info')}
           className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'info'
               ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'

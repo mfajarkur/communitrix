@@ -132,7 +132,7 @@ export default async function PlayerProfilePage({
       {/* Back button */}
       <div>
         <Link
-          href={`/c/${communitySlug}/leaderboard/${community.default_sport}`}
+          href={`/c/${communitySlug}?tab=leaderboard`}
           className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
