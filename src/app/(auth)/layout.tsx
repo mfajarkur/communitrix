@@ -7,14 +7,14 @@ export default function AuthLayout({
 }) {
   return (
     <div className="relative flex-1 flex flex-col items-center justify-center bg-zinc-950 p-6 select-none overflow-hidden">
-      {/* Background Image backdrop */}
+      {/* Rich orange gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-orange-600 via-orange-600/90 to-orange-950 pointer-events-none" />
+      {/* Background Image backdrop on top of gradient */}
       <img
         src="/community_banner_placeholder.png"
         alt="Communitrix Sports"
         className="absolute inset-0 w-full h-full object-cover opacity-35 mix-blend-overlay pointer-events-none select-none"
       />
-      {/* Rich orange gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-orange-600/90 via-orange-600/60 to-orange-950/90 pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-sm space-y-7">
         <div className="flex flex-col items-center text-center">
