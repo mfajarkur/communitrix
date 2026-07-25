@@ -120,8 +120,8 @@ export default function WizardForm({
     });
 
     if (result.ok) {
-      // Redirect back to community dashboard for now
-      router.push(`/c/${communitySlug}`);
+      // Redirect directly to the live board of the newly started session
+      router.push(`/c/${communitySlug}/sessions/${result.data.sessionId}`);
       router.refresh();
     } else {
       setIsSubmitting(false);
