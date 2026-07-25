@@ -71,50 +71,50 @@ export default function CommunityTabs({
 
   return (
     <div className="space-y-6">
-      {/* Dynamic Tab Switcher */}
-      <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+      {/* Dynamic Tab Switcher (Horizontally scrollable for mobile widths) */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto whitespace-nowrap scroll-smooth shrink-0 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           onClick={() => handleTabChange('dashboard')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
             activeTab === 'dashboard'
-              ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'
-              : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              ? 'border-indigo-655 text-indigo-655 dark:text-indigo-400 dark:border-indigo-400'
+              : 'border-transparent text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-300'
           }`}
         >
-          <Activity className="h-4.5 w-4.5" />
+          <Activity className="h-4 w-4" />
           Dashboard
         </button>
         <button
           onClick={() => handleTabChange('leaderboard')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
             activeTab === 'leaderboard'
-              ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'
-              : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              ? 'border-indigo-655 text-indigo-655 dark:text-indigo-400 dark:border-indigo-400'
+              : 'border-transparent text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-300'
           }`}
         >
-          <Trophy className="h-4.5 w-4.5" />
+          <Trophy className="h-4 w-4" />
           Leaderboard
         </button>
         <button
           onClick={() => handleTabChange('members')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
             activeTab === 'members'
-              ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'
-              : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              ? 'border-indigo-655 text-indigo-655 dark:text-indigo-400 dark:border-indigo-400'
+              : 'border-transparent text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-300'
           }`}
         >
-          <Users className="h-4.5 w-4.5" />
+          <Users className="h-4 w-4" />
           Members
         </button>
         <button
           onClick={() => handleTabChange('info')}
-          className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
             activeTab === 'info'
-              ? 'border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400'
-              : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              ? 'border-indigo-655 text-indigo-655 dark:text-indigo-400 dark:border-indigo-400'
+              : 'border-transparent text-zinc-450 hover:text-zinc-850 dark:hover:text-zinc-300'
           }`}
         >
-          <HelpCircle className="h-4.5 w-4.5" />
+          <HelpCircle className="h-4 w-4" />
           Glossary & Guide
         </button>
       </div>
