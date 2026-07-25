@@ -107,6 +107,9 @@ export default async function MatchScorerPage({
           communitySlug={communitySlug}
           teamAPlayers={teamA}
           teamBPlayers={teamB}
+          initialScoreA={match.team_a_score ?? 0}
+          initialScoreB={match.team_b_score ?? 0}
+          initialStatus={match.status}
           sessionConfig={{
             sport: session.sport,
             scoringType: session.scoring_type,

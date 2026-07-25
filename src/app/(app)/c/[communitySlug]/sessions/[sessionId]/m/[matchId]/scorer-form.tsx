@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { calculateElo } from '@/lib/elo/calculate';
-import { submitMatchScoreAction } from '@/server/actions/match.actions';
+import {
+  submitMatchScoreAction,
+  amendMatchScoreAction,
+  voidMatchAction,
+} from '@/server/actions/match.actions';
 import {
   Plus,
   Minus,
@@ -40,6 +44,9 @@ interface ScorerFormProps {
     format: 'AMERICANO' | 'MEXICANO';
     attendeeCount: number;
   };
+  initialScoreA?: number;
+  initialScoreB?: number;
+  initialStatus?: string;
 }
 
 export default function ScorerForm({
@@ -49,12 +56,18 @@ export default function ScorerForm({
   teamAPlayers,
   teamBPlayers,
   sessionConfig,
+  initialScoreA,
+  initialScoreB,
+  initialStatus,
 }: ScorerFormProps) {
   const router = useRouter();
-  const [scoreA, setScoreA] = useState(0);
-  const [scoreB, setScoreB] = useState(0);
+  const [scoreA, setScoreA] = useState(initialScoreA ?? 0);
+  const [scoreB, setScoreB] = useState(initialScoreB ?? 0);
+  const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVoiding, setIsVoiding] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Client-side ELO preview calculation using Phase 3 TypeScript logic
@@ -112,11 +125,26 @@ export default function ScorerForm({
     setIsSubmitting(true);
     setError(null);
 
-    const result = await submitMatchScoreAction({
-      matchId,
-      scoreA,
-      scoreB,
-    });
+    const isAmendment = initialStatus === 'COMPLETED';
+    
+    if (isAmendment && reason.trim().length === 0) {
+      setError('Please enter a reason for the amendment.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const result = isAmendment
+      ? await amendMatchScoreAction({
+          matchId,
+          scoreA,
+          scoreB,
+          reason: reason.trim(),
+        })
+      : await submitMatchScoreAction({
+          matchId,
+          scoreA,
+          scoreB,
+        });
 
     if (result.ok) {
       router.push(`/c/${communitySlug}/sessions/${sessionId}`);
@@ -124,6 +152,29 @@ export default function ScorerForm({
     } else {
       setIsSubmitting(false);
       setShowConfirm(false);
+      setError(result.message);
+    }
+  };
+
+  const handleVoidSubmit = async () => {
+    if (reason.trim().length === 0) {
+      setError('Please enter a reason for voiding this match.');
+      return;
+    }
+    setIsVoiding(true);
+    setError(null);
+
+    const result = await voidMatchAction({
+      matchId,
+      reason: reason.trim(),
+    });
+
+    if (result.ok) {
+      router.push(`/c/${communitySlug}/sessions/${sessionId}`);
+      router.refresh();
+    } else {
+      setIsVoiding(false);
+      setShowVoidConfirm(false);
       setError(result.message);
     }
   };
@@ -263,26 +314,38 @@ export default function ScorerForm({
         </div>
       )}
 
-      {/* Submit panel */}
-      <button
-        type="button"
-        onClick={() => setShowConfirm(true)}
-        className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-all font-bold text-white shadow-md shadow-indigo-950 flex items-center justify-center gap-2 cursor-pointer"
-      >
-        <span>Submit Match Score</span>
-      </button>
+      {/* Submit & Admin panel */}
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowConfirm(true)}
+          className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-all font-bold text-white shadow-md shadow-indigo-950 flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <span>{initialStatus === 'COMPLETED' ? 'Amend Match Score' : 'Submit Match Score'}</span>
+        </button>
 
-      {/* Confirmation Dialog Sheet */}
+        {initialStatus === 'COMPLETED' && (
+          <button
+            type="button"
+            onClick={() => setShowVoidConfirm(true)}
+            className="w-full h-12 rounded-xl border border-red-900/50 hover:bg-red-950/20 transition-all font-bold text-red-400 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Void Match</span>
+          </button>
+        )}
+      </div>
+
+      {/* Confirmation Dialog Sheet for scoring / amending */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="text-center space-y-1">
               <CheckCircle2 className="h-8 w-8 text-indigo-500 mx-auto" />
               <h3 className="text-lg font-black tracking-tight text-white mt-2">
-                Confirm Match Score
+                {initialStatus === 'COMPLETED' ? 'Confirm Amendment' : 'Confirm Match Score'}
               </h3>
               <p className="text-xs text-zinc-400">
-                Are you sure you want to finalize the scores? This will update Elo ratings immediately.
+                Are you sure? This will trigger a full ELO ratings recalculation.
               </p>
             </div>
 
@@ -302,7 +365,23 @@ export default function ScorerForm({
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {initialStatus === 'COMPLETED' && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Reason for Amendment
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Typo in previous score entry"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-850 bg-zinc-950 px-3 py-2 text-xs text-white placeholder-zinc-550 focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setShowConfirm(false)}
@@ -318,7 +397,58 @@ export default function ScorerForm({
                 className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Confirm & Send
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog Sheet for voiding */}
+      {showVoidConfirm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-850 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="text-center space-y-1">
+              <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
+              <h3 className="text-lg font-black tracking-tight text-white mt-2">
+                Void Match
+              </h3>
+              <p className="text-xs text-zinc-400">
+                Are you sure you want to void this match? This will remove all ELO calculations for this match and recalculate.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                Reason for Voiding
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Player withdrew mid-match"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="w-full rounded-lg border border-zinc-850 bg-zinc-950 px-3 py-2 text-xs text-white placeholder-zinc-550 focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowVoidConfirm(false)}
+                disabled={isVoiding}
+                className="flex-1 h-10 rounded-lg border border-zinc-800 hover:bg-zinc-800 font-bold text-xs text-zinc-300 transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleVoidSubmit}
+                disabled={isVoiding || reason.trim().length === 0}
+                className="flex-1 h-10 rounded-lg bg-red-600 hover:bg-red-500 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isVoiding && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Void Match
               </button>
             </div>
           </div>

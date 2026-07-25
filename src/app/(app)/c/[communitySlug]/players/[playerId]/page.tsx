@@ -218,6 +218,105 @@ export default async function PlayerProfilePage({
         )}
       </div>
 
+      {/* ELO Trend Sparkline Chart */}
+      {completedMatches.length > 0 && (() => {
+        const ratingHistory = [...completedMatches].reverse();
+        const startingElo = ratingHistory.length > 0 ? Number((ratingHistory[0] as any).elo_before) : 1000.00;
+        const eloPoints = [startingElo, ...ratingHistory.map((mh: any) => Number(mh.elo_after))];
+        
+        const minElo = Math.min(...eloPoints) - 15;
+        const maxElo = Math.max(...eloPoints) + 15;
+        const range = maxElo - minElo === 0 ? 1 : maxElo - minElo;
+
+        const w = 800;
+        const h = 140;
+        const paddingLeft = 40;
+        const paddingRight = 30;
+        const paddingTop = 20;
+        const paddingBottom = 20;
+
+        const plotWidth = w - paddingLeft - paddingRight;
+        const plotHeight = h - paddingTop - paddingBottom;
+
+        const coords = eloPoints.map((val, i) => {
+          const x = eloPoints.length > 1 
+            ? paddingLeft + (i / (eloPoints.length - 1)) * plotWidth
+            : w / 2;
+          const y = h - paddingBottom - ((val - minElo) / range) * plotHeight;
+          return { x, y, val };
+        });
+
+        const lineD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ');
+        const areaD = coords.length > 0 
+          ? `${lineD} L ${coords[coords.length - 1].x} ${h - paddingBottom} L ${coords[0].x} ${h - paddingBottom} Z`
+          : '';
+
+        return (
+          <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                <TrendingUp className="h-4.5 w-4.5 text-indigo-500" />
+                ELO Rating Trend History
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Visual progress of Elo rating changes across matches.
+              </p>
+            </div>
+
+            <div className="relative pt-2">
+              <svg viewBox={`0 0 ${w} ${h}`} className="w-full overflow-visible">
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.00" />
+                  </linearGradient>
+                </defs>
+
+                {/* Gridlines */}
+                <line x1={paddingLeft} y1={paddingTop} x2={w - paddingRight} y2={paddingTop} stroke="#e4e4e7" strokeDasharray="4 4" className="dark:stroke-zinc-800" />
+                <line x1={paddingLeft} y1={h - paddingBottom} x2={w - paddingRight} y2={h - paddingBottom} stroke="#e4e4e7" className="dark:stroke-zinc-800" />
+
+                {/* Y-axis labels */}
+                <text x={paddingLeft - 8} y={paddingTop + 4} textAnchor="end" className="text-[9px] font-bold fill-zinc-400 tabular-nums">
+                  {maxElo.toFixed(0)}
+                </text>
+                <text x={paddingLeft - 8} y={h - paddingBottom + 4} textAnchor="end" className="text-[9px] font-bold fill-zinc-400 tabular-nums">
+                  {minElo.toFixed(0)}
+                </text>
+
+                {/* Area under the line */}
+                {areaD && <path d={areaD} fill="url(#chartGradient)" />}
+
+                {/* Main line */}
+                {lineD && (
+                  <path
+                    d={lineD}
+                    fill="none"
+                    stroke="#4f46e5"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+
+                {/* Plot points */}
+                {coords.map((c, i) => (
+                  <g key={i} className="group/dot">
+                    <circle
+                      cx={c.x}
+                      cy={c.y}
+                      r="4"
+                      className="fill-indigo-650 stroke-white dark:stroke-zinc-900 stroke-2 cursor-pointer transition-all hover:r-6"
+                    />
+                    <title>{`Match ${i}: ELO ${c.val.toFixed(1)}`}</title>
+                  </g>
+                ))}
+              </svg>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Match History Log */}
       <div className="space-y-4">
         <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
