@@ -23,13 +23,15 @@ export default async function Home() {
       />
 
       <div className="relative z-10 w-full max-w-sm space-y-7">
-        <div className="flex flex-col items-center text-center">
+        <div className="flex flex-col items-center text-center w-full">
           <h2 className="text-4xl font-black uppercase tracking-widest text-white font-sans drop-shadow-md">
             Communitrix
           </h2>
-          <p className="text-xs text-white/90 mt-2 font-light tracking-wide max-w-[280px] mx-auto leading-relaxed drop-shadow-sm">
-            Unlocking intelligent matrix to elevate your community
-          </p>
+          <div className="w-full max-w-[280px] overflow-hidden whitespace-nowrap mx-auto mt-2 select-none">
+            <span className="animate-marquee text-xs text-white/90 font-light tracking-widest drop-shadow-sm uppercase">
+              Elevate your community through intelligent matrix
+            </span>
+          </div>
         </div>
         <div className="rounded-2xl bg-black/35 border border-orange-500 shadow-[0_0_25px_rgba(249,115,22,0.35)] backdrop-blur-md p-7 text-white">
           <UnifiedAuthCard />
