@@ -65,7 +65,7 @@ export default async function CommunityLayout({
   return (
     <div className="space-y-8">
       {/* Header Info */}
-      <div className="flex flex-col gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 pb-5 border-b border-zinc-200 dark:border-zinc-800">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-extrabold text-zinc-950 dark:text-white leading-tight">

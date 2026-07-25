@@ -135,9 +135,9 @@ export default function WizardForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid md:grid-cols-3 gap-8 items-start">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 items-start">
       {/* Configuration column */}
-      <div className="md:col-span-2 space-y-6">
+      <div className="space-y-6">
         {error && (
           <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950/20 dark:text-red-300">
             <AlertCircle className="h-5 w-5 shrink-0" />

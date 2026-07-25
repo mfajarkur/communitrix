@@ -268,7 +268,7 @@ export default function LiveBoardWrapper({
               )}
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {matches.map(m => {
                 const teamA = m.match_players.filter(mp => mp.team === 'A');
                 const teamB = m.match_players.filter(mp => mp.team === 'B');
@@ -419,7 +419,7 @@ export default function LiveBoardWrapper({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-              <div className="grid md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-2">
                 {previewRound.courts.map((c: any) => (
                   <div
                     key={c.courtNumber}
