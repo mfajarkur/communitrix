@@ -177,7 +177,7 @@ begin
     p_session_id,
     v_community_id,
     p_round_number,
-    'PLAYING'
+    'ACTIVE'
   )
   returning id into v_round_id;
 
@@ -204,7 +204,7 @@ begin
       v_community_id,
       p_round_number,
       v_court_num,
-      'PLAYING'
+      'IN_PROGRESS'
     )
     returning id into v_match_id;
 
