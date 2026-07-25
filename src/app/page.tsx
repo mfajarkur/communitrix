@@ -21,7 +21,7 @@ export default async function Home() {
         playsInline
         className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay pointer-events-none select-none"
       >
-        <source src="/splash-bg.mp4" type="video/mp4" />
+        <source src="https://lzzzjtijagandsrodaaj.supabase.co/storage/v1/object/public/assets/splash-bg.mp4" type="video/mp4" />
       </video>
       {/* Rich orange gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-orange-600/85 via-orange-600/60 to-orange-950/95 pointer-events-none" />
