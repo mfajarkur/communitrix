@@ -11,7 +11,10 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  Shield,
+  User,
 } from 'lucide-react';
+import ProfileEditor from './profile-editor';
 
 export default async function PlayerProfilePage({
   params,
@@ -19,7 +22,8 @@ export default async function PlayerProfilePage({
   params: Promise<{ communitySlug: string; playerId: string }>;
 }) {
   const { communitySlug, playerId } = await params;
-  const profile = await requireProfile();
+  const loggedInProfile = await requireProfile();
+  const isOwnProfile = loggedInProfile.id === playerId;
   const supabase = await createClient();
 
   // 1. Fetch community details
@@ -43,6 +47,14 @@ export default async function PlayerProfilePage({
   if (pErr || !player) {
     notFound();
   }
+
+  // Fetch player's membership role record
+  const { data: memberRecord } = await supabase
+    .from('community_members')
+    .select('role')
+    .eq('community_id', community.id)
+    .eq('profile_id', playerId)
+    .maybeSingle();
 
   // 3. Fetch Player rankings for all sports in this community
   const { data: rankings } = await supabase
@@ -141,30 +153,62 @@ export default async function PlayerProfilePage({
       </div>
 
       {/* Profile Header Cards */}
-      <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-6">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 font-extrabold text-2xl uppercase">
-            {player.full_name.slice(0, 2)}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-black text-zinc-950 dark:text-white leading-tight">
-                {player.full_name}
-              </h2>
-              {player.is_guest && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 text-xs font-semibold uppercase dark:bg-zinc-800 dark:text-zinc-400">
-                  Guest Player
-                </span>
-              )}
+      <div className="flex flex-row gap-4 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-6">
+        <div className="flex items-center gap-4 min-w-0">
+          {player.avatar_url ? (
+            <img
+              src={player.avatar_url}
+              alt={player.full_name}
+              className="h-16 w-16 rounded-2xl object-cover border border-zinc-200 dark:border-zinc-800 shrink-0"
+            />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-650 dark:bg-indigo-950/20 dark:text-indigo-400 font-extrabold text-2xl uppercase shrink-0">
+              {player.full_name.slice(0, 2)}
             </div>
-            <p className="text-xs text-zinc-400 mt-1">
-              Member since: {new Date(player.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-              })}
-            </p>
+          )}
+          <div className="min-w-0">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <h2 className="text-xl font-black text-zinc-950 dark:text-white leading-tight truncate">
+                  {player.full_name}
+                </h2>
+                {memberRecord && (
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                    memberRecord.role === 'ADMIN'
+                      ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300'
+                      : memberRecord.role === 'HOST'
+                      ? 'bg-indigo-50 text-indigo-850 dark:bg-indigo-950/20 dark:text-indigo-300'
+                      : 'bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400'
+                  }`}>
+                    {memberRecord.role === 'ADMIN' ? (
+                      <Shield className="h-2.5 w-2.5" />
+                    ) : (
+                      <User className="h-2.5 w-2.5" />
+                    )}
+                    {memberRecord.role}
+                  </span>
+                )}
+                {player.is_guest && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-650 text-[9px] font-bold uppercase dark:bg-zinc-800 dark:text-zinc-450 shrink-0">
+                    Guest
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-zinc-400">
+                Member since: {new Date(player.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                })}
+              </p>
+            </div>
           </div>
         </div>
+
+        {isOwnProfile && (
+          <div className="shrink-0">
+            <ProfileEditor fullName={player.full_name} avatarUrl={player.avatar_url} />
+          </div>
+        )}
       </div>
 
       {/* Sport Ratings Overview Grid */}

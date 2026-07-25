@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { requireCommunityAdmin } from '../guards';
+import { requireCommunityAdmin, requireCommunityHost } from '../guards';
 import { ActionResult } from '../result';
 import { revalidatePath } from 'next/cache';
 
@@ -33,7 +33,7 @@ export async function submitMatchScoreAction(
     }
 
     // 2. Enforce admin guard
-    await requireCommunityAdmin(match.community_id);
+    await requireCommunityHost(match.community_id);
 
     // 3. Call submit_match_score RPC
     const { error: rpcErr } = await supabase.rpc('submit_match_score', {

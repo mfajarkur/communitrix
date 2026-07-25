@@ -70,3 +70,17 @@ export async function requireCommunityAdmin(communityId: string) {
 
   return profile;
 }
+
+export async function requireCommunityHost(communityId: string) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { data: isHost, error } = await supabase
+    .rpc('is_community_host', { cid: communityId });
+
+  if (error || !isHost) {
+    throw new Error('Forbidden: You must be at least a Host or Admin of this community');
+  }
+
+  return profile;
+}

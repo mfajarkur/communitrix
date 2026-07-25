@@ -365,78 +365,136 @@ export default function CommunityTabs({
         )}
 
         {/* MEMBERS TAB */}
-        {activeTab === 'members' && (
-          <div className="grid gap-6 grid-cols-1">
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
-                <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
-                  <h3 className="font-bold text-zinc-950 dark:text-white">Active Players</h3>
-                </div>
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {members.map((m: any) => {
-                    const p = m.profile;
-                    if (!p) return null;
-                    const isMemberAdmin = m.role === 'ADMIN';
+        {activeTab === 'members' && (() => {
+          const adminsAndHosts = members.filter(m => m.role === 'ADMIN' || m.role === 'HOST');
+          const generalMembers = members.filter(m => m.role === 'MEMBER');
 
-                    return (
-                      <div key={p.id} className="flex items-center justify-between px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 font-semibold text-zinc-700 dark:text-zinc-300 text-sm uppercase">
-                            {p.full_name.substring(0, 2)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-zinc-950 dark:text-white">
-                              {p.full_name}
-                            </p>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                              {p.is_guest ? 'Guest Player' : 'Authenticated Account'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            isMemberAdmin
-                              ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300'
-                              : 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200'
-                          }`}>
-                            {isMemberAdmin ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                            {m.role}
-                          </span>
-                          <span className="flex items-center gap-1 text-xs text-zinc-450">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                            Active
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+          return (
+            <div className="grid gap-6 grid-cols-1">
+              <div className="space-y-6">
+                
+                {/* ADMIN & HOST SECTION */}
+                <div className="p-5 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-800">
+                    <Shield className="h-4.5 w-4.5 text-indigo-500" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">ADMINS & HOSTS</h3>
+                  </div>
+                  
+                  {adminsAndHosts.length === 0 ? (
+                    <p className="text-xs text-zinc-500 text-center py-4">No admins or hosts registered.</p>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-4 justify-items-center">
+                      {adminsAndHosts.map((m: any) => {
+                        const p = m.profile;
+                        if (!p) return null;
+                        return (
+                          <Link
+                            key={p.id}
+                            href={`/c/${communitySlug}/players/${p.id}`}
+                            className="flex flex-col items-center group w-full text-center"
+                          >
+                            <div className="relative">
+                              {p.avatar_url ? (
+                                <img
+                                  src={p.avatar_url}
+                                  alt={p.full_name}
+                                  className="h-12 w-12 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 bg-zinc-50"
+                                />
+                              ) : (
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-650 dark:bg-indigo-950/20 dark:text-indigo-400 font-extrabold text-sm uppercase">
+                                  {p.full_name.slice(0, 2)}
+                                </div>
+                              )}
+                              <div className="absolute -bottom-1 -right-1 bg-blue-600 rounded-full p-0.5 text-white shadow-sm border border-white dark:border-zinc-900">
+                                <Shield className="h-2.5 w-2.5" />
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-black text-zinc-900 dark:text-white mt-1.5 truncate w-full group-hover:underline">
+                              {p.full_name.split(' ')[0]}
+                            </span>
+                            <span className={`text-[8px] font-extrabold uppercase tracking-wider mt-0.5 ${
+                              m.role === 'ADMIN' ? 'text-amber-500' : 'text-indigo-455'
+                            }`}>
+                              {m.role}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
+
+                {/* MEMBERS SECTION */}
+                <div className="p-5 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-800">
+                    <Users className="h-4.5 w-4.5 text-indigo-500" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">MEMBERS ({generalMembers.length})</h3>
+                  </div>
+
+                  {generalMembers.length === 0 ? (
+                    <p className="text-xs text-zinc-500 text-center py-4">No regular members registered.</p>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-4 justify-items-center">
+                      {generalMembers.map((m: any) => {
+                        const p = m.profile;
+                        if (!p) return null;
+                        return (
+                          <Link
+                            key={p.id}
+                            href={`/c/${communitySlug}/players/${p.id}`}
+                            className="flex flex-col items-center group w-full text-center"
+                          >
+                            {p.avatar_url ? (
+                              <img
+                                src={p.avatar_url}
+                                alt={p.full_name}
+                                className="h-12 w-12 rounded-full object-cover border border-zinc-200 dark:border-zinc-700 bg-zinc-50"
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-350 font-bold text-sm uppercase">
+                                {p.full_name.slice(0, 2)}
+                              </div>
+                            )}
+                            <span className="text-[10px] font-black text-zinc-950 dark:text-white mt-1.5 truncate w-full group-hover:underline">
+                              {p.full_name.split(' ')[0]}
+                            </span>
+                            {p.is_guest && (
+                              <span className="text-[7px] font-extrabold uppercase bg-zinc-100 text-zinc-500 px-1 py-0.2 rounded dark:bg-zinc-800 dark:text-zinc-400 mt-0.5">
+                                Guest
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
               </div>
-            </div>
 
-            {/* Admin Add Guest side panel */}
-            <div>
-              {isAdmin ? (
-                <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
-                  <div>
-                    <h3 className="font-bold text-zinc-950 dark:text-white">Add Guest Player</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                      Register quick guest profiles for sessions without account verification emails.
+              {/* Admin Add Guest side panel */}
+              <div>
+                {isAdmin ? (
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
+                    <div>
+                      <h3 className="font-bold text-zinc-950 dark:text-white">Add Guest Player</h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                        Register quick guest profiles for sessions without account verification emails.
+                      </p>
+                    </div>
+                    <AddGuestForm communityId={communityId} />
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 dark:border-zinc-800 dark:bg-zinc-900/30 text-center">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Only community administrators can register guest players or adjust player permissions.
                     </p>
                   </div>
-                  <AddGuestForm communityId={communityId} />
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-6 dark:border-zinc-800 dark:bg-zinc-900/30 text-center">
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Only community administrators can register guest players or adjust player permissions.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* INFO & GLOSSARY TAB */}
         {activeTab === 'info' && (
@@ -546,6 +604,49 @@ export default function CommunityTabs({
                     <h4 className="font-bold text-sm text-zinc-900 dark:text-white">Pencegahan Partner Berulang</h4>
                     <p className="text-xs text-zinc-650 dark:text-zinc-455 leading-relaxed">
                       Algoritma menyimpan memori riwayat tanding. Jika di lapangan tersebut peringkat $1+4$ sudah pernah berpasangan sebelumnya, sistem otomatis melakukan pergeseran peringkat (*shifting*) agar Anda tidak bosan berpasangan dengan orang yang sama.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* MEMBER ROLES SECTION */}
+              <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
+                <h3 className="text-lg font-black text-indigo-650 dark:text-indigo-400 flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Peran & Hak Akses Anggota (ADMIN, HOST, MEMBER)
+                </h3>
+                <p className="text-sm text-zinc-650 dark:text-zinc-400 leading-relaxed">
+                  Dalam Communitrix, setiap komunitas memiliki pembagian hak akses teratur demi kelancaran pengelolaan dan pencegahan penyalahgunaan data:
+                </p>
+
+                <div className="space-y-4 pt-2">
+                  <div className="border-l-4 border-amber-500 pl-4 space-y-1">
+                    <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      1. ADMIN (Tingkat Tertinggi)
+                    </h4>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                      Admin memiliki kontrol penuh atas seluruh komunitas. Hanya Admin yang dapat **menambah/mengundang member baru**, **mengeluarkan/kick member**, **mengubah tingkat peran keanggotaan**, serta melakukan tindakan administratif sensitif seperti **amend (koreksi skor)** dan **void (membatalkan laga)** yang mempengaruhi recalculation ELO global.
+                    </p>
+                  </div>
+
+                  <div className="border-l-4 border-indigo-500 pl-4 space-y-1">
+                    <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                      2. HOST (Penyelenggara Lapangan)
+                    </h4>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                      Host adalah asisten pengelola yang bertanggung jawab di lapangan. Host dapat **membuat sesi tanding baru**, **mendaftarkan profil tamu (guest)** di tempat, **mengatur antrean main**, dan **menginput/submit skor pertandingan aktif**. Namun, Host **tidak memiliki hak** untuk mengedit, membatalkan (void/amend) skor yang sudah final, ataupun mengeluarkan/kick member dari komunitas.
+                    </p>
+                  </div>
+
+                  <div className="border-l-4 border-zinc-400 pl-4 space-y-1">
+                    <h4 className="font-bold text-sm text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-zinc-450" />
+                      3. MEMBER (Pemain Biasa)
+                    </h4>
+                    <p className="text-xs text-zinc-655 dark:text-zinc-450 leading-relaxed">
+                      Member adalah pemain terdaftar dalam komunitas. Member memiliki hak baca penuh (Read-Only) untuk **melihat statistik umum**, **leaderboard ELO**, **profil pemain (termasuk grafik tren ELO)**, serta **pantauan Live Board** pertandingan yang sedang berjalan secara real-time dari HP mereka.
                     </p>
                   </div>
                 </div>

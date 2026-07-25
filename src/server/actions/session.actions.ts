@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { requireCommunityAdmin } from '../guards';
+import { requireCommunityHost } from '../guards';
 import { ActionResult } from '../result';
 
 export interface StartSessionInput {
@@ -22,7 +22,7 @@ export async function startSessionAction(
 ): Promise<ActionResult<{ sessionId: string }>> {
   try {
     // 1. Enforce admin guard
-    await requireCommunityAdmin(input.communityId);
+    await requireCommunityHost(input.communityId);
 
     // 2. Validate input constraints
     if (!input.name || input.name.trim().length === 0) {
@@ -117,7 +117,7 @@ export async function finalizeSessionAction(
     }
 
     // 2. Enforce admin guard
-    await requireCommunityAdmin(session.community_id);
+    await requireCommunityHost(session.community_id);
 
     // 3. Call finalize_session RPC
     const { error: rpcErr } = await supabase.rpc('finalize_session', {

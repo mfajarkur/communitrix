@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { requireCommunityAdmin } from '../guards';
+import { requireCommunityHost } from '../guards';
 import { ActionResult } from '../result';
 import { generateAmericanoRound } from '@/lib/matchmaking/americano';
 import { generateMexicanoRound } from '@/lib/matchmaking/mexicano';
@@ -41,7 +41,7 @@ export async function generateNextRoundAction(
     }
 
     // 2. Admin authorization guard
-    await requireCommunityAdmin(session.community_id);
+    await requireCommunityHost(session.community_id);
 
     // 3. Fetch active attendees
     const { data: players, error: pErr } = await supabase
@@ -244,7 +244,7 @@ export async function persistRoundAction(
     }
 
     // 2. Admin authorization guard
-    await requireCommunityAdmin(session.community_id);
+    await requireCommunityHost(session.community_id);
 
     // 3. Serialize matches for postgres jsonb input
     const matchesJson = input.courts.map(c => ({
