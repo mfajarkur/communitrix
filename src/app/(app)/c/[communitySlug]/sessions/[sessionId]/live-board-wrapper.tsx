@@ -7,6 +7,7 @@ import {
   generateNextRoundAction,
   persistRoundAction,
 } from '@/server/actions/round.actions';
+import { finalizeSessionAction } from '@/server/actions/session.actions';
 import {
   Trophy,
   Users,
@@ -78,8 +79,23 @@ export default function LiveBoardWrapper({
   const supabase = createClient();
   
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [previewRound, setPreviewRound] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const handleFinalizeClick = async () => {
+    if (!confirm('Are you sure you want to end this match session? This will finalize all ratings.')) return;
+    setIsFinalizing(true);
+    setError(null);
+    const result = await finalizeSessionAction(sessionId);
+    setIsFinalizing(false);
+    if (result.ok) {
+      router.push(`/c/${communitySlug}`);
+      router.refresh();
+    } else {
+      setError(result.message);
+    }
+  };
 
   // 1. Setup Supabase Realtime subscription for instant updates (PRD Phase 6)
   useEffect(() => {
@@ -204,18 +220,30 @@ export default function LiveBoardWrapper({
               </p>
             </div>
 
-            <button
-              onClick={handleGenerateClick}
-              disabled={!canGenerateNextRound || isGenerating}
-              className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-            >
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-3.5 w-3.5 fill-current" />
+            <div className="flex items-center gap-2 shrink-0">
+              {latestRound && (
+                <button
+                  onClick={handleFinalizeClick}
+                  disabled={isFinalizing || isGenerating}
+                  className="h-10 px-4 rounded-lg border border-red-200 hover:bg-red-50 text-xs font-semibold text-red-600 dark:border-red-900/50 dark:hover:bg-red-950/20 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  <span>End Session</span>
+                </button>
               )}
-              <span>Generate Round {nextRoundNumber}</span>
-            </button>
+              <button
+                onClick={handleGenerateClick}
+                disabled={!canGenerateNextRound || isGenerating || isFinalizing}
+                className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                )}
+                <span>Generate Round {nextRoundNumber}</span>
+              </button>
+            </div>
           </div>
         )}
 

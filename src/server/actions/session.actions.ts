@@ -94,3 +94,57 @@ export async function startSessionAction(
     };
   }
 }
+
+export async function finalizeSessionAction(
+  sessionId: string
+): Promise<ActionResult<{ success: boolean }>> {
+  try {
+    const supabase = await createClient();
+
+    // 1. Fetch session community_id for authorization
+    const { data: session, error: sErr } = await supabase
+      .from('sessions')
+      .select('community_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sErr || !session) {
+      return {
+        ok: false,
+        code: 'NOT_FOUND',
+        message: 'Session not found.',
+      };
+    }
+
+    // 2. Enforce admin guard
+    await requireCommunityAdmin(session.community_id);
+
+    // 3. Call finalize_session RPC
+    const { error: rpcErr } = await supabase.rpc('finalize_session', {
+      p_session_id: sessionId,
+    });
+
+    if (rpcErr) {
+      return {
+        ok: false,
+        code: 'UNKNOWN',
+        message: rpcErr.message || 'Failed to finalize session.',
+      };
+    }
+
+    const { revalidatePath } = require('next/cache');
+    revalidatePath(`/c/[communitySlug]/sessions/${sessionId}`);
+
+    return {
+      ok: true,
+      data: { success: true },
+    };
+  } catch (error: any) {
+    if (error.message?.includes('redirect')) throw error;
+    return {
+      ok: false,
+      code: 'FORBIDDEN',
+      message: error.message || 'Permission denied.',
+    };
+  }
+}
