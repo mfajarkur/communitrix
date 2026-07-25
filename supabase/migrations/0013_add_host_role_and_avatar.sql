@@ -15,7 +15,7 @@ as $$
     select 1 from public.community_members cm
     where cm.community_id = cid
       and cm.profile_id = public.current_profile_id()
-      and cm.role in ('ADMIN', 'HOST')
+      and cm.role::text in ('ADMIN', 'HOST')
       and cm.is_active
   );
 $$;
