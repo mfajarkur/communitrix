@@ -6,17 +6,26 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center bg-orange-500 p-6 select-none">
-      <div className="w-full max-w-md space-y-8">
+    <div className="relative flex-1 flex flex-col items-center justify-center bg-zinc-950 p-6 select-none overflow-hidden">
+      {/* Background Image backdrop */}
+      <img
+        src="/community_banner_placeholder.png"
+        alt="Communitrix Sports"
+        className="absolute inset-0 w-full h-full object-cover opacity-35 mix-blend-overlay pointer-events-none select-none"
+      />
+      {/* Rich orange gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-orange-600/90 via-orange-600/60 to-orange-950/90 pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-sm space-y-7">
         <div className="flex flex-col items-center text-center">
-          <h2 className="text-3xl font-black uppercase tracking-widest text-white font-sans drop-shadow-sm">
+          <h2 className="text-4xl font-black uppercase tracking-widest text-white font-sans drop-shadow-md">
             Communitrix
           </h2>
-          <p className="text-sm text-white/90 mt-2 font-light">
+          <p className="text-xs text-white/90 mt-2 font-light tracking-wide max-w-[280px] mx-auto leading-relaxed drop-shadow-sm">
             Unlocking intelligent matrix to elevate your community
           </p>
         </div>
-        <div className="rounded-2xl bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-orange-600/10 text-zinc-900">
+        <div className="rounded-2xl bg-black/35 border border-orange-500 shadow-[0_0_25px_rgba(249,115,22,0.35)] backdrop-blur-md p-7 text-white">
           {children}
         </div>
       </div>

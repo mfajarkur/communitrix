@@ -45,20 +45,20 @@ function UnifiedAuthCardContent() {
   };
 
   return (
-    <div className="space-y-6 bg-white">
+    <div className="space-y-5">
       <div>
-        <h3 className="text-xl font-black text-[#111827] font-sans uppercase tracking-wider text-center">
+        <h3 className="text-lg font-black text-white font-sans uppercase tracking-widest text-center drop-shadow-sm">
           Get Started
         </h3>
-        <p className="text-xs text-zinc-500 mt-1.5 text-center leading-relaxed font-sans font-light">
+        <p className="text-xs text-white/80 mt-1.5 text-center leading-relaxed font-sans font-light">
           Sign in or Register with Google to join sports communities, run sessions, and track your Elo ratings.
         </p>
       </div>
 
       <div className="space-y-4">
         {error && (
-          <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 text-sm text-red-800">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2.5 rounded-lg bg-red-950/40 border border-red-500/30 p-3 text-xs text-red-200">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-400" />
             <span>{error}</span>
           </div>
         )}
@@ -66,7 +66,7 @@ function UnifiedAuthCardContent() {
         <button
           onClick={handleGoogleAuth}
           disabled={isSubmitting}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2.5 text-sm font-bold text-zinc-700 disabled:opacity-50 transition-all shadow-sm cursor-pointer"
+          className="flex w-full items-center justify-center gap-3 rounded-xl bg-white hover:bg-zinc-50 px-4 py-2.5 text-sm font-bold text-zinc-900 disabled:opacity-50 transition-all shadow-md cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
         >
           {isSubmitting ? (
             <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
