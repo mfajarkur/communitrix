@@ -75,16 +75,25 @@ export default async function AppLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="flex md:hidden items-center justify-between border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center gap-2">
+        <header className="flex md:hidden items-center justify-between border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900 shrink-0">
+          <Link href="/communities" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Trophy className="h-5 w-5 text-indigo-600" />
             <span className="font-semibold text-zinc-950 dark:text-white">Communitrix</span>
+          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              href="/communities/new"
+              className="p-2 text-zinc-500 hover:text-indigo-600 transition-colors"
+              title="Create Community"
+            >
+              <Plus className="h-5 w-5" />
+            </Link>
+            <form action={signOut} className="flex">
+              <button className="p-2 text-zinc-500 hover:text-red-650 transition-colors cursor-pointer">
+                <LogOut className="h-5 w-5" />
+              </button>
+            </form>
           </div>
-          <form action={signOut}>
-            <button className="p-2 text-zinc-500 hover:text-red-600 transition-colors">
-              <LogOut className="h-5 w-5" />
-            </button>
-          </form>
         </header>
 
         <main className="flex-1 p-6 md:p-10 max-w-5xl w-full mx-auto">
