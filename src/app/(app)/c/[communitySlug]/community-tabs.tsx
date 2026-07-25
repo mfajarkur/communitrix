@@ -126,7 +126,7 @@ export default function CommunityTabs({
           <div className="space-y-8">
             {/* Overview Stat Cards */}
             <div className="grid gap-3 grid-cols-1">
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
                   <UserCheck className="h-5 w-5" />
                 </div>
@@ -136,7 +136,7 @@ export default function CommunityTabs({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
                   <Calendar className="h-5 w-5" />
                 </div>
@@ -146,12 +146,12 @@ export default function CommunityTabs({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-650">
                   <Activity className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-450 font-medium">Matches Played</p>
+                  <p className="text-xs text-zinc-455 font-medium">Matches Played</p>
                   <h4 className="text-xl font-extrabold text-[#111827] mt-0.5">{totalMatchesCount}</h4>
                 </div>
               </div>
@@ -195,7 +195,7 @@ export default function CommunityTabs({
                     return (
                       <div
                         key={s.id}
-                        className={`p-5 rounded-2xl border bg-white flex flex-col justify-between gap-4 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] ${
+                        className={`p-5 rounded-2xl border bg-zinc-50 flex flex-col justify-between gap-4 transition-all shadow-sm hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)] ${
                           isActive
                             ? 'border-orange-500/30 bg-orange-500/[0.01]'
                             : 'border-zinc-100'
@@ -263,7 +263,7 @@ export default function CommunityTabs({
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+            <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
               {rankings.length === 0 ? (
                 <div className="text-center py-16 text-zinc-400 space-y-2">
                   <Trophy className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
@@ -381,7 +381,7 @@ export default function CommunityTabs({
             <div className="grid gap-6 grid-cols-1">
               <div className="space-y-6">
                 {/* ADMIN & HOST SECTION */}
-                <div className="p-5 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+                <div className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                   <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
                     <Shield className="h-4.5 w-4.5 text-orange-500" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">ADMINS & HOSTS</h3>
@@ -430,7 +430,7 @@ export default function CommunityTabs({
                 </div>
 
                 {/* MEMBERS SECTION */}
-                <div className="p-5 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+                <div className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                   <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
                     <Users className="h-4.5 w-4.5 text-orange-500" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">MEMBERS ({generalMembers.length})</h3>
@@ -480,7 +480,7 @@ export default function CommunityTabs({
               {/* Admin Add Guest side panel */}
               <div>
                 {isAdmin ? (
-                  <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm space-y-4">
+                  <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm space-y-4">
                     <div>
                       <h3 className="font-bold text-[#111827]">Add Guest Player</h3>
                       <p className="text-xs text-zinc-500 mt-1">
@@ -507,7 +507,7 @@ export default function CommunityTabs({
             {/* Left Nav for Glossary */}
             <div className="space-y-6">
               {/* ELO RATING SYSTEM SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                 <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
                   <Trophy className="h-5 w-5" />
                   Sistem ELO Rating
@@ -550,7 +550,7 @@ export default function CommunityTabs({
               </div>
 
               {/* AMERICANO FORMAT SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                 <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
                   <Star className="h-5 w-5" />
                   Format Turnamen: Americano
@@ -579,7 +579,7 @@ export default function CommunityTabs({
               </div>
 
               {/* MEXICANO FORMAT SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                 <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
                   <Activity className="h-5 w-5" />
                   Format Turnamen: Mexicano
@@ -615,7 +615,7 @@ export default function CommunityTabs({
               </div>
 
               {/* MEMBER ROLES SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                 <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
                   <Shield className="h-5 w-5" />
                   Peran & Hak Akses Anggota (ADMIN, HOST, MEMBER)
@@ -660,7 +660,7 @@ export default function CommunityTabs({
 
             {/* Glossary Sidebar */}
             <div className="space-y-6">
-              <div className="p-5 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] space-y-4">
+              <div className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                 <h4 className="font-bold text-[#111827] flex items-center gap-1.5 text-xs uppercase tracking-wider">
                   <BookOpen className="h-4.5 w-4.5 text-orange-500" />
                   Glosarium Singkat

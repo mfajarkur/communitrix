@@ -140,45 +140,45 @@ export default async function PlayerProfilePage({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-white">
       {/* Back button */}
       <div>
         <Link
           href={`/c/${communitySlug}?tab=leaderboard`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-550 hover:text-orange-500 transition-colors bg-zinc-50 border border-zinc-200/60 rounded-lg px-3 py-1.5 shadow-sm"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5" />
           Back to Standings
         </Link>
       </div>
 
       {/* Profile Header Cards */}
-      <div className="flex flex-row gap-4 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-6">
+      <div className="flex flex-row gap-4 items-center justify-between border-b border-zinc-100 pb-6">
         <div className="flex items-center gap-4 min-w-0">
           {player.avatar_url ? (
             <img
               src={player.avatar_url}
               alt={player.full_name}
-              className="h-16 w-16 rounded-2xl object-cover border border-zinc-200 dark:border-zinc-800 shrink-0"
+              className="h-16 w-16 rounded-2xl object-cover border border-zinc-100 shrink-0 shadow-sm"
             />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-650 dark:bg-indigo-950/20 dark:text-indigo-400 font-extrabold text-2xl uppercase shrink-0">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-650 font-extrabold text-2xl uppercase shrink-0">
               {player.full_name.slice(0, 2)}
             </div>
           )}
           <div className="min-w-0">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <h2 className="text-xl font-black text-zinc-950 dark:text-white leading-tight truncate">
+                <h2 className="text-xl font-extrabold text-[#111827] leading-tight truncate">
                   {player.full_name}
                 </h2>
                 {memberRecord && (
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0 ${
                     memberRecord.role === 'ADMIN'
-                      ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300'
+                      ? 'bg-orange-500/10 text-orange-600'
                       : memberRecord.role === 'HOST'
-                      ? 'bg-indigo-50 text-indigo-850 dark:bg-indigo-950/20 dark:text-indigo-300'
-                      : 'bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400'
+                      ? 'bg-orange-500/[0.04] text-orange-600/80'
+                      : 'bg-zinc-100 text-zinc-500'
                   }`}>
                     {memberRecord.role === 'ADMIN' ? (
                       <Shield className="h-2.5 w-2.5" />
@@ -189,12 +189,12 @@ export default async function PlayerProfilePage({
                   </span>
                 )}
                 {player.is_guest && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-650 text-[9px] font-bold uppercase dark:bg-zinc-800 dark:text-zinc-450 shrink-0">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[9px] font-bold uppercase shrink-0">
                     Guest
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-zinc-400">
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
                 Member since: {new Date(player.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -220,35 +220,35 @@ export default async function PlayerProfilePage({
             return (
               <div
                 key={r.sport}
-                className="p-5 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4"
+                className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-[0_2px_8px_rgba(0,0,0,0.02)] space-y-4"
               >
-                <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
+                <div className="flex items-center justify-between border-b border-zinc-200/50 pb-2.5">
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                     {r.sport} Rating
                   </span>
-                  <Trophy className="h-4 w-4 text-indigo-500" />
+                  <Trophy className="h-4 w-4 text-orange-500" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">
+                  <span className="text-3xl font-extrabold text-orange-500">
                     {Number(r.elo_rating).toFixed(0)}
                   </span>
                   <span className="text-xs text-zinc-400 font-semibold">
                     Peak: {Number(r.elo_peak).toFixed(0)}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 pt-2 text-center text-xs border-t border-zinc-50 dark:border-zinc-850">
-                  <div>
-                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Matches</span>
-                    <p className="font-extrabold mt-0.5">{r.total_matches}</p>
+                <div className="flex items-center justify-between pt-3 text-xs border-t border-zinc-200/50">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-zinc-450 uppercase font-bold tracking-wider">Matches</span>
+                    <p className="font-extrabold text-[#111827] mt-0.5 text-sm">{r.total_matches}</p>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Win Rate</span>
-                    <p className="font-extrabold mt-0.5 text-emerald-500">{winRate}%</p>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] text-zinc-455 uppercase font-bold tracking-wider">Win Rate</span>
+                    <p className="font-extrabold mt-0.5 text-emerald-500 text-sm">{winRate}%</p>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-zinc-400 uppercase font-bold">Record</span>
-                    <p className="font-extrabold mt-0.5 text-zinc-500">
-                      {r.total_wins}–{r.total_losses}
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-zinc-455 uppercase font-bold tracking-wider">Record</span>
+                    <p className="font-extrabold mt-0.5 text-zinc-600 text-sm">
+                      {r.total_wins}W–{r.total_losses}L
                     </p>
                   </div>
                 </div>
@@ -256,7 +256,7 @@ export default async function PlayerProfilePage({
             );
           })
         ) : (
-          <div className="sm:col-span-3 text-center py-10 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 text-sm">
+          <div className="sm:col-span-3 text-center py-10 rounded-2xl border border-dashed border-zinc-200 text-zinc-400 text-sm bg-zinc-50/50">
             No rating standings computed for this player in Padel or Tennis yet.
           </div>
         )}
@@ -296,13 +296,13 @@ export default async function PlayerProfilePage({
           : '';
 
         return (
-          <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
+          <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-55/70 shadow-sm space-y-4">
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                <TrendingUp className="h-4.5 w-4.5 text-indigo-500" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                <TrendingUp className="h-4.5 w-4.5 text-orange-500" />
                 ELO Rating Trend History
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              <p className="text-xs text-zinc-500 mt-1">
                 Visual progress of Elo rating changes across matches.
               </p>
             </div>
@@ -311,14 +311,14 @@ export default async function PlayerProfilePage({
               <svg viewBox={`0 0 ${w} ${h}`} className="w-full overflow-visible">
                 <defs>
                   <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity="0.00" />
+                    <stop offset="0%" stopColor="#f97316" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="#f97316" stopOpacity="0.00" />
                   </linearGradient>
                 </defs>
 
                 {/* Gridlines */}
-                <line x1={paddingLeft} y1={paddingTop} x2={w - paddingRight} y2={paddingTop} stroke="#e4e4e7" strokeDasharray="4 4" className="dark:stroke-zinc-800" />
-                <line x1={paddingLeft} y1={h - paddingBottom} x2={w - paddingRight} y2={h - paddingBottom} stroke="#e4e4e7" className="dark:stroke-zinc-800" />
+                <line x1={paddingLeft} y1={paddingTop} x2={w - paddingRight} y2={paddingTop} stroke="#f1f1f4" strokeDasharray="4 4" />
+                <line x1={paddingLeft} y1={h - paddingBottom} x2={w - paddingRight} y2={h - paddingBottom} stroke="#e4e4e7" />
 
                 {/* Y-axis labels */}
                 <text x={paddingLeft - 8} y={paddingTop + 4} textAnchor="end" className="text-[9px] font-bold fill-zinc-400 tabular-nums">
@@ -336,7 +336,7 @@ export default async function PlayerProfilePage({
                   <path
                     d={lineD}
                     fill="none"
-                    stroke="#4f46e5"
+                    stroke="#f97316"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -350,7 +350,7 @@ export default async function PlayerProfilePage({
                       cx={c.x}
                       cy={c.y}
                       r="4"
-                      className="fill-indigo-650 stroke-white dark:stroke-zinc-900 stroke-2 cursor-pointer transition-all hover:r-6"
+                      className="fill-orange-500 stroke-white stroke-2 cursor-pointer transition-all hover:r-6"
                     />
                     <title>{`Match ${i}: ELO ${c.val.toFixed(1)}`}</title>
                   </g>
@@ -363,18 +363,18 @@ export default async function PlayerProfilePage({
 
       {/* Match History Log */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-          <Activity className="h-4.5 w-4.5 text-indigo-500" />
+        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+          <Activity className="h-4.5 w-4.5 text-orange-500" />
           Recent Matches History Log
         </h3>
 
-        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
           {completedMatches.length === 0 ? (
-            <div className="text-center py-12 text-zinc-400 text-xs">
+            <div className="text-center py-12 text-zinc-400 text-xs bg-white/50">
               No completed matches found in this player's session history log.
             </div>
           ) : (
-            <div className="divide-y divide-zinc-150 dark:divide-zinc-800">
+            <div className="divide-y divide-zinc-200/50">
               {completedMatches.map((mh: any) => {
                 const isWin =
                   (mh.team === 'A' && mh.match.winner_side === 'A') ||
@@ -395,17 +395,17 @@ export default async function PlayerProfilePage({
                 return (
                   <div
                     key={mh.id}
-                    className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-zinc-50/30 dark:hover:bg-zinc-850/10 transition-all"
+                    className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white hover:bg-zinc-50 transition-all"
                   >
                     {/* Match Info Column */}
                     <div className="space-y-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-zinc-100 text-zinc-500">
                         {mh.match.session?.sport} • R{mh.match.round_number}
                       </span>
-                      <p className="text-sm font-extrabold text-zinc-900 dark:text-white">
+                      <p className="text-sm font-extrabold text-[#111827]">
                         {mh.match.session?.session_name}
                       </p>
-                      <p className="text-[10px] text-zinc-400">
+                      <p className="text-[10px] text-zinc-400 font-medium">
                         {new Date(mh.match.completed_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -417,13 +417,13 @@ export default async function PlayerProfilePage({
 
                     {/* Matchup Details Column */}
                     <div className="flex-1 max-w-md text-xs text-zinc-500 space-y-1">
-                      <p className="font-semibold text-zinc-800 dark:text-zinc-200">
+                      <p className="font-semibold text-zinc-650">
                         Matchup:{' '}
-                        <span className="font-bold text-zinc-950 dark:text-white">
+                        <span className="font-bold text-[#111827]">
                           You {teammate ? `& ${teammate}` : ''}
                         </span>{' '}
                         vs{' '}
-                        <span className="font-bold text-zinc-950 dark:text-white">
+                        <span className="font-bold text-[#111827]">
                           {opponents || 'Opponents'}
                         </span>
                       </p>
@@ -431,7 +431,7 @@ export default async function PlayerProfilePage({
                         Result:{' '}
                         <span
                           className={`font-extrabold uppercase ${
-                            isDraw ? 'text-zinc-500' : isWin ? 'text-emerald-500' : 'text-rose-500'
+                            isDraw ? 'text-zinc-400' : isWin ? 'text-emerald-500' : 'text-rose-500'
                           }`}
                         >
                           {isDraw ? 'Draw' : isWin ? 'Win' : 'Loss'}
@@ -443,7 +443,7 @@ export default async function PlayerProfilePage({
                     {/* Elo shift Column */}
                     <div className="flex items-center gap-4 text-right shrink-0">
                       <div>
-                        <span className="block text-[10px] text-zinc-400">Rating Shift</span>
+                        <span className="block text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Rating Shift</span>
                         <div className="flex items-center gap-1 justify-end font-black mt-0.5">
                           {isDraw || delta === 0 ? (
                             <span className="text-zinc-400 text-sm flex items-center gap-0.5">
@@ -464,9 +464,9 @@ export default async function PlayerProfilePage({
                         </div>
                       </div>
 
-                      <div className="border-l border-zinc-100 dark:border-zinc-800 pl-4 w-20">
-                        <span className="block text-[10px] text-zinc-400">New Elo</span>
-                        <span className="font-black text-sm text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+                      <div className="border-l border-zinc-150 pl-4 w-20">
+                        <span className="block text-[10px] text-zinc-400 font-bold uppercase tracking-wider">New Elo</span>
+                        <span className="font-extrabold text-sm text-orange-500 mt-0.5 block">
                           {Number(mh.elo_after).toFixed(0)}
                         </span>
                       </div>
