@@ -111,16 +111,6 @@ export default async function CommunityDashboardPage({
 
   return (
     <div className="space-y-6">
-      {/* Title */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white leading-tight">
-          {community.name}
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Unified community workspace for matchmaking formats, ELO ratings, and active player rosters.
-        </p>
-      </div>
-
       {/* Tabs Switcher and Content */}
       <CommunityTabs
         communityId={community.id}

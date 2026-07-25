@@ -62,40 +62,60 @@ export default async function CommunityLayout({
 
   const isAdmin = member.role === 'ADMIN';
 
+  const bannerImage = community.logo_url || '/community_banner_placeholder.png';
+
   return (
-    <div className="space-y-8 bg-white">
-      {/* Header Info */}
-      <div className="flex flex-col gap-3 pb-5 border-b border-zinc-150">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold text-[#111827] leading-tight">
+    <div className="space-y-6 bg-white">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl h-44 bg-zinc-950 flex flex-col justify-end p-5 text-white shadow-sm border border-zinc-100">
+        {/* Banner image */}
+        <img
+          src={bannerImage}
+          alt={community.name}
+          className="absolute inset-0 w-full h-full object-cover opacity-60 select-none pointer-events-none"
+        />
+        {/* Orange to transparent gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-orange-600/90 via-orange-600/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-950/40 via-transparent to-transparent" />
+
+        {/* Back Link Overlay */}
+        <div className="absolute top-4 left-4">
+          <Link
+            href="/communities"
+            className="inline-flex items-center gap-1 text-[10px] font-bold text-white/95 hover:text-white transition-all bg-black/30 hover:bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm"
+          >
+            ← Back
+          </Link>
+        </div>
+
+        {/* Header content on top */}
+        <div className="relative z-10 space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black leading-tight text-white tracking-tight drop-shadow-sm font-sans">
               {community.name}
             </h1>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+            <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-black tracking-wider uppercase border border-white/20 shadow-sm ${
               member.role === 'ADMIN'
-                ? 'bg-orange-500/10 text-orange-600'
+                ? 'bg-orange-500 text-white'
                 : member.role === 'HOST'
-                ? 'bg-orange-500/[0.04] text-orange-600/80'
-                : 'bg-zinc-100 text-zinc-500'
+                ? 'bg-white text-orange-600'
+                : 'bg-white/80 text-zinc-800'
             }`}>
-              {member.role === 'ADMIN' ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
+              {member.role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
               {member.role}
             </span>
           </div>
-          <p className="text-sm text-zinc-500 mt-1">
-            Default Sport: <span className="font-bold text-zinc-700">{community.default_sport}</span>
-          </p>
-        </div>
 
-        {/* Community Nav Options */}
-        <div className="flex items-center gap-2 py-1">
-          <Link
-            href={`/c/${communitySlug}`}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold border border-zinc-200 bg-white text-zinc-650 hover:bg-zinc-50 transition-all shadow-sm"
-          >
-            <Trophy className="h-3.5 w-3.5 text-orange-500" />
-            Community Workspace
-          </Link>
+          <div className="flex items-center justify-between text-[11px] text-white/90 font-medium pt-0.5">
+            <p>
+              Default Sport: <span className="font-extrabold uppercase">{community.default_sport}</span>
+            </p>
+            {community.join_code && (
+              <p className="bg-white/15 px-2 py-0.5 rounded font-mono text-[9px] tracking-wider uppercase border border-white/10 shadow-sm">
+                Code: {community.join_code}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

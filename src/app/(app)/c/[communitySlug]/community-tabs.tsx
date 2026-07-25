@@ -70,52 +70,52 @@ export default function CommunityTabs({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Dynamic Tab Switcher (Horizontally scrollable for mobile widths) */}
-      <div className="flex border-b border-zinc-100 overflow-x-auto whitespace-nowrap scroll-smooth shrink-0 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white">
+    <div className="space-y-6 bg-white">
+      {/* Dynamic Tab Switcher - Segmented pills layout */}
+      <div className="flex gap-2 p-1.5 bg-zinc-50 border border-zinc-200/70 rounded-2xl overflow-x-auto whitespace-nowrap scroll-smooth shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shadow-sm">
         <button
           onClick={() => handleTabChange('dashboard')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
             activeTab === 'dashboard'
-              ? 'border-orange-500 text-orange-500'
-              : 'border-transparent text-zinc-400 hover:text-zinc-600'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-zinc-550 hover:text-zinc-800'
           }`}
         >
-          <Activity className="h-4 w-4" />
+          <Activity className="h-3.5 w-3.5" />
           Dashboard
         </button>
         <button
           onClick={() => handleTabChange('leaderboard')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
             activeTab === 'leaderboard'
-              ? 'border-orange-500 text-orange-500'
-              : 'border-transparent text-zinc-400 hover:text-zinc-600'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-zinc-550 hover:text-zinc-800'
           }`}
         >
-          <Trophy className="h-4 w-4" />
+          <Trophy className="h-3.5 w-3.5" />
           Leaderboard
         </button>
         <button
           onClick={() => handleTabChange('members')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
             activeTab === 'members'
-              ? 'border-orange-500 text-orange-500'
-              : 'border-transparent text-zinc-400 hover:text-zinc-600'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-zinc-550 hover:text-zinc-800'
           }`}
         >
-          <Users className="h-4 w-4" />
+          <Users className="h-3.5 w-3.5" />
           Members
         </button>
         <button
           onClick={() => handleTabChange('info')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer shrink-0 ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
             activeTab === 'info'
-              ? 'border-orange-500 text-orange-500'
-              : 'border-transparent text-zinc-400 hover:text-zinc-600'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-zinc-550 hover:text-zinc-800'
           }`}
         >
-          <HelpCircle className="h-4 w-4" />
-          Glossary & Guide
+          <HelpCircle className="h-3.5 w-3.5" />
+          Glossary
         </button>
       </div>
 
