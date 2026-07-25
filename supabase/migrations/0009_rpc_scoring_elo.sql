@@ -268,7 +268,7 @@ begin
     where match_id = p_match_id and profile_id = v_player_id;
 
     v_player_delta := -v_delta;
-    v_player_elo_after := greatest(v_player_elo_before + v_player_delta, 100.00); // E21 floor at 100
+    v_player_elo_after := greatest(v_player_elo_before + v_player_delta, 100.00); -- E21 floor at 100
 
     update public.match_players
     set elo_delta = v_player_delta,
