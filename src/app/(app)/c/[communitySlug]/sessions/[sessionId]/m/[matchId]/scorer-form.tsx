@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { calculateElo } from '@/lib/elo/calculate';
 import {
@@ -63,12 +63,91 @@ export default function ScorerForm({
   const router = useRouter();
   const [scoreA, setScoreA] = useState(initialScoreA ?? 0);
   const [scoreB, setScoreB] = useState(initialScoreB ?? 0);
+  const [isOnline, setIsOnline] = useState(true);
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVoiding, setIsVoiding] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 1. Load draft from localStorage on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem(`courtside-draft-${matchId}`);
+    if (saved) {
+      try {
+        const draft = JSON.parse(saved);
+        setScoreA(draft.a);
+        setScoreB(draft.b);
+      } catch (e) {}
+    }
+  }, [matchId]);
+
+  // 2. Save draft when score modifications occur
+  const updateScoreA = (val: number) => {
+    setScoreA(val);
+    localStorage.setItem(
+      `courtside-draft-${matchId}`,
+      JSON.stringify({ a: val, b: scoreB, dirty: false })
+    );
+  };
+
+  const updateScoreB = (val: number) => {
+    setScoreB(val);
+    localStorage.setItem(
+      `courtside-draft-${matchId}`,
+      JSON.stringify({ a: scoreA, b: val, dirty: false })
+    );
+  };
+
+  // 3. Keep track of online connectivity status
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    setIsOnline(navigator.onLine);
+
+    const handleOnline = async () => {
+      setIsOnline(true);
+      // Auto-submit once on reconnect if a dirty draft exists
+      const saved = localStorage.getItem(`courtside-draft-${matchId}`);
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          if (draft.dirty) {
+            console.log('Reconnected! Auto-submitting cached score draft...');
+            setError(null);
+            setIsSubmitting(true);
+            const result = await submitMatchScoreAction({
+              matchId,
+              scoreA: draft.a,
+              scoreB: draft.b,
+            });
+            setIsSubmitting(false);
+            if (result.ok) {
+              localStorage.removeItem(`courtside-draft-${matchId}`);
+              router.push(`/c/${communitySlug}/sessions/${sessionId}`);
+              router.refresh();
+            } else {
+              setError(`Reconnected but submit failed: ${result.message}`);
+            }
+          }
+        } catch (e) {}
+      }
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [matchId, router, communitySlug, sessionId]);
 
   // Client-side ELO preview calculation using Phase 3 TypeScript logic
   const playersPerMatch =
@@ -106,24 +185,36 @@ export default function ScorerForm({
   }
 
   const handleIncrementA = () => {
-    setScoreA(prev => Math.min(prev + 1, 99));
+    updateScoreA(Math.min(scoreA + 1, 99));
   };
 
   const handleDecrementA = () => {
-    setScoreA(prev => Math.max(prev - 1, 0));
+    updateScoreA(Math.max(scoreA - 1, 0));
   };
 
   const handleIncrementB = () => {
-    setScoreB(prev => Math.min(prev + 1, 99));
+    updateScoreB(Math.min(scoreB + 1, 99));
   };
 
   const handleDecrementB = () => {
-    setScoreB(prev => Math.max(prev - 1, 0));
+    updateScoreB(Math.max(scoreB - 1, 0));
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
     setError(null);
+
+    // If browser is offline, save score as a dirty draft and notify user
+    if (!navigator.onLine) {
+      localStorage.setItem(
+        `courtside-draft-${matchId}`,
+        JSON.stringify({ a: scoreA, b: scoreB, dirty: true })
+      );
+      setError('Offline: Koneksi terputus! Skor Anda telah disimpan sementara di perangkat ini dan akan dikirim otomatis saat internet terhubung kembali.');
+      setShowConfirm(false);
+      return;
+    }
+
+    setIsSubmitting(true);
 
     const isAmendment = initialStatus === 'COMPLETED';
     
@@ -147,6 +238,7 @@ export default function ScorerForm({
         });
 
     if (result.ok) {
+      localStorage.removeItem(`courtside-draft-${matchId}`);
       router.push(`/c/${communitySlug}/sessions/${sessionId}`);
       router.refresh();
     } else {
@@ -181,6 +273,13 @@ export default function ScorerForm({
 
   return (
     <div className="space-y-6">
+      {!isOnline && (
+        <div className="flex items-center gap-2.5 rounded-lg bg-amber-950/40 border border-amber-900/60 p-4 text-sm text-amber-300 animate-pulse">
+          <AlertCircle className="h-5 w-5 shrink-0 text-amber-400" />
+          <span>Offline: Koneksi terputus! Skor Anda tersimpan sementara di perangkat ini.</span>
+        </div>
+      )}
+
       {error && (
         <div className="flex items-start gap-2.5 rounded-lg bg-red-950/40 border border-red-900/60 p-4 text-sm text-red-300">
           <AlertCircle className="h-5 w-5 shrink-0" />
