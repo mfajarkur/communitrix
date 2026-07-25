@@ -12,8 +12,8 @@ export default function AuthLayout({
           <h2 className="text-3xl font-black uppercase tracking-widest text-white font-sans drop-shadow-sm">
             Communitrix
           </h2>
-          <p className="text-sm text-white/90 mt-2">
-            Matchmaking and ratings for active sports clubs.
+          <p className="text-sm text-white/90 mt-2 font-light">
+            Unlocking intelligent matrix to elevate your community
           </p>
         </div>
         <div className="rounded-2xl bg-white p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-orange-600/10 text-zinc-900">
