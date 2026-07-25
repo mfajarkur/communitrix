@@ -37,21 +37,21 @@ export default async function CommunityLayout({
 
   if (!member) {
     return (
-      <div className="max-w-md mx-auto text-center py-16 space-y-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Access Denied</h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="max-w-md mx-auto text-center py-16 space-y-6 bg-white">
+        <h2 className="text-2xl font-bold text-zinc-900">Access Denied</h2>
+        <p className="text-sm text-zinc-500">
           You are not currently a member of this community. To view its dashboard, you need to join using a code.
         </p>
         <div className="flex gap-4 justify-center">
           <Link
             href="/communities"
-            className="inline-flex justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="inline-flex justify-center rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 shadow-sm"
           >
             My Communities
           </Link>
           <Link
             href="/communities/join"
-            className="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+            className="inline-flex justify-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-bold text-white hover:bg-orange-600 shadow-sm"
           >
             Join with Code
           </Link>
@@ -63,25 +63,27 @@ export default async function CommunityLayout({
   const isAdmin = member.role === 'ADMIN';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-white">
       {/* Header Info */}
-      <div className="flex flex-col gap-3 pb-5 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="flex flex-col gap-3 pb-5 border-b border-zinc-150">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold text-zinc-950 dark:text-white leading-tight">
+            <h1 className="text-3xl font-extrabold text-[#111827] leading-tight">
               {community.name}
             </h1>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              isAdmin 
-                ? 'bg-amber-50 text-amber-800 dark:bg-amber-950/20 dark:text-amber-300' 
-                : 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/20 dark:text-indigo-300'
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+              member.role === 'ADMIN'
+                ? 'bg-orange-500/10 text-orange-600'
+                : member.role === 'HOST'
+                ? 'bg-orange-500/[0.04] text-orange-600/80'
+                : 'bg-zinc-100 text-zinc-500'
             }`}>
-              {isAdmin ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
+              {member.role === 'ADMIN' ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
               {member.role}
             </span>
           </div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Default Sport: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{community.default_sport}</span>
+          <p className="text-sm text-zinc-500 mt-1">
+            Default Sport: <span className="font-bold text-zinc-700">{community.default_sport}</span>
           </p>
         </div>
 
@@ -89,9 +91,9 @@ export default async function CommunityLayout({
         <div className="flex items-center gap-2 py-1">
           <Link
             href={`/c/${communitySlug}`}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold border border-zinc-200 bg-white text-zinc-650 hover:bg-zinc-50 transition-all shadow-sm"
           >
-            <Trophy className="h-3.5 w-3.5 text-indigo-500" />
+            <Trophy className="h-3.5 w-3.5 text-orange-500" />
             Community Workspace
           </Link>
         </div>

@@ -48,15 +48,15 @@ function LoginForm() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-bold text-zinc-950 dark:text-white">Sign In</h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+        <h3 className="text-xl font-extrabold text-[#111827]">Sign In</h3>
+        <p className="text-sm text-zinc-500 mt-1">
           Access your communities, ratings, and match history.
         </p>
       </div>
 
       <div className="space-y-4">
         {error && (
-          <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/20 dark:text-red-300">
+          <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 text-sm text-red-800">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -65,10 +65,10 @@ function LoginForm() {
         <button
           onClick={handleGoogleLogin}
           disabled={isSubmitting}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 transition-all shadow-sm cursor-pointer dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 transition-all shadow-sm cursor-pointer"
         >
           {isSubmitting ? (
-            <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+            <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
           ) : (
             <GoogleIcon />
           )}
@@ -76,11 +76,11 @@ function LoginForm() {
         </button>
       </div>
 
-      <div className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="text-center text-sm text-zinc-500">
         New to Communitrix?{' '}
         <Link
           href="/signup"
-          className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+          className="font-bold text-orange-500 hover:text-orange-600"
         >
           Create an Account
         </Link>
@@ -93,7 +93,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="flex justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
       </div>
     }>
       <LoginForm />

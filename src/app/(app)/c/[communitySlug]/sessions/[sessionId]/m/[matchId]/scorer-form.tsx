@@ -274,14 +274,14 @@ export default function ScorerForm({
   return (
     <div className="space-y-6">
       {!isOnline && (
-        <div className="flex items-center gap-2.5 rounded-lg bg-amber-950/40 border border-amber-900/60 p-4 text-sm text-amber-300 animate-pulse">
-          <AlertCircle className="h-5 w-5 shrink-0 text-amber-400" />
+        <div className="flex items-center gap-2.5 rounded-lg bg-orange-50 border border-orange-200 p-4 text-sm text-orange-850 animate-pulse">
+          <AlertCircle className="h-5 w-5 shrink-0 text-orange-500" />
           <span>Offline: Koneksi terputus! Skor Anda tersimpan sementara di perangkat ini.</span>
         </div>
       )}
 
       {error && (
-        <div className="flex items-start gap-2.5 rounded-lg bg-red-950/40 border border-red-900/60 p-4 text-sm text-red-300">
+        <div className="flex items-start gap-2.5 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-800">
           <AlertCircle className="h-5 w-5 shrink-0" />
           <span>{error}</span>
         </div>
@@ -290,32 +290,32 @@ export default function ScorerForm({
       {/* Back button */}
       <Link
         href={`/c/${communitySlug}/sessions/${sessionId}`}
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-all"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-550 hover:text-orange-500 transition-all"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to Session Board
       </Link>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 text-zinc-900">
         {/* Team A score adjustment */}
-        <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 flex flex-col items-center gap-4">
-          <span className="text-xs font-semibold text-zinc-400">TEAM A</span>
+        <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-100 flex flex-col items-center gap-4 shadow-sm">
+          <span className="text-xs font-bold text-zinc-500">TEAM A</span>
           
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={handleDecrementA}
-              className="h-14 w-14 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center cursor-pointer transition-all border border-zinc-750"
+              className="h-14 w-14 rounded-full bg-white hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-all border border-zinc-200 text-zinc-800 shadow-sm"
             >
               <Minus className="h-6 w-6" />
             </button>
-            <span className="text-5xl font-black tabular-nums tracking-tight">
+            <span className="text-5xl font-black tabular-nums tracking-tight text-[#111827]">
               {scoreA}
             </span>
             <button
               type="button"
               onClick={handleIncrementA}
-              className="h-14 w-14 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center cursor-pointer transition-all border border-zinc-750"
+              className="h-14 w-14 rounded-full bg-white hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-all border border-zinc-200 text-zinc-800 shadow-sm"
             >
               <Plus className="h-6 w-6" />
             </button>
@@ -323,7 +323,7 @@ export default function ScorerForm({
 
           <div className="text-center space-y-1 mt-2">
             {teamAPlayers.map(p => (
-              <p key={p.id} className="text-sm font-bold text-zinc-200">
+              <p key={p.id} className="text-sm font-bold text-zinc-800">
                 {p.fullName}
               </p>
             ))}
@@ -331,24 +331,24 @@ export default function ScorerForm({
         </div>
 
         {/* Team B score adjustment */}
-        <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 flex flex-col items-center gap-4">
-          <span className="text-xs font-semibold text-zinc-400">TEAM B</span>
+        <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-100 flex flex-col items-center gap-4 shadow-sm">
+          <span className="text-xs font-bold text-zinc-500">TEAM B</span>
 
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={handleDecrementB}
-              className="h-14 w-14 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center cursor-pointer transition-all border border-zinc-750"
+              className="h-14 w-14 rounded-full bg-white hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-all border border-zinc-200 text-zinc-800 shadow-sm"
             >
               <Minus className="h-6 w-6" />
             </button>
-            <span className="text-5xl font-black tabular-nums tracking-tight">
+            <span className="text-5xl font-black tabular-nums tracking-tight text-[#111827]">
               {scoreB}
             </span>
             <button
               type="button"
               onClick={handleIncrementB}
-              className="h-14 w-14 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center cursor-pointer transition-all border border-zinc-750"
+              className="h-14 w-14 rounded-full bg-white hover:bg-zinc-100 flex items-center justify-center cursor-pointer transition-all border border-zinc-200 text-zinc-800 shadow-sm"
             >
               <Plus className="h-6 w-6" />
             </button>
@@ -356,7 +356,7 @@ export default function ScorerForm({
 
           <div className="text-center space-y-1 mt-2">
             {teamBPlayers.map(p => (
-              <p key={p.id} className="text-sm font-bold text-zinc-200">
+              <p key={p.id} className="text-sm font-bold text-zinc-800">
                 {p.fullName}
               </p>
             ))}
@@ -366,23 +366,23 @@ export default function ScorerForm({
 
       {/* Live Elo Forecast Rating deltas */}
       {eloResults.teamADeltas.length > 0 && (
-        <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-            <TrendingUp className="h-3.5 w-3.5 text-indigo-400" />
+        <div className="p-4 rounded-xl bg-orange-500/[0.04] border border-orange-500/10 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-orange-500" />
             Live ELO Rating Forecast
           </h4>
           <div className="grid grid-cols-2 gap-6 pt-1">
             <div className="space-y-2">
-              <span className="text-[10px] font-semibold text-zinc-500">Team A Elo shifts</span>
+              <span className="text-[10px] font-bold text-zinc-400 uppercase">Team A Elo shifts</span>
               {eloResults.teamADeltas.map(d => {
                 const player = teamAPlayers.find(p => p.id === d.id);
                 const isPositive = d.delta >= 0;
                 return (
                   <div key={d.id} className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-300 font-bold truncate pr-2 max-w-[120px]">
+                    <span className="text-zinc-700 font-bold truncate pr-2 max-w-[120px]">
                       {player?.fullName}
                     </span>
-                    <span className={`font-black ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <span className={`font-black ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {isPositive ? '+' : ''}
                       {d.delta.toFixed(1)}
                     </span>
@@ -392,16 +392,16 @@ export default function ScorerForm({
             </div>
 
             <div className="space-y-2">
-              <span className="text-[10px] font-semibold text-zinc-500">Team B Elo shifts</span>
+              <span className="text-[10px] font-bold text-zinc-400 uppercase">Team B Elo shifts</span>
               {eloResults.teamBDeltas.map(d => {
                 const player = teamBPlayers.find(p => p.id === d.id);
                 const isPositive = d.delta >= 0;
                 return (
                   <div key={d.id} className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-300 font-bold truncate pr-2 max-w-[120px]">
+                    <span className="text-zinc-700 font-bold truncate pr-2 max-w-[120px]">
                       {player?.fullName}
                     </span>
-                    <span className={`font-black ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <span className={`font-black ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {isPositive ? '+' : ''}
                       {d.delta.toFixed(1)}
                     </span>
@@ -418,7 +418,7 @@ export default function ScorerForm({
         <button
           type="button"
           onClick={() => setShowConfirm(true)}
-          className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition-all font-bold text-white shadow-md shadow-indigo-950 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 transition-all font-bold text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer"
         >
           <span>{initialStatus === 'COMPLETED' ? 'Amend Match Score' : 'Submit Match Score'}</span>
         </button>
@@ -427,7 +427,7 @@ export default function ScorerForm({
           <button
             type="button"
             onClick={() => setShowVoidConfirm(true)}
-            className="w-full h-12 rounded-xl border border-red-900/50 hover:bg-red-950/20 transition-all font-bold text-red-400 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full h-12 rounded-xl border border-red-200 bg-white hover:bg-red-50 transition-all font-bold text-red-650 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
           >
             <span>Void Match</span>
           </button>
@@ -436,36 +436,36 @@ export default function ScorerForm({
 
       {/* Confirmation Dialog Sheet for scoring / amending */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm p-6 rounded-2xl bg-white border border-zinc-100 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="text-center space-y-1">
-              <CheckCircle2 className="h-8 w-8 text-indigo-500 mx-auto" />
-              <h3 className="text-lg font-black tracking-tight text-white mt-2">
+              <CheckCircle2 className="h-8 w-8 text-orange-500 mx-auto" />
+              <h3 className="text-lg font-extrabold tracking-tight text-[#111827] mt-2">
                 {initialStatus === 'COMPLETED' ? 'Confirm Amendment' : 'Confirm Match Score'}
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 Are you sure? This will trigger a full ELO ratings recalculation.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-850 flex items-center justify-center gap-6 text-2xl font-black">
+            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/60 flex items-center justify-center gap-6 text-2xl font-black text-zinc-900 shadow-sm">
               <div className="text-center">
                 <span className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
                   Team A
                 </span>
-                <span className="text-white mt-1 block">{scoreA}</span>
+                <span className="text-[#111827] mt-1 block">{scoreA}</span>
               </div>
-              <span className="text-zinc-600 font-semibold">—</span>
+              <span className="text-zinc-400 font-semibold">—</span>
               <div className="text-center">
                 <span className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
                   Team B
                 </span>
-                <span className="text-white mt-1 block">{scoreB}</span>
+                <span className="text-[#111827] mt-1 block">{scoreB}</span>
               </div>
             </div>
 
             {initialStatus === 'COMPLETED' && (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 text-zinc-900">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                   Reason for Amendment
                 </label>
@@ -475,7 +475,7 @@ export default function ScorerForm({
                   placeholder="e.g. Typo in previous score entry"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-850 bg-zinc-950 px-3 py-2 text-xs text-white placeholder-zinc-550 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none shadow-sm"
                 />
               </div>
             )}
@@ -485,7 +485,7 @@ export default function ScorerForm({
                 type="button"
                 onClick={() => setShowConfirm(false)}
                 disabled={isSubmitting}
-                className="flex-1 h-10 rounded-lg border border-zinc-800 hover:bg-zinc-800 font-bold text-xs text-zinc-300 transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 h-10 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 font-bold text-xs text-zinc-700 transition-all cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -493,7 +493,7 @@ export default function ScorerForm({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="flex-1 h-10 rounded-lg bg-orange-500 hover:bg-orange-600 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Confirm
@@ -505,19 +505,19 @@ export default function ScorerForm({
 
       {/* Confirmation Dialog Sheet for voiding */}
       {showVoidConfirm && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-850 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm p-6 rounded-2xl bg-white border border-zinc-100 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="text-center space-y-1">
               <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
-              <h3 className="text-lg font-black tracking-tight text-white mt-2">
+              <h3 className="text-lg font-extrabold tracking-tight text-[#111827] mt-2">
                 Void Match
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 Are you sure you want to void this match? This will remove all ELO calculations for this match and recalculate.
               </p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 text-zinc-900">
               <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                 Reason for Voiding
               </label>
@@ -527,7 +527,7 @@ export default function ScorerForm({
                 placeholder="e.g. Player withdrew mid-match"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="w-full rounded-lg border border-zinc-850 bg-zinc-950 px-3 py-2 text-xs text-white placeholder-zinc-550 focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none shadow-sm"
               />
             </div>
 
@@ -536,7 +536,7 @@ export default function ScorerForm({
                 type="button"
                 onClick={() => setShowVoidConfirm(false)}
                 disabled={isVoiding}
-                className="flex-1 h-10 rounded-lg border border-zinc-800 hover:bg-zinc-800 font-bold text-xs text-zinc-300 transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 h-10 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 font-bold text-xs text-zinc-700 transition-all cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -544,7 +544,7 @@ export default function ScorerForm({
                 type="button"
                 onClick={handleVoidSubmit}
                 disabled={isVoiding || reason.trim().length === 0}
-                className="flex-1 h-10 rounded-lg bg-red-600 hover:bg-red-500 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="flex-1 h-10 rounded-lg bg-red-600 hover:bg-red-500 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
               >
                 {isVoiding && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Void Match

@@ -89,14 +89,14 @@ export default async function MatchScorerPage({
   const teamB = players.filter(p => p.team === 'B').sort((a, b) => a.slot - b.slot);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white py-8 px-4 flex flex-col items-center justify-center">
+    <div className="flex-1 bg-white text-zinc-900 py-8 px-4 flex flex-col items-center justify-center">
       <div className="w-full max-w-xl space-y-6">
         <div className="text-center">
-          <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-500">
             Court {match.court_number} • Round {match.round_number}
           </span>
-          <h1 className="text-2xl font-black tracking-tight mt-1">Courtside Scorer</h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
+          <h1 className="text-2xl font-extrabold tracking-tight mt-1 text-[#111827]">Courtside Scorer</h1>
+          <p className="text-xs text-zinc-500 mt-0.5">
             Tap the scores to adjust, view the Elo preview below, and send the score.
           </p>
         </div>

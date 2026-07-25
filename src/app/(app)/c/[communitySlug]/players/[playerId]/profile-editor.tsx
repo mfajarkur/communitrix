@@ -87,33 +87,33 @@ export default function ProfileEditor({ fullName, avatarUrl }: ProfileEditorProp
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-xs font-bold text-zinc-650 hover:bg-zinc-55 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-all shadow-sm cursor-pointer"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm cursor-pointer"
       >
-        <Edit3 className="h-3.5 w-3.5" />
+        <Edit3 className="h-3.5 w-3.5 text-zinc-400" />
         Edit Profile
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm p-6 rounded-2xl bg-zinc-900 border border-zinc-850 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm p-6 rounded-2xl bg-white border border-zinc-100 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 relative">
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-1 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-4 right-4 p-1 text-zinc-400 hover:text-zinc-900 transition-colors cursor-pointer"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="text-center space-y-1">
-              <h3 className="text-lg font-black tracking-tight text-white">
+              <h3 className="text-lg font-extrabold tracking-tight text-[#111827]">
                 Edit Profile
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 Update your name and profile picture.
               </p>
             </div>
 
             {error && (
-              <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-900/60 text-xs text-red-300 text-center">
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 text-center">
                 {error}
               </div>
             )}
@@ -126,17 +126,17 @@ export default function ProfileEditor({ fullName, avatarUrl }: ProfileEditorProp
                     <img
                       src={avatar}
                       alt="Preview"
-                      className="h-20 w-20 rounded-2xl object-cover border border-zinc-700 bg-zinc-800"
+                      className="h-20 w-20 rounded-2xl object-cover border border-zinc-100 bg-zinc-50 shadow-sm"
                     />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-850 text-zinc-400 font-extrabold text-2xl uppercase">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-650 font-extrabold text-2xl uppercase shadow-sm">
                       {name.slice(0, 2)}
                     </div>
                   )}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 p-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition-all cursor-pointer"
+                    className="absolute -bottom-1 -right-1 p-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-md transition-all cursor-pointer border border-white"
                   >
                     <Upload className="h-3.5 w-3.5" />
                   </button>
@@ -148,14 +148,14 @@ export default function ProfileEditor({ fullName, avatarUrl }: ProfileEditorProp
                   accept="image/*"
                   className="hidden"
                 />
-                <span className="text-[10px] text-zinc-500 font-medium">
+                <span className="text-[10px] text-zinc-400 font-medium">
                   Max size 2MB (resizes to 128x128 px)
                 </span>
               </div>
 
               {/* Name Input */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-450">
                   Full Name
                 </label>
                 <input
@@ -164,7 +164,7 @@ export default function ProfileEditor({ fullName, avatarUrl }: ProfileEditorProp
                   placeholder="Your display name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-850 bg-zinc-950 px-3 py-2 text-xs text-white placeholder-zinc-550 focus:border-indigo-500 focus:outline-none"
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none shadow-sm"
                 />
               </div>
 
@@ -173,14 +173,14 @@ export default function ProfileEditor({ fullName, avatarUrl }: ProfileEditorProp
                   type="button"
                   onClick={() => setIsOpen(false)}
                   disabled={isSubmitting}
-                  className="flex-1 h-10 rounded-lg border border-zinc-800 hover:bg-zinc-800 font-bold text-xs text-zinc-300 transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-1 h-10 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 font-bold text-xs text-zinc-700 transition-all cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="flex-1 h-10 rounded-lg bg-orange-500 hover:bg-orange-600 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   Save Changes

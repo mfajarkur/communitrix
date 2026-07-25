@@ -104,17 +104,17 @@ export default async function SessionLiveBoardPage({
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-150 pb-5">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-500">
             Live Session Dashboard
           </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white mt-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#111827] mt-1">
             {session.session_name}
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Format: <span className="font-semibold uppercase">{session.format}</span> • Sport:{' '}
-            <span className="font-semibold uppercase">{session.sport}</span>
+          <p className="text-sm text-zinc-500 mt-1">
+            Format: <span className="font-bold uppercase">{session.format}</span> • Sport:{' '}
+            <span className="font-bold uppercase">{session.sport}</span>
           </p>
         </div>
         <div className="flex items-center gap-3">

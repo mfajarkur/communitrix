@@ -205,13 +205,13 @@ export default function LiveBoardWrapper({
 
         {/* Generate / match controls */}
         {isAdmin && (
-          <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm flex items-center justify-between gap-4">
+          <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 text-sm">
-                <Calendar className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="font-bold text-[#111827] flex items-center gap-1.5 text-sm">
+                <Calendar className="h-4.5 w-4.5 text-orange-500" />
                 Round Playback Controls
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              <p className="text-xs text-zinc-500 mt-1">
                 {!latestRound
                   ? 'No rounds created. Start the first round.'
                   : allMatchesCompleted
@@ -225,7 +225,7 @@ export default function LiveBoardWrapper({
                 <button
                   onClick={handleFinalizeClick}
                   disabled={isFinalizing || isGenerating}
-                  className="h-10 px-4 rounded-lg border border-red-200 hover:bg-red-50 text-xs font-semibold text-red-600 dark:border-red-900/50 dark:hover:bg-red-950/20 transition-all cursor-pointer flex items-center gap-1.5"
+                  className="h-10 px-4 rounded-lg border border-red-200 hover:bg-red-50 text-xs font-bold text-red-600 transition-all cursor-pointer flex items-center gap-1.5 bg-white shadow-sm"
                 >
                   {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   <span>End Session</span>
@@ -234,7 +234,7 @@ export default function LiveBoardWrapper({
               <button
                 onClick={handleGenerateClick}
                 disabled={!canGenerateNextRound || isGenerating || isFinalizing}
-                className="h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                className="h-10 px-4 rounded-lg bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 {isGenerating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -255,13 +255,13 @@ export default function LiveBoardWrapper({
           </h3>
 
           {!latestRound ? (
-            <div className="text-center py-16 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/20 text-zinc-400 space-y-3">
+            <div className="text-center py-16 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50 text-zinc-400 space-y-3">
               <HelpCircle className="h-10 w-10 mx-auto opacity-50" />
               <p className="text-sm">No rounds have been generated for this session yet.</p>
               {isAdmin && (
                 <button
                   onClick={handleGenerateClick}
-                  className="mt-2 text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
+                  className="mt-2 text-xs font-bold text-orange-500 hover:underline cursor-pointer"
                 >
                   Generate Round 1
                 </button>
@@ -277,17 +277,17 @@ export default function LiveBoardWrapper({
                 return (
                   <div
                     key={m.id}
-                    className="p-5 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm flex flex-col justify-between"
+                    className="p-5 rounded-2xl border border-zinc-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
+                    <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5">
                       <span className="text-xs font-bold text-zinc-500">
                         Court {m.court_number}
                       </span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                           isCompleted
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                            : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-orange-500/10 text-orange-600'
                         }`}
                       >
                         {m.status}
@@ -297,18 +297,18 @@ export default function LiveBoardWrapper({
                     <div className="py-4 flex justify-between items-center gap-6">
                       <div className="space-y-1 flex-1">
                         {teamA.map(mp => (
-                          <p key={mp.profile_id} className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                          <p key={mp.profile_id} className="text-sm font-bold text-zinc-800 truncate">
                             {mp.profile.full_name}
                           </p>
                         ))}
                       </div>
 
-                      <div className="text-center font-black tabular-nums tracking-tight px-3 py-1 bg-zinc-50 dark:bg-zinc-950 rounded-xl flex items-center gap-3">
-                        <span className={`text-xl ${isCompleted && m.winner_side === 'A' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}`}>
+                      <div className="text-center font-black tabular-nums tracking-tight px-3 py-1 bg-zinc-50 rounded-xl flex items-center gap-3">
+                        <span className={`text-xl ${isCompleted && m.winner_side === 'A' ? 'text-orange-500' : 'text-zinc-400'}`}>
                           {m.team_a_score ?? 0}
                         </span>
-                        <span className="text-zinc-300 dark:text-zinc-700 text-xs">—</span>
-                        <span className={`text-xl ${isCompleted && m.winner_side === 'B' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'}`}>
+                        <span className="text-zinc-300 text-xs">—</span>
+                        <span className={`text-xl ${isCompleted && m.winner_side === 'B' ? 'text-orange-500' : 'text-zinc-400'}`}>
                           {m.team_b_score ?? 0}
                         </span>
                       </div>
@@ -321,11 +321,10 @@ export default function LiveBoardWrapper({
                         ))}
                       </div>
                     </div>
-
                     {isAdmin && (
                       <Link
                         href={`/c/${communitySlug}/sessions/${sessionId}/m/${m.id}`}
-                        className="mt-2 text-center text-xs font-semibold py-2 bg-zinc-50 hover:bg-zinc-100 rounded-xl border border-zinc-200/60 dark:bg-zinc-950 dark:hover:bg-zinc-800 dark:border-zinc-800 transition-all text-zinc-600 dark:text-zinc-300"
+                        className="mt-2 text-center text-xs font-bold py-2 bg-zinc-100 hover:bg-zinc-200/80 rounded-xl border border-zinc-200/60 transition-all text-zinc-700"
                       >
                         {isCompleted ? 'Edit Score' : 'Score Court'}
                       </Link>
@@ -342,9 +341,9 @@ export default function LiveBoardWrapper({
       <div className="space-y-6">
         {/* Roster sit-outs */}
         {latestRound && (
-          <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
-            <h4 className="font-bold text-zinc-900 dark:text-white flex items-center gap-2 text-sm border-b border-zinc-100 dark:border-zinc-800 pb-3">
-              <Users className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+          <div className="p-6 rounded-2xl border border-zinc-100 bg-white shadow-sm space-y-4">
+            <h4 className="font-bold text-[#111827] flex items-center gap-2 text-sm border-b border-zinc-100 pb-3">
+              <Users className="h-4.5 w-4.5 text-orange-500" />
               Sit-outs this Round ({sitOuts.length})
             </h4>
             {sitOuts.length === 0 ? (
@@ -354,7 +353,7 @@ export default function LiveBoardWrapper({
                 {sitOuts.map(p => (
                   <div
                     key={p.id}
-                    className="p-2.5 rounded-xl border border-zinc-150 bg-zinc-50/50 text-xs font-bold text-zinc-700 truncate dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
+                    className="p-2.5 rounded-xl border border-zinc-150 bg-zinc-50/50 text-xs font-bold text-zinc-700 truncate"
                   >
                     {p.fullName}
                   </div>
@@ -365,25 +364,25 @@ export default function LiveBoardWrapper({
         )}
 
         {/* Quick Session leaderboard */}
-        <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm space-y-4">
-          <h4 className="font-bold text-zinc-900 dark:text-white flex items-center gap-2 text-sm border-b border-zinc-100 dark:border-zinc-800 pb-3">
-            <Trophy className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+        <div className="p-6 rounded-2xl border border-zinc-100 bg-white shadow-sm space-y-4">
+          <h4 className="font-bold text-[#111827] flex items-center gap-2 text-sm border-b border-zinc-100 pb-3">
+            <Trophy className="h-4.5 w-4.5 text-orange-500" />
             Session Leaderboard
           </h4>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-zinc-100 dark:border-zinc-800 text-zinc-400 uppercase tracking-widest text-[10px] font-semibold">
+                <tr className="border-b border-zinc-100 text-zinc-400 uppercase tracking-widest text-[10px] font-semibold">
                   <th className="py-2 font-semibold">Player</th>
                   <th className="py-2 text-center font-semibold">Record</th>
                   <th className="py-2 text-right font-semibold">Diff</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 font-medium">
+              <tbody className="divide-y divide-zinc-100 font-medium">
                 {sortedLeaderboard.map((p, idx) => {
                   const diff = p.pointsFor - p.pointsAgainst;
                   return (
-                    <tr key={p.id} className="text-zinc-800 dark:text-zinc-200">
+                    <tr key={p.id} className="text-zinc-800">
                       <td className="py-2.5 flex items-center gap-2 truncate max-w-[120px] font-bold">
                         <span className="text-zinc-400">{idx + 1}.</span>
                         {p.fullName}
@@ -406,14 +405,14 @@ export default function LiveBoardWrapper({
 
       {/* Matchmaking proposal preview modal/dialog */}
       {previewRound && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl p-6 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-xl p-6 rounded-2xl bg-white border border-zinc-100 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
             <div className="text-center space-y-1 shrink-0">
-              <Zap className="h-8 w-8 text-indigo-500 mx-auto" />
-              <h3 className="text-lg font-black tracking-tight text-white mt-2">
+              <Zap className="h-8 w-8 text-orange-500 mx-auto" />
+              <h3 className="text-lg font-extrabold tracking-tight text-[#111827] mt-2">
                 Verify Round {previewRound.roundNumber} Pairings
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 Confirm match generation courts and player sit-out roster allocation before starting.
               </p>
             </div>
@@ -423,17 +422,17 @@ export default function LiveBoardWrapper({
                 {previewRound.courts.map((c: any) => (
                   <div
                     key={c.courtNumber}
-                    className="p-4 rounded-xl bg-zinc-950 border border-zinc-850 flex flex-col gap-2"
+                    className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/60 flex flex-col gap-2"
                   >
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-900 pb-1.5">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-100 pb-1.5">
                       Court {c.courtNumber}
                     </span>
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-zinc-200">
+                      <p className="text-xs font-bold text-zinc-800">
                         {c.teamA.map((p: any) => p.name).join(' / ')}
                       </p>
-                      <span className="text-[9px] font-black text-indigo-500/80 block py-0.5">VS</span>
-                      <p className="text-xs font-bold text-zinc-200">
+                      <span className="text-[9px] font-black text-orange-500 block py-0.5">VS</span>
+                      <p className="text-xs font-bold text-zinc-800">
                         {c.teamB.map((p: any) => p.name).join(' / ')}
                       </p>
                     </div>
@@ -442,7 +441,7 @@ export default function LiveBoardWrapper({
               </div>
 
               {previewRound.sitOuts.length > 0 && (
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-850 space-y-2">
+                <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/60 space-y-2">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
                     Sit-outs ({previewRound.sitOuts.length})
                   </span>
@@ -450,7 +449,7 @@ export default function LiveBoardWrapper({
                     {previewRound.sitOuts.map((p: any) => (
                       <span
                         key={p.id}
-                        className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-zinc-300"
+                        className="px-2.5 py-1 rounded-lg bg-white border border-zinc-200 text-[10px] font-bold text-zinc-600 shadow-sm"
                       >
                         {p.name}
                       </span>
@@ -460,12 +459,12 @@ export default function LiveBoardWrapper({
               )}
             </div>
 
-            <div className="flex gap-3 shrink-0 pt-2 border-t border-zinc-800/80">
+            <div className="flex gap-3 shrink-0 pt-2 border-t border-zinc-250/60">
               <button
                 type="button"
                 onClick={() => setPreviewRound(null)}
                 disabled={isGenerating}
-                className="flex-1 h-10 rounded-lg border border-zinc-800 hover:bg-zinc-800 font-bold text-xs text-zinc-300 transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 h-10 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 font-bold text-xs text-zinc-700 transition-all cursor-pointer disabled:opacity-50"
               >
                 Discard
               </button>
@@ -473,7 +472,7 @@ export default function LiveBoardWrapper({
                 type="button"
                 onClick={handlePersistConfirm}
                 disabled={isGenerating}
-                className="flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="flex-1 h-10 rounded-lg bg-orange-500 hover:bg-orange-600 font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {isGenerating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Confirm & Open Courts

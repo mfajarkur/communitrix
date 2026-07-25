@@ -55,32 +55,32 @@ export default function NewCommunityPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto space-y-6">
+    <div className="max-w-md mx-auto space-y-6 bg-white">
       <div>
         <Link
           href="/communities"
-          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-550 hover:text-orange-500 transition-colors mb-4"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back to Communities
         </Link>
-        <h2 className="text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">Create a Community</h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+        <h2 className="text-2xl font-extrabold tracking-tight text-[#111827]">Create a Community</h2>
+        <p className="text-sm text-zinc-500 mt-1">
           Form a new group, invite players, and start managing padel sessions.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
+      <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/20 dark:text-red-300">
+            <div className="flex items-start gap-2.5 rounded-lg bg-red-50 p-3 text-sm text-red-800">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label htmlFor="name" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <label htmlFor="name" className="text-sm font-semibold text-zinc-700">
               Community Name
             </label>
             <input
@@ -90,19 +90,19 @@ export default function NewCommunityPage() {
               placeholder="e.g. Westside Padel Club"
               value={name}
               onChange={handleNameChange}
-              className="w-full rounded-lg border border-zinc-300 bg-transparent px-3.5 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:text-white dark:placeholder-zinc-500"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 shadow-sm"
             />
             {fieldErrors.name && (
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.name[0]}</p>
+              <p className="text-xs text-red-600 mt-1">{fieldErrors.name[0]}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="slug" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <label htmlFor="slug" className="text-sm font-semibold text-zinc-700">
               Community URL Slug
             </label>
             <div className="relative flex items-center">
-              <span className="absolute left-3.5 text-sm text-zinc-400 dark:text-zinc-500 select-none">
+              <span className="absolute left-3.5 text-sm text-zinc-400 select-none">
                 c/
               </span>
               <input
@@ -112,21 +112,21 @@ export default function NewCommunityPage() {
                 placeholder="westside-padel-club"
                 value={slug}
                 onChange={(e) => setSlug(slugify(e.target.value))}
-                className="w-full rounded-lg border border-zinc-300 bg-transparent pl-8 pr-3.5 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:text-white dark:placeholder-zinc-500"
+                className="w-full rounded-lg border border-zinc-300 bg-white pl-8 pr-3.5 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 shadow-sm"
               />
             </div>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-zinc-400">
               Only lowercase letters, numbers, and hyphens (3-40 characters).
             </p>
             {fieldErrors.slug && (
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.slug[0]}</p>
+              <p className="text-xs text-red-600 mt-1">{fieldErrors.slug[0]}</p>
             )}
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-all shadow-sm cursor-pointer"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-50 transition-all shadow-sm cursor-pointer"
           >
             {isSubmitting ? (
               <>

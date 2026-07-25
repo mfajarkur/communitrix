@@ -145,10 +145,10 @@ export default function WizardForm({
           </div>
         )}
 
-        <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 space-y-5 shadow-sm">
-          <div className="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-800">
-            <LayoutGrid className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            <h3 className="font-bold text-zinc-900 dark:text-white">1. Session Parameters</h3>
+        <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 space-y-5 shadow-sm">
+          <div className="flex items-center gap-2 border-b border-zinc-200/60 pb-3">
+            <LayoutGrid className="h-5 w-5 text-orange-500" />
+            <h3 className="font-bold text-[#111827]">1. Session Parameters</h3>
           </div>
 
           <div className="space-y-4">
@@ -401,27 +401,27 @@ export default function WizardForm({
         </div>
 
         {/* Live capacity dashboard indicator */}
-        <div className="p-5 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-900 dark:bg-indigo-950/20 dark:border-indigo-900/50 dark:text-indigo-300">
+        <div className="p-5 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-950">
           <div className="flex items-center gap-2.5">
-            <Zap className="h-5 w-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <Zap className="h-5 w-5 text-orange-600 shrink-0" />
             <h4 className="font-bold text-sm">Live Court Capacity Calculations</h4>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-3 border-t border-indigo-100/50 dark:border-indigo-900/30">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-3 border-t border-orange-500/20">
             <div>
-              <span className="text-xs text-indigo-600/75 dark:text-indigo-400/80">Attendees</span>
+              <span className="text-xs text-orange-600/75">Attendees</span>
               <p className="text-xl font-bold mt-0.5">{activeCount}</p>
             </div>
             <div>
-              <span className="text-xs text-indigo-600/75 dark:text-indigo-400/80">Active Courts</span>
+              <span className="text-xs text-orange-600/75">Active Courts</span>
               <p className="text-xl font-bold mt-0.5">{activeCourts}</p>
             </div>
             <div>
-              <span className="text-xs text-indigo-600/75 dark:text-indigo-400/80">Playing</span>
-              <p className="text-xl font-bold mt-0.5 text-emerald-600 dark:text-emerald-400">{playingSlots}</p>
+              <span className="text-xs text-orange-600/75">Playing</span>
+              <p className="text-xl font-bold mt-0.5 text-emerald-600">{playingSlots}</p>
             </div>
             <div>
-              <span className="text-xs text-indigo-600/75 dark:text-indigo-400/80">Sitting Out</span>
-              <p className={`text-xl font-bold mt-0.5 ${sitOutCount > 0 ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+              <span className="text-xs text-orange-600/75">Sitting Out</span>
+              <p className={`text-xl font-bold mt-0.5 ${sitOutCount > 0 ? 'text-orange-600' : ''}`}>
                 {sitOutCount}
               </p>
             </div>
@@ -431,13 +431,13 @@ export default function WizardForm({
 
       {/* Attendance selection column */}
       <div className="space-y-6">
-        <div className="p-6 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 shadow-sm flex flex-col max-h-[600px]">
-          <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800 shrink-0">
+        <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm flex flex-col max-h-[600px]">
+          <div className="flex items-center justify-between border-b border-zinc-200/60 pb-3 shrink-0">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              <h3 className="font-bold text-zinc-900 dark:text-white">2. Attendance</h3>
+              <Users className="h-5 w-5 text-orange-500" />
+              <h3 className="font-bold text-[#111827]">2. Attendance</h3>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-650">
               {selectedIds.length} / {players.length}
             </span>
           </div>
@@ -447,14 +447,14 @@ export default function WizardForm({
             <button
               type="button"
               onClick={handleSelectAll}
-              className="flex-1 text-xs font-semibold py-1.5 border border-zinc-200 hover:bg-zinc-50 rounded-lg transition-all dark:border-zinc-800 dark:hover:bg-zinc-800 cursor-pointer"
+              className="flex-1 text-xs font-bold py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-lg transition-all text-zinc-700 cursor-pointer shadow-sm"
             >
               Select All
             </button>
             <button
               type="button"
               onClick={handleClearAll}
-              className="flex-1 text-xs font-semibold py-1.5 border border-zinc-200 hover:bg-zinc-50 rounded-lg transition-all dark:border-zinc-800 dark:hover:bg-zinc-800 cursor-pointer"
+              className="flex-1 text-xs font-bold py-1.5 border border-zinc-200 bg-white hover:bg-zinc-50 rounded-lg transition-all text-zinc-700 cursor-pointer shadow-sm"
             >
               Clear All
             </button>
@@ -476,16 +476,16 @@ export default function WizardForm({
                     onClick={() => handleTogglePlayer(p.id)}
                     className={`flex items-center justify-between w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-indigo-600 bg-indigo-50/20 dark:border-indigo-500/50'
-                        : 'border-zinc-150 hover:bg-zinc-55/40 hover:border-zinc-250 dark:border-zinc-800 dark:hover:bg-zinc-800/40'
+                        ? 'border-orange-500 bg-orange-500/10'
+                        : 'border-zinc-200 bg-white hover:bg-zinc-50/50 hover:border-zinc-300'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-sm font-bold text-zinc-600 uppercase dark:bg-zinc-800 dark:text-zinc-300">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-sm font-bold text-zinc-650 uppercase">
                         {p.fullName.slice(0, 2)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">
+                        <p className="text-sm font-bold text-[#111827] line-clamp-1">
                           {p.fullName}
                         </p>
                         {p.isGuest && (
@@ -496,7 +496,7 @@ export default function WizardForm({
                       </div>
                     </div>
                     {isSelected && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white dark:bg-indigo-500">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-white">
                         <Check className="h-3 w-3 stroke-[3]" />
                       </div>
                     )}
@@ -510,7 +510,7 @@ export default function WizardForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-100 disabled:opacity-50 dark:shadow-none cursor-pointer shrink-0"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 font-bold text-white hover:bg-orange-600 transition-all shadow-sm disabled:opacity-50 cursor-pointer shrink-0"
         >
           {isSubmitting ? (
             <Loader2 className="h-5 w-5 animate-spin" />
