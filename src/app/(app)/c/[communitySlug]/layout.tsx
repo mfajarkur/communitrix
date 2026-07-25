@@ -86,26 +86,13 @@ export default async function CommunityLayout({
         </div>
 
         {/* Community Nav Options */}
-        <div className="flex items-center gap-2 overflow-x-auto py-1">
+        <div className="flex items-center gap-2 py-1">
           <Link
             href={`/c/${communitySlug}`}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-all shadow-sm"
           >
-            Dashboard
-          </Link>
-          <Link
-            href={`/c/${communitySlug}/leaderboard/${community.default_sport}`}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-sm"
-          >
-            <Trophy className="h-4 w-4" />
-            Leaderboard
-          </Link>
-          <Link
-            href={`/c/${communitySlug}/members`}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold border border-zinc-250 bg-white text-zinc-650 hover:bg-zinc-55 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <Users className="h-4 w-4" />
-            Members
+            <Trophy className="h-3.5 w-3.5 text-indigo-500" />
+            Community Workspace
           </Link>
         </div>
       </div>
