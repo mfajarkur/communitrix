@@ -87,52 +87,65 @@ export default async function CommunitiesPage() {
             const comm = m.community;
             if (!comm) return null;
             const isAdmin = m.role === 'ADMIN';
+            const bannerImage = comm.logo_url || '/community_banner_placeholder.png';
 
             return (
-              <div
+              <Link
+                href={`/c/${comm.slug}`}
                 key={comm.id}
-                className="group relative flex flex-col justify-between p-6 rounded-2xl border border-zinc-100 bg-zinc-50 hover:shadow-md transition-all"
+                className="group relative overflow-hidden rounded-2xl h-40 bg-zinc-950 flex flex-col justify-end p-5 text-white shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all border border-zinc-100"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold bg-zinc-150 text-zinc-500">
+                {/* Banner image */}
+                <img
+                  src={bannerImage}
+                  alt={comm.name}
+                  className="absolute inset-0 w-full h-full object-cover opacity-50 select-none pointer-events-none group-hover:scale-105 transition-transform duration-300"
+                />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-orange-600/95 via-orange-600/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-950/30 via-transparent to-transparent" />
+
+                {/* Content on top */}
+                <div className="relative z-10 space-y-3 w-full">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-white/15 border border-white/10 text-white shadow-sm">
                       {comm.default_sport}
                     </span>
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                      isAdmin 
-                        ? 'bg-orange-500/10 text-orange-600' 
-                        : 'bg-zinc-150 text-zinc-500'
+                    <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase border border-white/20 shadow-sm ${
+                      m.role === 'ADMIN'
+                        ? 'bg-orange-500 text-white'
+                        : m.role === 'HOST'
+                        ? 'bg-white text-orange-600'
+                        : 'bg-white/80 text-zinc-800'
                     }`}>
-                      {isAdmin ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                      {m.role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
                       {m.role}
                     </span>
                   </div>
 
-                  <h3 className="text-xl font-extrabold text-[#111827] leading-snug">
-                    {comm.name}
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">/c/{comm.slug}</p>
-                </div>
+                  <div>
+                    <h3 className="text-xl font-black leading-tight text-white tracking-tight drop-shadow-sm font-sans">
+                      {comm.name}
+                    </h3>
+                    <p className="text-[10px] text-white/75">/c/{comm.slug}</p>
+                  </div>
 
-                <div className="mt-8 pt-4 border-t border-zinc-200/60 flex items-center justify-between">
-                  {isAdmin && comm.join_code_enabled ? (
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                      <Share2 className="h-3.5 w-3.5" />
-                      <span>Code: <code className="font-mono bg-zinc-100 px-1 py-0.5 rounded border border-zinc-200/50">{comm.join_code}</code></span>
-                    </div>
-                  ) : (
-                    <span />
-                  )}
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                    {isAdmin && comm.join_code_enabled ? (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white/90 bg-white/15 border border-white/10 px-2 py-0.5 rounded shadow-sm font-mono tracking-wider uppercase">
+                        Code: {comm.join_code}
+                      </span>
+                    ) : (
+                      <span />
+                    )}
 
-                  <Link
-                    href={`/c/${comm.slug}`}
-                    className="inline-flex items-center gap-1.5 text-sm font-bold text-orange-500 hover:text-orange-600"
-                  >
-                    Enter
-                    <ChevronRight className="h-4 w-4 transform group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
+                    <span className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-white group-hover:translate-x-0.5 transition-transform">
+                      Enter
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
