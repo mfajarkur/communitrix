@@ -106,26 +106,31 @@ export default function WizardForm({
       return;
     }
 
-    const result = await startSessionAction({
-      communityId,
-      name,
-      format,
-      sport,
-      scoringType,
-      pointsMode,
-      maxScoreTarget,
-      courtCount,
-      roundsPlanned,
-      attendeeIds: selectedIds,
-    });
+    try {
+      const result = await startSessionAction({
+        communityId,
+        name,
+        format,
+        sport,
+        scoringType,
+        pointsMode,
+        maxScoreTarget,
+        courtCount,
+        roundsPlanned,
+        attendeeIds: selectedIds,
+      });
 
-    if (result.ok) {
-      // Redirect directly to the live board of the newly started session
-      router.push(`/c/${communitySlug}/sessions/${result.data.sessionId}`);
-      router.refresh();
-    } else {
+      if (result.ok) {
+        // Redirect directly to the live board of the newly started session
+        router.push(`/c/${communitySlug}/sessions/${result.data.sessionId}`);
+        router.refresh();
+      } else {
+        setIsSubmitting(false);
+        setError(result.message);
+      }
+    } catch (err: any) {
       setIsSubmitting(false);
-      setError(result.message);
+      setError(err.message || 'An unexpected client-side error occurred. Please check console logs.');
     }
   };
 
