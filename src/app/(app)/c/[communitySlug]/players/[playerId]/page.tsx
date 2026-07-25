@@ -212,7 +212,7 @@ export default async function PlayerProfilePage({
       </div>
 
       {/* Sport Ratings Overview Grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {rankings && rankings.length > 0 ? (
           rankings.map((r: any) => {
             const winRate =
@@ -256,7 +256,7 @@ export default async function PlayerProfilePage({
             );
           })
         ) : (
-          <div className="sm:col-span-3 text-center py-10 rounded-2xl border border-dashed border-zinc-200 text-zinc-400 text-sm bg-zinc-50/50">
+          <div className="col-span-1 text-center py-10 rounded-2xl border border-dashed border-zinc-200 text-zinc-400 text-sm bg-zinc-50/50">
             No rating standings computed for this player in Padel or Tennis yet.
           </div>
         )}
