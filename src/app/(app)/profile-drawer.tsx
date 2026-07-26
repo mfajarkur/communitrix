@@ -13,6 +13,8 @@ const SPORT_LABELS: Record<string, string> = {
   TABLE_TENNIS: 'Table Tennis',
 };
 
+import AvatarCropModal from './avatar-crop-modal';
+
 type Props = {
   profileData: ProfileWithCommunities;
   signOutAction: () => Promise<void>;
@@ -29,6 +31,7 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -61,18 +64,37 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
     }, 500);
   }, [profileData.profile.username]);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // When user picks a file, open crop modal
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File size must be under 5MB');
+      return;
+    }
+    setUploadError(null);
+    const objectUrl = URL.createObjectURL(file);
+    setCropImageSrc(objectUrl);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Called when user clicks "Apply & Save" inside AvatarCropModal
+  const handleCropSave = async (croppedFile: File) => {
     setIsUploading(true);
     setUploadError(null);
     const fd = new FormData();
-    fd.append('avatar', file);
+    fd.append('avatar', croppedFile);
+
     const result = await uploadAvatar(fd);
     setIsUploading(false);
+
+    if (cropImageSrc) {
+      URL.revokeObjectURL(cropImageSrc);
+      setCropImageSrc(null);
+    }
+
     if ('url' in result) {
       setAvatarUrl(result.url);
-      // Auto-save avatar URL immediately
       const saveFd = new FormData();
       saveFd.append('avatar_url', result.url);
       await updateProfile(saveFd);
@@ -182,7 +204,7 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
-              onChange={handleAvatarUpload}
+              onChange={handleFileSelect}
             />
           </div>
 
@@ -309,6 +331,17 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
           </form>
         </div>
       </div>
+
+      {cropImageSrc && (
+        <AvatarCropModal
+          imageSrc={cropImageSrc}
+          onCancel={() => {
+            if (cropImageSrc) URL.revokeObjectURL(cropImageSrc);
+            setCropImageSrc(null);
+          }}
+          onCropComplete={handleCropSave}
+        />
+      )}
     </>
   );
 }
