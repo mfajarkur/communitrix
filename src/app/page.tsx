@@ -44,7 +44,7 @@ export default async function Home({
       />
 
       {/* Content on top of everything */}
-      <div className="relative w-full max-w-sm space-y-7" style={{ zIndex: 2 }}>
+      <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl space-y-7" style={{ zIndex: 2 }}>
         <div className="flex flex-col items-center text-center w-full">
           <h2 className="text-4xl font-black uppercase tracking-widest text-white font-sans drop-shadow-md">
             Communitrix
