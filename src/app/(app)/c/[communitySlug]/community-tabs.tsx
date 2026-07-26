@@ -69,23 +69,33 @@ export default function CommunityTabs({
     if (!guestToClaim) return;
     setIsClaiming(true);
     setClaimError(null);
-    const result = await requestClaimAction(guestToClaim.id, communityId, communitySlug);
-    setIsClaiming(false);
-    if (result?.error) {
-      setClaimError(result.error);
-    } else {
-      setGuestToClaim(null);
-      window.location.reload();
+    try {
+      const result = await requestClaimAction(guestToClaim.id, communityId, communitySlug);
+      if (result?.error) {
+        setClaimError(result.error);
+      } else {
+        setGuestToClaim(null);
+        window.location.reload();
+      }
+    } catch (err: any) {
+      setClaimError(err?.message || 'An unexpected error occurred');
+    } finally {
+      setIsClaiming(false);
     }
   };
 
   // Admin/Host approves or rejects a claim request
   const handleResolve = async (requestId: string, action: 'APPROVE' | 'REJECT') => {
     setResolvingId(requestId);
-    const result = await resolveClaimAction(requestId, action, communitySlug);
-    setResolvingId(null);
-    if (result?.success) {
-      window.location.reload();
+    try {
+      const result = await resolveClaimAction(requestId, action, communitySlug);
+      if (result?.success) {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Failed to resolve claim request', err);
+    } finally {
+      setResolvingId(null);
     }
   };
 
