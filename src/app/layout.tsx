@@ -63,7 +63,7 @@ export default function RootLayout({
       className={`${nexa.variable} h-full antialiased`}
     >
       <body className="min-h-screen flex justify-center items-start overflow-y-auto bg-[#f3f4f6]">
-        <div className="w-full max-w-[480px] min-h-screen bg-white text-[#111827] border-x border-gray-100 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex flex-col relative font-sans">
+        <div className="w-full max-w-full md:max-w-4xl lg:max-w-5xl min-h-screen bg-white text-[#111827] shadow-sm flex flex-col relative font-sans">
           {children}
         </div>
       </body>
