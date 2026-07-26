@@ -119,10 +119,10 @@ begin
 
   delete from public.match_players where profile_id = p_guest_profile_id;
 
-  -- 7. Re-assign created_by / submitted_by in sessions and rounds
+  -- 7. Re-assign created_by / submitted_by in sessions and matches
   update public.sessions set created_by = v_effective_target_id where created_by = p_guest_profile_id;
-  update public.rounds set submitted_by = v_effective_target_id where submitted_by = p_guest_profile_id;
-  update public.rounds set amended_by = v_effective_target_id where amended_by = p_guest_profile_id;
+  update public.matches set submitted_by = v_effective_target_id where submitted_by = p_guest_profile_id;
+  update public.matches set amended_by = v_effective_target_id where amended_by = p_guest_profile_id;
 
   -- 8. Delete guest's community membership (target is already member or joins)
   delete from public.community_members where profile_id = p_guest_profile_id;
