@@ -842,25 +842,56 @@ export default function WizardForm({
               </p>
             </div>
 
-            {/* Action Buttons: Add Yourself & Add Player */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleAddYourself}
-                disabled={registeredPlayers.some((p) => p.id === currentProfile.id)}
-                className="py-3 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
-              >
-                + ADD YOURSELF
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAddManualPlayer(false)}
-                disabled={!manualInputName.trim()}
-                className="py-3 rounded-xl border border-zinc-300 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
-              >
-                + ADD PLAYER
-              </button>
-            </div>
+            {/* Action Buttons: Add Yourself (Community Mode) vs Quick Fill (Demo Mode) */}
+            {!isGuestDemoMode ? (
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddYourself}
+                  disabled={registeredPlayers.some((p) => p.id === currentProfile.id)}
+                  className="py-3 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  + ADD YOURSELF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddManualPlayer(false)}
+                  disabled={!manualInputName.trim()}
+                  className="py-3 rounded-xl border border-zinc-300 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  + ADD PLAYER
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddManualPlayer(false)}
+                  disabled={!manualInputName.trim()}
+                  className="py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                >
+                  + ADD PLAYER
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const samples = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+                    setRegisteredPlayers(
+                      samples.map((name, i) => ({
+                        id: `sample-${i}-${Date.now()}`,
+                        name,
+                        isGuest: true,
+                        avatarUrl: null,
+                      }))
+                    );
+                  }}
+                  className="py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Zap className="h-3.5 w-3.5 text-amber-600" />
+                  Auto-Fill 4 Players
+                </button>
+              </div>
+            )}
 
             {/* Player List Counter Header */}
             <div className="pt-4 border-t border-zinc-100 text-center space-y-1">
@@ -896,31 +927,34 @@ export default function WizardForm({
               </div>
             )}
 
-            {/* Quick Community Member Selection Checklist */}
-            <div className="space-y-2 pt-4 border-t border-zinc-100">
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
-                Or Select From Community Members ({availableCommunityPlayers.length})
-              </span>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                {availableCommunityPlayers.map((p) => {
-                  const isSelected = registeredPlayers.some((reg) => reg.id === p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleToggleCommunityPlayer(p)}
-                      className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${isSelected
-                        ? 'border-orange-500 bg-orange-500/10 text-orange-950'
-                        : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+            {/* Quick Community Member Selection Checklist (Only for Community Mode) */}
+            {!isGuestDemoMode && availableCommunityPlayers.length > 0 && (
+              <div className="space-y-2 pt-4 border-t border-zinc-100">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
+                  Or Select From Community Members ({availableCommunityPlayers.length})
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {availableCommunityPlayers.map((p) => {
+                    const isSelected = registeredPlayers.some((reg) => reg.id === p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleToggleCommunityPlayer(p)}
+                        className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? 'border-orange-500 bg-orange-500/10 text-orange-950'
+                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
                         }`}
-                    >
-                      <span className="truncate">{p.fullName}</span>
-                      {isSelected && <Check className="h-4 w-4 text-orange-500 shrink-0 ml-1" />}
-                    </button>
-                  );
-                })}
+                      >
+                        <span className="truncate">{p.fullName}</span>
+                        {isSelected && <Check className="h-4 w-4 text-orange-500 shrink-0 ml-1" />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Action Button to Generate Matches */}
