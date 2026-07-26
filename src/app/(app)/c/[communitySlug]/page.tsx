@@ -114,6 +114,45 @@ export default async function CommunityDashboardPage({
     .eq('community_id', community.id)
     .eq('status', 'COMPLETED');
 
+  // 8. Fetch pending claim requests for this community
+  const isHostOrAdmin = callerMember.role === 'ADMIN' || callerMember.role === 'HOST';
+  let pendingClaims: any[] = [];
+  if (isHostOrAdmin) {
+    const { data: claimsData } = await supabase
+      .from('guest_claim_requests')
+      .select(`
+        id,
+        created_at,
+        guest_profile:profiles!guest_claim_requests_guest_profile_id_fkey (
+          id,
+          full_name,
+          display_name
+        ),
+        requester_profile:profiles!guest_claim_requests_requester_profile_id_fkey (
+          id,
+          full_name,
+          display_name,
+          username,
+          avatar_url
+        )
+      `)
+      .eq('community_id', community.id)
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: false });
+
+    pendingClaims = claimsData || [];
+  }
+
+  // 9. Fetch current user's claim requests in this community
+  const { data: myClaimsData } = await supabase
+    .from('guest_claim_requests')
+    .select('guest_profile_id, status')
+    .eq('community_id', community.id)
+    .eq('requester_profile_id', profile.id)
+    .eq('status', 'PENDING');
+
+  const myClaimedGuestIds = (myClaimsData || []).map((c) => c.guest_profile_id);
+
   return (
     <div className="space-y-6">
       {/* Tabs Switcher and Content */}
@@ -123,12 +162,15 @@ export default async function CommunityDashboardPage({
         communityName={community.name}
         defaultSport={community.default_sport}
         isAdmin={isAdmin}
+        isHostOrAdmin={isHostOrAdmin}
         memberCount={activeMembers.length}
         activeSessionsCount={activeSessionsCount || 0}
         totalMatchesCount={totalMatchesCount || 0}
         sessions={activeSessions}
         members={activeMembers}
         rankings={activeRankings}
+        pendingClaims={pendingClaims}
+        myClaimedGuestIds={myClaimedGuestIds}
       />
     </div>
   );

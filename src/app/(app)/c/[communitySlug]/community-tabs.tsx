@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import { getDisplayName } from '@/lib/utils/profile';
-import { claimGuestProfile } from '@/server/actions/claim.actions';
+import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 
 interface CommunityTabsProps {
   communityId: string;
@@ -31,12 +31,15 @@ interface CommunityTabsProps {
   communityName: string;
   defaultSport: string;
   isAdmin: boolean;
+  isHostOrAdmin?: boolean;
   memberCount: number;
   activeSessionsCount: number;
   totalMatchesCount: number;
   sessions: any[];
   members: any[];
   rankings: any[];
+  pendingClaims?: any[];
+  myClaimedGuestIds?: string[];
 }
 
 export default function CommunityTabs({
@@ -45,28 +48,43 @@ export default function CommunityTabs({
   communityName,
   defaultSport,
   isAdmin,
+  isHostOrAdmin = false,
   memberCount,
   activeSessionsCount,
   totalMatchesCount,
   sessions,
   members,
   rankings,
+  pendingClaims = [],
+  myClaimedGuestIds = [],
 }: CommunityTabsProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'leaderboard' | 'members' | 'info'>('dashboard');
   const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
 
-  const handleClaim = async () => {
+  // User submits claim request (pending admin approval)
+  const handleClaimSubmit = async () => {
     if (!guestToClaim) return;
     setIsClaiming(true);
     setClaimError(null);
-    const result = await claimGuestProfile(guestToClaim.id, communitySlug);
+    const result = await requestClaimAction(guestToClaim.id, communityId, communitySlug);
     setIsClaiming(false);
     if (result?.error) {
       setClaimError(result.error);
     } else {
       setGuestToClaim(null);
+      window.location.reload();
+    }
+  };
+
+  // Admin/Host approves or rejects a claim request
+  const handleResolve = async (requestId: string, action: 'APPROVE' | 'REJECT') => {
+    setResolvingId(requestId);
+    const result = await resolveClaimAction(requestId, action, communitySlug);
+    setResolvingId(null);
+    if (result?.success) {
       window.location.reload();
     }
   };
@@ -489,13 +507,19 @@ export default function CommunityTabs({
                               </span>
                             </Link>
                             {p.is_guest ? (
-                              <button
-                                onClick={() => setGuestToClaim({ id: p.id, name: pName })}
-                                className="text-[7px] font-extrabold uppercase bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white px-1.5 py-0.5 rounded transition-all mt-0.5 cursor-pointer border border-orange-500/20"
-                                title="Click to claim this guest's match history into your account"
-                              >
-                                Claim
-                              </button>
+                              myClaimedGuestIds.includes(p.id) ? (
+                                <span className="text-[7px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded mt-0.5">
+                                  Pending
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => setGuestToClaim({ id: p.id, name: pName })}
+                                  className="text-[7px] font-extrabold uppercase bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white px-1.5 py-0.5 rounded transition-all mt-0.5 cursor-pointer border border-orange-500/20"
+                                  title="Request to claim this guest profile"
+                                >
+                                  Claim
+                                </button>
+                              )
                             ) : null}
                           </div>
                         );
@@ -506,8 +530,63 @@ export default function CommunityTabs({
 
               </div>
 
-              {/* Admin Add Guest side panel */}
-              <div>
+              {/* Admin Side Panel: Pending Claims & Add Guest */}
+              <div className="space-y-6">
+                {/* PENDING CLAIM REQUESTS (Admin/Host Only) */}
+                {isHostOrAdmin && pendingClaims.length > 0 && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
+                      <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
+                        <CheckCircle className="h-4 w-4 text-amber-600" />
+                        Pending Claims ({pendingClaims.length})
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3">
+                      {pendingClaims.map((req) => {
+                        const guestName = getDisplayName(req.guest_profile);
+                        const reqName = getDisplayName(req.requester_profile);
+                        const username = req.requester_profile?.username ? `@${req.requester_profile.username}` : '';
+                        const isProcessingThis = resolvingId === req.id;
+
+                        return (
+                          <div
+                            key={req.id}
+                            className="p-3.5 rounded-xl bg-white border border-amber-200/80 space-y-3 shadow-xs"
+                          >
+                            <div className="text-xs text-gray-800 space-y-1 font-sans">
+                              <p className="font-bold">
+                                {reqName} <span className="text-gray-400 font-normal">{username}</span>
+                              </p>
+                              <p className="text-gray-500 font-light text-[11px]">
+                                Requests to claim guest: <span className="font-extrabold text-orange-600">{guestName}</span>
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleResolve(req.id, 'APPROVE')}
+                                disabled={isProcessingThis}
+                                className="flex-1 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                {isProcessingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Approve'}
+                              </button>
+                              <button
+                                onClick={() => handleResolve(req.id, 'REJECT')}
+                                disabled={isProcessingThis}
+                                className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ADD GUEST FORM */}
                 {isAdmin ? (
                   <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm space-y-4">
                     <div>
@@ -768,17 +847,17 @@ export default function CommunityTabs({
                 Cancel
               </button>
               <button
-                onClick={handleClaim}
+                onClick={handleClaimSubmit}
                 disabled={isClaiming}
                 className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-xs font-black uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-orange-500/20"
               >
                 {isClaiming ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Claiming...
+                    Submitting...
                   </>
                 ) : (
-                  'Confirm Claim'
+                  'Submit Request'
                 )}
               </button>
             </div>
