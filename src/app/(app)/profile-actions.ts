@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export type ProfileWithCommunities = {
@@ -64,18 +65,21 @@ export async function uploadAvatar(formData: FormData): Promise<{ url: string } 
   if (!file || file.size === 0) return { error: 'No file provided' };
   if (file.size > 2 * 1024 * 1024) return { error: 'File size must be under 2MB' };
 
+  // Verify user is authenticated first
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
 
   const ext = file.name.split('.').pop();
   const fileName = `${user.id}-${Date.now()}.${ext}`;
 
-  const { error: uploadError } = await supabase.storage
+  // Use admin client to bypass RLS for storage upload
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
     .from('avatars')
     .upload(fileName, file, { upsert: true, contentType: file.type });
 
   if (uploadError) return { error: uploadError.message };
 
-  const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+  const { data } = adminClient.storage.from('avatars').getPublicUrl(fileName);
   return { url: data.publicUrl };
 }
