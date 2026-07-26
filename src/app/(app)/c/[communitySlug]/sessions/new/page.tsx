@@ -22,8 +22,8 @@ export default async function NewSessionPage({
     notFound();
   }
 
-  // 2. Enforce admin guard
-  await requireCommunityAdmin(community.id);
+  // 2. Enforce admin guard and get current profile
+  const profile = await requireCommunityAdmin(community.id);
 
   // 3. Fetch active community members
   const { data: members, error: mErr } = await supabase
@@ -33,6 +33,7 @@ export default async function NewSessionPage({
       profile:profiles (
         id,
         full_name,
+        display_name,
         avatar_url,
         is_guest
       )
@@ -47,7 +48,7 @@ export default async function NewSessionPage({
   // Format members list for client component
   const playerList = members.map((m: any) => ({
     id: m.profile.id,
-    fullName: m.profile.full_name,
+    fullName: m.profile.display_name || m.profile.full_name,
     isGuest: m.profile.is_guest,
     avatarUrl: m.profile.avatar_url,
   })).sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -65,6 +66,11 @@ export default async function NewSessionPage({
         communityId={community.id}
         communitySlug={community.slug}
         players={playerList}
+        currentProfile={{
+          id: profile.id,
+          name: profile.display_name || profile.full_name,
+          avatarUrl: profile.avatar_url,
+        }}
       />
     </div>
   );
