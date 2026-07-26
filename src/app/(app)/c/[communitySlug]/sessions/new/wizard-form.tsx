@@ -92,6 +92,7 @@ interface WizardFormProps {
   communitySlug: string;
   players: Player[];
   currentProfile: CurrentProfile;
+  isGuestDemoMode?: boolean;
 }
 
 const POINTS_TARGET_OPTIONS = [
@@ -127,11 +128,13 @@ export default function WizardForm({
   communitySlug,
   players: initialPlayers,
   currentProfile,
+  isGuestDemoMode = false,
 }: WizardFormProps) {
   const router = useRouter();
 
   // Wizard Step State (1: Game Type, 2: Setup Config, 3: Registration, 4: Match Generation, 5: Leaderboard)
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [showDemoCompleteModal, setShowDemoCompleteModal] = useState(false);
 
   // ------------------------------------------
   // STEP 1 & 2: CONFIGURATION STATE
@@ -441,8 +444,13 @@ export default function WizardForm({
     return list;
   }, [registeredPlayers, matches, config.leaderboardRankedBy]);
 
-  // Submit Session to backend
+  // Submit Session to backend (or finish Sandbox Demo)
   const handleStartRealSession = async () => {
+    if (isGuestDemoMode) {
+      setShowDemoCompleteModal(true);
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
@@ -497,13 +505,12 @@ export default function WizardForm({
           {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
-              className={`h-2.5 rounded-full transition-all ${
-                s === step
-                  ? 'w-7 bg-orange-500'
-                  : s < step
+              className={`h-2.5 rounded-full transition-all ${s === step
+                ? 'w-7 bg-orange-500'
+                : s < step
                   ? 'w-2.5 bg-orange-200'
                   : 'w-2.5 bg-zinc-200 dark:bg-zinc-800'
-              }`}
+                }`}
             />
           ))}
         </div>
@@ -535,22 +542,20 @@ export default function WizardForm({
             <button
               type="button"
               onClick={() => setConfig((prev) => ({ ...prev, sport: 'PADEL' }))}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                config.sport === 'PADEL'
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-900'
-              }`}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${config.sport === 'PADEL'
+                ? 'bg-orange-500 text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-900'
+                }`}
             >
               Padel
             </button>
             <button
               type="button"
               onClick={() => setConfig((prev) => ({ ...prev, sport: 'TENNIS' }))}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-                config.sport === 'TENNIS'
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-900'
-              }`}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${config.sport === 'TENNIS'
+                ? 'bg-orange-500 text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-900'
+                }`}
             >
               Tennis
             </button>
@@ -561,11 +566,10 @@ export default function WizardForm({
             {/* Americano */}
             <div
               onClick={() => handleSelectGameType('AMERICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${
-                config.gameType === 'AMERICANO'
-                  ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                  : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-              }`}
+              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'AMERICANO'
+                ? 'border-orange-500 bg-orange-500/10 shadow-md'
+                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
@@ -581,11 +585,10 @@ export default function WizardForm({
             {/* Mexicano */}
             <div
               onClick={() => handleSelectGameType('MEXICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${
-                config.gameType === 'MEXICANO'
-                  ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                  : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-              }`}
+              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'MEXICANO'
+                ? 'border-orange-500 bg-orange-500/10 shadow-md'
+                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
@@ -601,11 +604,10 @@ export default function WizardForm({
             {/* Team Americano */}
             <div
               onClick={() => handleSelectGameType('TEAM_AMERICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${
-                config.gameType === 'TEAM_AMERICANO'
-                  ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                  : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-              }`}
+              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'TEAM_AMERICANO'
+                ? 'border-orange-500 bg-orange-500/10 shadow-md'
+                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
@@ -621,11 +623,10 @@ export default function WizardForm({
             {/* Team Mexicano */}
             <div
               onClick={() => handleSelectGameType('TEAM_MEXICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${
-                config.gameType === 'TEAM_MEXICANO'
-                  ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                  : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-              }`}
+              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'TEAM_MEXICANO'
+                ? 'border-orange-500 bg-orange-500/10 shadow-md'
+                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
@@ -708,11 +709,10 @@ export default function WizardForm({
                       pointTarget: '16 Points',
                     }))
                   }
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
-                    config.scoringSystem === 'POINTS'
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${config.scoringSystem === 'POINTS'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                    }`}
                 >
                   Points
                 </button>
@@ -725,11 +725,10 @@ export default function WizardForm({
                       pointTarget: 'Total of 4',
                     }))
                   }
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
-                    config.scoringSystem === 'GENERAL'
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${config.scoringSystem === 'GENERAL'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                    }`}
                 >
                   General
                 </button>
@@ -763,22 +762,20 @@ export default function WizardForm({
                 <button
                   type="button"
                   onClick={() => setConfig((prev) => ({ ...prev, leaderboardRankedBy: 'POINT' }))}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
-                    config.leaderboardRankedBy === 'POINT'
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${config.leaderboardRankedBy === 'POINT'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                    }`}
                 >
                   Point
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfig((prev) => ({ ...prev, leaderboardRankedBy: 'WIN' }))}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
-                    config.leaderboardRankedBy === 'WIN'
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${config.leaderboardRankedBy === 'WIN'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                    }`}
                 >
                   Win
                 </button>
@@ -912,11 +909,10 @@ export default function WizardForm({
                       key={p.id}
                       type="button"
                       onClick={() => handleToggleCommunityPlayer(p)}
-                      className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? 'border-orange-500 bg-orange-500/10 text-orange-950'
-                          : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
-                      }`}
+                      className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${isSelected
+                        ? 'border-orange-500 bg-orange-500/10 text-orange-950'
+                        : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                        }`}
                     >
                       <span className="truncate">{p.fullName}</span>
                       {isSelected && <Check className="h-4 w-4 text-orange-500 shrink-0 ml-1" />}
@@ -972,37 +968,26 @@ export default function WizardForm({
               return (
                 <div
                   key={m.id}
-                  className="p-4 sm:p-5 rounded-2xl border border-zinc-200 bg-white shadow-xs space-y-3.5"
+                  className="p-5 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm"
                 >
-                  {/* Match Header */}
-                  <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-xs text-zinc-900 uppercase tracking-wider">
-                        Match {idx + 1}
-                      </span>
-                      {m.roundNumber && (
-                        <span className="text-[10px] text-zinc-400 font-medium">Round {m.roundNumber}</span>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-md bg-orange-50 text-orange-600 border border-orange-200">
+                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                    <span className="font-black text-xs text-[#111827] uppercase tracking-wider">
+                      Match {idx + 1}
+                    </span>
+                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 border border-orange-500/20">
                       Court {m.courtNumber}
                     </span>
                   </div>
 
-                  {/* Match Teams & Score Box */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-zinc-50/70 p-3.5 rounded-xl border border-zinc-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-4 text-center">
                     {/* Team A */}
-                    <div className="flex-1 flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
-                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-orange-500/10 text-orange-600 border border-orange-500/20 shrink-0">
-                        Team A
-                      </span>
-                      <p className="text-xs font-bold text-zinc-900 truncate max-w-[200px]" title={teamANames}>
-                        {teamANames}
-                      </p>
+                    <div className="sm:col-span-2 space-y-1 text-center sm:text-right">
+                      <p className="text-xs font-bold text-zinc-900 truncate">{teamANames}</p>
+                      <span className="text-[10px] font-extrabold text-orange-600 uppercase">Team A</span>
                     </div>
 
                     {/* Interactive Score Inputs */}
-                    <div className="flex items-center gap-2 shrink-0 my-1 sm:my-0">
+                    <div className="sm:col-span-1 flex items-center justify-center gap-2">
                       <input
                         type="number"
                         min={0}
@@ -1012,10 +997,10 @@ export default function WizardForm({
                           const val = e.target.value === '' ? null : Number(e.target.value);
                           handleUpdateScore(m.id, val, m.scoreB);
                         }}
-                        placeholder="0"
-                        className="w-11 h-11 text-center text-base font-black rounded-xl border border-zinc-300 bg-white shadow-xs focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        placeholder="00"
+                        className="w-12 h-12 text-center text-lg font-black rounded-xl border border-zinc-300 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
                       />
-                      <span className="text-zinc-400 font-bold text-sm">:</span>
+                      <span className="text-zinc-400 font-bold">:</span>
                       <input
                         type="number"
                         min={0}
@@ -1025,19 +1010,15 @@ export default function WizardForm({
                           const val = e.target.value === '' ? null : Number(e.target.value);
                           handleUpdateScore(m.id, m.scoreA, val);
                         }}
-                        placeholder="0"
-                        className="w-11 h-11 text-center text-base font-black rounded-xl border border-zinc-300 bg-white shadow-xs focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        placeholder="00"
+                        className="w-12 h-12 text-center text-lg font-black rounded-xl border border-zinc-300 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
                       />
                     </div>
 
                     {/* Team B */}
-                    <div className="flex-1 flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
-                      <p className="text-xs font-bold text-zinc-900 truncate max-w-[200px] text-right" title={teamBNames}>
-                        {teamBNames}
-                      </p>
-                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 border border-blue-500/20 shrink-0">
-                        Team B
-                      </span>
+                    <div className="sm:col-span-2 space-y-1 text-center sm:text-left">
+                      <p className="text-xs font-bold text-zinc-900 truncate">{teamBNames}</p>
+                      <span className="text-[10px] font-extrabold text-blue-600 uppercase">Team B</span>
                     </div>
                   </div>
                 </div>
@@ -1146,7 +1127,7 @@ export default function WizardForm({
             </table>
           </div>
 
-          {/* Start Real Live Session Button */}
+          {/* Start Real Live Session or Finish Demo Button */}
           <button
             onClick={handleStartRealSession}
             disabled={isSubmitting}
@@ -1157,8 +1138,63 @@ export default function WizardForm({
             ) : (
               <Trophy className="h-5 w-5" />
             )}
-            <span>Save & Open Live Court Session</span>
+            <span>{isGuestDemoMode ? '⚡ Finish Quick Match (Sandbox)' : 'Save & Open Live Court Session'}</span>
           </button>
+        </div>
+      )}
+
+      {/* Demo Completion Modal for Guest Quick Match Mode */}
+      {showDemoCompleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-3xl bg-zinc-900 border border-zinc-800 p-6 text-white shadow-2xl space-y-5 text-center font-sans">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/20 text-orange-400">
+              <Sparkles className="h-7 w-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-black uppercase tracking-wide">
+                Quick Match Completed! 🎉
+              </h3>
+              <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                This was a sandbox demonstration session. No data or player names were saved.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-2 text-left">
+              <span className="text-[10px] font-bold uppercase text-orange-400">Match Summary</span>
+              <div className="flex justify-between text-xs text-zinc-300">
+                <span>Winner:</span>
+                <span className="font-bold text-white">
+                  {standings[0]?.name || 'N/A'} ({standings[0]?.totalPoints || 0} pts)
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-zinc-300">
+                <span>Format:</span>
+                <span className="font-bold text-white">
+                  {config.gameType} ({config.sport})
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 pt-2">
+              <button
+                onClick={() => {
+                  setShowDemoCompleteModal(false);
+                  setStep(1);
+                }}
+                className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
+              >
+                ⚡ Play Another Quick Match
+              </button>
+
+              <button
+                onClick={() => router.push('/login')}
+                className="w-full py-3 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Create Account to Join Communities & Save History
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

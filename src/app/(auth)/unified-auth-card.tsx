@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { AlertCircle, Loader2, Lock, User, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
+import { AlertCircle, Loader2, Lock, User, Eye, EyeOff, Zap } from 'lucide-react';
 import { loginWithUsernameOrEmail } from './auth-actions';
 
 const GoogleIcon = () => (
@@ -157,6 +158,20 @@ function UnifiedAuthCardContent() {
             )}
           </button>
         </form>
+
+        {/* Guest Mode: Try Quick Matchup Button */}
+        <div className="pt-3 border-t border-white/15 text-center space-y-2">
+          <Link
+            href="/quick-match"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-400/40 px-4 py-3 text-xs font-black uppercase tracking-wider text-amber-200 hover:text-white transition-all shadow-md cursor-pointer font-sans group"
+          >
+            <Zap className="h-4 w-4 text-amber-400 animate-pulse shrink-0 group-hover:scale-110 transition-transform" />
+            <span>Try Quick Matchup (No Login)</span>
+          </Link>
+          <p className="text-[10px] text-white/60 font-light leading-snug">
+            Test scoring & matchmaking instantly as a guest without saving data.
+          </p>
+        </div>
       </div>
     </div>
   );
