@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { loginWithUsernameOrEmail } from './auth-actions';
 
 const GoogleIcon = () => (
   <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -16,7 +17,12 @@ const GoogleIcon = () => (
 
 function UnifiedAuthCardContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,6 +50,27 @@ function UnifiedAuthCardContent() {
     }
   };
 
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!identifier || !password) {
+      setError('Please enter your username/email and password');
+      return;
+    }
+
+    setIsPasswordSubmitting(true);
+    setError(null);
+
+    const result = await loginWithUsernameOrEmail(identifier, password);
+    setIsPasswordSubmitting(false);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      router.push('/communities');
+      router.refresh();
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div>
@@ -51,22 +78,23 @@ function UnifiedAuthCardContent() {
           Get Started
         </h3>
         <p className="text-xs text-white/80 mt-1.5 text-center leading-relaxed font-sans font-light">
-          Sign in or Register with Google to join sports communities, run sessions, and track your Elo ratings.
+          Sign up with Google, or sign in with your Username and Password.
         </p>
       </div>
 
       <div className="space-y-4">
         {error && (
-          <div className="flex items-start gap-2.5 rounded-lg bg-red-950/40 border border-red-500/30 p-3 text-xs text-red-200">
+          <div className="flex items-start gap-2.5 rounded-xl bg-red-950/50 border border-red-500/40 p-3 text-xs text-red-200">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-400" />
             <span>{error}</span>
           </div>
         )}
 
+        {/* Primary Google Auth button (for signup & fast signin) */}
         <button
           onClick={handleGoogleAuth}
-          disabled={isSubmitting}
-          className="flex w-full items-center justify-center gap-3 rounded-xl bg-white hover:bg-zinc-50 px-4 py-2.5 text-sm font-bold text-zinc-900 disabled:opacity-50 transition-all shadow-md cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+          disabled={isSubmitting || isPasswordSubmitting}
+          className="flex w-full items-center justify-center gap-3 rounded-xl bg-white hover:bg-zinc-50 px-4 py-3 text-xs font-black uppercase tracking-wider text-zinc-900 disabled:opacity-50 transition-all shadow-md cursor-pointer hover:scale-[1.01] active:scale-[0.99] font-sans"
         >
           {isSubmitting ? (
             <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
@@ -75,6 +103,60 @@ function UnifiedAuthCardContent() {
           )}
           <span>Continue with Google</span>
         </button>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center py-1">
+          <div className="w-full border-t border-white/20" />
+          <span className="absolute bg-[#1a0e05]/60 px-3 text-[10px] font-bold uppercase tracking-widest text-white/60 font-sans backdrop-blur-xs">
+            or password sign in
+          </span>
+        </div>
+
+        {/* Username / Email + Password Login Form */}
+        <form onSubmit={handlePasswordLogin} className="space-y-2.5">
+          <div className="relative">
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+            <input
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="Username or Email"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-xs font-light text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all"
+            />
+          </div>
+
+          <div className="relative">
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/10 border border-white/20 text-xs font-light text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isPasswordSubmitting || isSubmitting}
+            className="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-black uppercase tracking-widest font-sans transition-all disabled:opacity-50 cursor-pointer shadow-md flex items-center justify-center gap-2"
+          >
+            {isPasswordSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Signing In...
+              </>
+            ) : (
+              'Sign In with Password'
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

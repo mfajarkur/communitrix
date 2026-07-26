@@ -83,3 +83,14 @@ export async function uploadAvatar(formData: FormData): Promise<{ url: string } 
   const { data } = adminClient.storage.from('avatars').getPublicUrl(fileName);
   return { url: data.publicUrl };
 }
+
+export async function updatePasswordAction(password: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}

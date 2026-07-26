@@ -2,8 +2,9 @@
 
 import { useState, useRef, useTransition, useEffect, useCallback } from 'react';
 import { X, Camera, Check, Loader2, LogOut, AlertCircle, ChevronRight } from 'lucide-react';
-import { updateProfile, checkUsernameAvailable, uploadAvatar } from './profile-actions';
+import { updateProfile, checkUsernameAvailable, uploadAvatar, updatePasswordAction } from './profile-actions';
 import type { ProfileWithCommunities } from './profile-actions';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 
 const SPORT_LABELS: Record<string, string> = {
   PADEL: 'Padel',
@@ -32,6 +33,14 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+
+  // Password setting state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -120,6 +129,32 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
         setTimeout(() => setSaveSuccess(false), 2000);
       }
     });
+  };
+
+  const handleSavePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+
+    setIsSavingPassword(true);
+    const result = await updatePasswordAction(newPassword);
+    setIsSavingPassword(false);
+
+    if (result.error) {
+      setPasswordError(result.error);
+    } else {
+      setPasswordSuccess(true);
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    }
   };
 
   // Close on backdrop click
@@ -288,8 +323,72 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
               <span className="flex items-center justify-center gap-2">
                 <Check className="h-4 w-4" /> Saved!
               </span>
-            ) : 'Save Changes'}
+            ) : 'Save Profile Details'}
           </button>
+
+          {/* Account Password Section */}
+          <div className="pt-2 border-t border-gray-100 space-y-3">
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-500 font-sans flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-orange-500" />
+              Password for Username Login
+            </h3>
+            <p className="text-[11px] text-gray-400 font-light leading-relaxed">
+              Set a password so you can sign in using your username or email instead of Google OAuth.
+            </p>
+
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="New Password (min. 6 chars)"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-light text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm Password"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-light text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
+              />
+            </div>
+
+            {passwordError && (
+              <p className="text-[11px] text-red-500 font-light">{passwordError}</p>
+            )}
+
+            <button
+              onClick={handleSavePassword}
+              disabled={isSavingPassword || !newPassword}
+              className={`w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-widest font-sans transition-all cursor-pointer ${
+                passwordSuccess
+                  ? 'bg-green-500 text-white'
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-white disabled:opacity-40'
+              }`}
+            >
+              {isSavingPassword ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Updating...
+                </span>
+              ) : passwordSuccess ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Check className="h-3.5 w-3.5" /> Password Set Successfully!
+                </span>
+              ) : (
+                'Set / Change Password'
+              )}
+            </button>
+          </div>
 
           {/* My Communities */}
           {profileData.communities && profileData.communities.length > 0 && (
