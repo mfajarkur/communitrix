@@ -25,6 +25,7 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
   const [avatarUrl, setAvatarUrl] = useState(profileData.profile.avatar_url ?? '');
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
@@ -64,12 +65,19 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
+    setUploadError(null);
     const fd = new FormData();
     fd.append('avatar', file);
     const result = await uploadAvatar(fd);
     setIsUploading(false);
     if ('url' in result) {
       setAvatarUrl(result.url);
+      // Auto-save avatar URL immediately
+      const saveFd = new FormData();
+      saveFd.append('avatar_url', result.url);
+      await updateProfile(saveFd);
+    } else {
+      setUploadError(result.error);
     }
   };
 
@@ -166,6 +174,9 @@ export default function ProfileDrawer({ profileData, signOutAction }: Props) {
               </div>
             </button>
             <p className="text-xs text-gray-400 font-light">Tap to change photo · Max 2MB</p>
+            {uploadError && (
+              <p className="text-xs text-red-500 font-light">{uploadError}</p>
+            )}
             <input
               ref={fileInputRef}
               type="file"
