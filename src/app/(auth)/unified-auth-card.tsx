@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { AlertCircle, Loader2, Lock, User, Eye, EyeOff, Zap } from 'lucide-react';
+import { AlertCircle, Loader2, Lock, User, Eye, EyeOff, Zap, X, LogIn } from 'lucide-react';
 import { loginWithUsernameOrEmail } from './auth-actions';
 
 const GoogleIcon = () => (
@@ -19,6 +19,8 @@ const GoogleIcon = () => (
 function UnifiedAuthCardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [identifier, setIdentifier] = useState('');
@@ -30,6 +32,7 @@ function UnifiedAuthCardContent() {
     const errorParam = searchParams.get('error');
     if (errorParam) {
       setError(errorParam);
+      setShowLoginModal(true);
     }
   }, [searchParams]);
 
@@ -73,106 +76,132 @@ function UnifiedAuthCardContent() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Title Header */}
       <div>
-        <h3 className="text-lg font-black text-white font-sans uppercase tracking-widest text-center drop-shadow-sm">
+        <h3 className="text-xl font-black text-white font-sans uppercase tracking-widest text-center drop-shadow-sm">
           Get Started
         </h3>
         <p className="text-xs text-white/80 mt-1.5 text-center leading-relaxed font-sans font-light">
-          Sign up with Google, or sign in with your Username and Password.
+          Join or test Communitrix matchmaking & scoring system.
         </p>
       </div>
 
-      <div className="space-y-4">
-        {error && (
-          <div className="flex items-start gap-2.5 rounded-xl bg-red-950/50 border border-red-500/40 p-3 text-xs text-red-200">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-400" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Primary Google Auth button (for signup & fast signin) */}
+      {/* Main 2 Action Buttons */}
+      <div className="space-y-3.5">
+        {/* 1. LOGIN BUTTON (Triggers Login Pop-up Modal) */}
         <button
-          onClick={handleGoogleAuth}
-          disabled={isSubmitting || isPasswordSubmitting}
-          className="flex w-full items-center justify-center gap-3 rounded-xl bg-white hover:bg-zinc-50 px-4 py-3 text-xs font-black uppercase tracking-wider text-zinc-900 disabled:opacity-50 transition-all shadow-md cursor-pointer hover:scale-[1.01] active:scale-[0.99] font-sans"
+          onClick={() => setShowLoginModal(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-50 px-4 py-3.5 text-xs font-black uppercase tracking-widest text-zinc-900 transition-all shadow-md cursor-pointer hover:scale-[1.01] active:scale-[0.99] font-sans"
         >
-          {isSubmitting ? (
-            <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
-          ) : (
-            <GoogleIcon />
-          )}
-          <span>Continue with Google</span>
+          <LogIn className="h-4 w-4 text-orange-600 shrink-0" />
+          <span>LOGIN</span>
         </button>
 
-        {/* Divider */}
-        <div className="relative flex items-center justify-center py-1">
-          <div className="w-full border-t border-white/20" />
-          <span className="absolute bg-[#1a0e05]/60 px-3 text-[10px] font-bold uppercase tracking-widest text-white/60 font-sans backdrop-blur-xs">
-            or password sign in
-          </span>
-        </div>
-
-        {/* Username / Email + Password Login Form */}
-        <form onSubmit={handlePasswordLogin} className="space-y-2.5">
-          <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
-            <input
-              type="text"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="Username or Email"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-xs font-light text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all"
-            />
-          </div>
-
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/10 border border-white/20 text-xs font-light text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white cursor-pointer"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isPasswordSubmitting || isSubmitting}
-            className="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-black uppercase tracking-widest font-sans transition-all disabled:opacity-50 cursor-pointer shadow-md flex items-center justify-center gap-2"
-          >
-            {isPasswordSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Signing In...
-              </>
-            ) : (
-              'Sign In with Password'
-            )}
-          </button>
-        </form>
-
-        {/* Guest Mode: Try Quick Matchup Button */}
-        <div className="pt-3 border-t border-white/15 text-center space-y-2">
-          <Link
-            href="/quick-match"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-400/40 px-4 py-3 text-xs font-black uppercase tracking-wider text-amber-200 hover:text-white transition-all shadow-md cursor-pointer font-sans group"
-          >
-            <Zap className="h-4 w-4 text-amber-400 animate-pulse shrink-0 group-hover:scale-110 transition-transform" />
-            <span>Try Quick Matchup (No Login)</span>
-          </Link>
-          <p className="text-[10px] text-white/60 font-light leading-snug">
-            Test scoring & matchmaking instantly as a guest without saving data.
-          </p>
-        </div>
+        {/* 2. QUICK MATCHUP BUTTON */}
+        <Link
+          href="/quick-match"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 hover:bg-orange-500 border border-orange-400/40 px-4 py-3.5 text-xs font-black uppercase tracking-widest text-white transition-all shadow-md cursor-pointer hover:scale-[1.01] active:scale-[0.99] font-sans group"
+        >
+          <Zap className="h-4 w-4 text-amber-300 animate-pulse shrink-0 group-hover:scale-110 transition-transform" />
+          <span>QUICK MATCHUP</span>
+        </Link>
       </div>
+
+      {/* LOGIN POP-UP MODAL */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm rounded-3xl bg-zinc-950 border border-orange-500/40 p-6 text-white shadow-2xl space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h4 className="text-sm font-black uppercase tracking-wider font-sans text-orange-400">
+                Sign In to Communitrix
+              </h4>
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="p-1 text-white/60 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2.5 rounded-xl bg-red-950/60 border border-red-500/40 p-3 text-xs text-red-200 font-sans">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-400" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Google Login Option */}
+            <button
+              onClick={handleGoogleAuth}
+              disabled={isSubmitting || isPasswordSubmitting}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white hover:bg-zinc-50 px-4 py-3 text-xs font-black uppercase tracking-wider text-zinc-900 disabled:opacity-50 transition-all shadow-md cursor-pointer font-sans"
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
+              ) : (
+                <GoogleIcon />
+              )}
+              <span>Continue with Google</span>
+            </button>
+
+            {/* Divider */}
+            <div className="relative flex items-center justify-center py-1">
+              <div className="w-full border-t border-white/20" />
+              <span className="absolute bg-zinc-950 px-3 text-[10px] font-bold uppercase tracking-widest text-white/50 font-sans">
+                or password sign in
+              </span>
+            </div>
+
+            {/* Username / Email + Password Login Form */}
+            <form onSubmit={handlePasswordLogin} className="space-y-3 font-sans">
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                <input
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Username or Email"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-xs font-light text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all"
+                />
+              </div>
+
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white/10 border border-white/20 text-xs font-light text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white/15 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isPasswordSubmitting || isSubmitting}
+                className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50 cursor-pointer shadow-md flex items-center justify-center gap-2"
+              >
+                {isPasswordSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Signing In...
+                  </>
+                ) : (
+                  'Sign In with Password'
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
