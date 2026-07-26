@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireProfile } from '@/server/guards';
 import { notFound } from 'next/navigation';
 import LiveBoardWrapper from './live-board-wrapper';
+import { getDisplayName } from '@/lib/utils/profile';
 
 export default async function SessionLiveBoardPage({
   params,
@@ -60,7 +61,8 @@ export default async function SessionLiveBoardPage({
           team,
           slot,
           profile:profiles (
-            full_name
+            full_name,
+            display_name
           )
         )
       `)
@@ -81,7 +83,8 @@ export default async function SessionLiveBoardPage({
       session_losses,
       session_draws,
       profile:profiles (
-        full_name
+        full_name,
+        display_name
       )
     `)
     .eq('session_id', sessionId)
@@ -98,7 +101,14 @@ export default async function SessionLiveBoardPage({
     .filter(p => !playingPlayerIds.has(p.profile_id))
     .map((p: any) => ({
       id: p.profile_id,
-      fullName: p.profile?.full_name || 'Player',
+      name: getDisplayName(p.profile),
+      stats: {
+        pointsFor: p.session_points_for,
+        pointsAgainst: p.session_points_against,
+        wins: p.session_wins,
+        losses: p.session_losses,
+        draws: p.session_draws,
+      }
     }));
 
   return (
@@ -133,7 +143,7 @@ export default async function SessionLiveBoardPage({
         sitOuts={sitOuts}
         sessionPlayers={activePlayers.map((p: any) => ({
           id: p.profile_id,
-          fullName: p.profile?.full_name || 'Player',
+          name: getDisplayName(p.profile),
           pointsFor: p.session_points_for,
           pointsAgainst: p.session_points_against,
           wins: p.session_wins,

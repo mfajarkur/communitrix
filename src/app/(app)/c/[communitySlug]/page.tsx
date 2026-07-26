@@ -50,6 +50,8 @@ export default async function CommunityDashboardPage({
       profile:profiles (
         id,
         full_name,
+        display_name,
+        username,
         is_guest,
         avatar_url
       )
@@ -77,7 +79,10 @@ export default async function CommunityDashboardPage({
       profile:profiles (
         id,
         full_name,
-        is_guest
+        display_name,
+        username,
+        is_guest,
+        avatar_url
       )
     `)
     .eq('community_id', community.id)

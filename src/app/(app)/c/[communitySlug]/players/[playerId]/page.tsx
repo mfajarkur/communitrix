@@ -14,6 +14,7 @@ import {
   Shield,
   User,
 } from 'lucide-react';
+import { getDisplayName } from '@/lib/utils/profile';
 import ProfileEditor from './profile-editor';
 
 export default async function PlayerProfilePage({
@@ -40,7 +41,7 @@ export default async function PlayerProfilePage({
   // 2. Fetch Player profile details
   const { data: player, error: pErr } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, is_guest, created_at')
+    .select('id, full_name, display_name, username, avatar_url, is_guest, created_at')
     .eq('id', playerId)
     .single();
 
@@ -115,7 +116,8 @@ export default async function PlayerProfilePage({
         team,
         profile:profiles (
           id,
-          full_name
+          full_name,
+          display_name
         )
       `)
       .in('match_id', matchIds);
@@ -124,7 +126,7 @@ export default async function PlayerProfilePage({
       const mh = completedMatches.find((x: any) => x.match.id === mp.match_id);
       if (!mh) return;
 
-      const pName = mp.profile?.full_name || 'Player';
+      const pName = getDisplayName(mp.profile);
       const isSelf = mp.profile?.id === playerId;
 
       if (mp.team === mh.team) {
@@ -138,6 +140,8 @@ export default async function PlayerProfilePage({
       }
     });
   }
+
+  const displayName = getDisplayName(player);
 
   return (
     <div className="space-y-8 bg-white">
@@ -158,19 +162,19 @@ export default async function PlayerProfilePage({
           {player.avatar_url ? (
             <img
               src={player.avatar_url}
-              alt={player.full_name}
+              alt={displayName}
               className="h-16 w-16 rounded-2xl object-cover border border-zinc-100 shrink-0 shadow-sm"
             />
           ) : (
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-650 font-extrabold text-2xl uppercase shrink-0">
-              {player.full_name.slice(0, 2)}
+              {displayName.slice(0, 2)}
             </div>
           )}
           <div className="min-w-0">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
                 <h2 className="text-xl font-extrabold text-[#111827] leading-tight truncate">
-                  {player.full_name}
+                  {displayName}
                 </h2>
                 {memberRecord && (
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0 ${

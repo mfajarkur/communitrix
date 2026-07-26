@@ -20,13 +20,15 @@ import {
   Calendar,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getDisplayName } from '@/lib/utils/profile';
 
 interface MatchPlayer {
   profile_id: string;
   team: 'A' | 'B';
   slot: number;
   profile: {
-    full_name: string;
+    full_name?: string | null;
+    display_name?: string | null;
   };
 }
 
@@ -43,12 +45,12 @@ interface Match {
 
 interface SitOut {
   id: string;
-  fullName: string;
+  name: string;
 }
 
 interface SessionPlayer {
   id: string;
-  fullName: string;
+  name: string;
   pointsFor: number;
   pointsAgainst: number;
   wins: number;
@@ -298,7 +300,7 @@ export default function LiveBoardWrapper({
                       <div className="space-y-1 flex-1">
                         {teamA.map(mp => (
                           <p key={mp.profile_id} className="text-sm font-bold text-zinc-800 truncate">
-                            {mp.profile.full_name}
+                            {getDisplayName(mp.profile)}
                           </p>
                         ))}
                       </div>
@@ -316,7 +318,7 @@ export default function LiveBoardWrapper({
                       <div className="space-y-1 flex-1 text-right">
                         {teamB.map(mp => (
                           <p key={mp.profile_id} className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                            {mp.profile.full_name}
+                            {getDisplayName(mp.profile)}
                           </p>
                         ))}
                       </div>
@@ -355,7 +357,7 @@ export default function LiveBoardWrapper({
                     key={p.id}
                     className="p-2.5 rounded-xl border border-zinc-150 bg-zinc-50/50 text-xs font-bold text-zinc-700 truncate"
                   >
-                    {p.fullName}
+                    {p.name}
                   </div>
                 ))}
               </div>
@@ -385,7 +387,7 @@ export default function LiveBoardWrapper({
                     <tr key={p.id} className="text-zinc-800">
                       <td className="py-2.5 flex items-center gap-2 truncate max-w-[120px] font-bold">
                         <span className="text-zinc-400">{idx + 1}.</span>
-                        {p.fullName}
+                        {p.name}
                       </td>
                       <td className="py-2.5 text-center font-bold text-zinc-500">
                         {p.wins}–{p.losses}{p.draws > 0 ? `–${p.draws}` : ''}

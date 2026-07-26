@@ -18,8 +18,12 @@ import {
   ArrowDownRight,
   Minus,
   CheckCircle,
+  X,
+  Loader2,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
+import { getDisplayName } from '@/lib/utils/profile';
+import { claimGuestProfile } from '@/server/actions/claim.actions';
 
 interface CommunityTabsProps {
   communityId: string;
@@ -49,6 +53,23 @@ export default function CommunityTabs({
   rankings,
 }: CommunityTabsProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'leaderboard' | 'members' | 'info'>('dashboard');
+  const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  const handleClaim = async () => {
+    if (!guestToClaim) return;
+    setIsClaiming(true);
+    setClaimError(null);
+    const result = await claimGuestProfile(guestToClaim.id, communitySlug);
+    setIsClaiming(false);
+    if (result?.error) {
+      setClaimError(result.error);
+    } else {
+      setGuestToClaim(null);
+      window.location.reload();
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -70,7 +91,8 @@ export default function CommunityTabs({
   };
 
   return (
-    <div className="space-y-6 bg-white">
+    <>
+      <div className="space-y-6 bg-white">
       {/* Dynamic Tab Switcher - Segmented pills layout */}
       <div className="flex gap-2 p-1.5 bg-zinc-50 border border-zinc-200/70 rounded-2xl overflow-x-auto whitespace-nowrap scroll-smooth shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shadow-sm">
         <button
@@ -321,17 +343,17 @@ export default function CommunityTabs({
                                 {r.profile.avatar_url ? (
                                   <img
                                     src={r.profile.avatar_url}
-                                    alt={r.profile.full_name}
+                                    alt={getDisplayName(r.profile)}
                                     className="h-7.5 w-7.5 shrink-0 rounded-lg object-cover border border-zinc-100"
                                   />
                                 ) : (
                                   <div className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-zinc-100 font-extrabold text-[10px] text-zinc-600 uppercase">
-                                    {r.profile.full_name.slice(0, 2)}
+                                    {getDisplayName(r.profile).slice(0, 2)}
                                   </div>
                                 )}
                                 <div className="min-w-0">
                                   <p className="text-xs font-bold text-[#111827] truncate flex items-center gap-1.5">
-                                    {r.profile.full_name}
+                                    {getDisplayName(r.profile)}
                                     {r.profile.is_guest && (
                                       <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
                                         Guest
@@ -394,6 +416,7 @@ export default function CommunityTabs({
                       {adminsAndHosts.map((m: any) => {
                         const p = m.profile;
                         if (!p) return null;
+                        const pName = getDisplayName(p);
                         return (
                           <Link
                             key={p.id}
@@ -404,12 +427,12 @@ export default function CommunityTabs({
                               {p.avatar_url ? (
                                 <img
                                   src={p.avatar_url}
-                                  alt={p.full_name}
+                                  alt={pName}
                                   className="h-12 w-12 rounded-full object-cover border border-zinc-100 bg-zinc-50"
                                 />
                               ) : (
                                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 font-extrabold text-sm uppercase">
-                                  {p.full_name.slice(0, 2)}
+                                  {pName.slice(0, 2)}
                                 </div>
                               )}
                               <div className="absolute -bottom-1 -right-1 bg-orange-500 rounded-full p-0.5 text-white shadow-sm border border-white">
@@ -417,7 +440,7 @@ export default function CommunityTabs({
                               </div>
                             </div>
                             <span className="text-[10px] font-black text-[#111827] mt-1.5 truncate w-full group-hover:underline">
-                              {p.full_name.split(' ')[0]}
+                              {pName.split(' ')[0]}
                             </span>
                             <span className="text-[8px] font-extrabold uppercase tracking-wider mt-0.5 text-orange-500">
                               {m.role}
@@ -443,32 +466,38 @@ export default function CommunityTabs({
                       {generalMembers.map((m: any) => {
                         const p = m.profile;
                         if (!p) return null;
+                        const pName = getDisplayName(p);
                         return (
-                          <Link
-                            key={p.id}
-                            href={`/c/${communitySlug}/players/${p.id}`}
-                            className="flex flex-col items-center group w-full text-center"
-                          >
-                            {p.avatar_url ? (
-                              <img
-                                src={p.avatar_url}
-                                alt={p.full_name}
-                                className="h-12 w-12 rounded-full object-cover border border-zinc-100 bg-zinc-55"
-                              />
-                            ) : (
-                              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 font-bold text-sm uppercase">
-                                {p.full_name.slice(0, 2)}
-                              </div>
-                            )}
-                            <span className="text-[10px] font-black text-[#111827] mt-1.5 truncate w-full group-hover:underline">
-                              {p.full_name.split(' ')[0]}
-                            </span>
-                            {p.is_guest && (
-                              <span className="text-[7px] font-extrabold uppercase bg-zinc-100 text-zinc-500 px-1 py-0.2 rounded mt-0.5">
-                                Guest
+                          <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
+                            <Link
+                              href={`/c/${communitySlug}/players/${p.id}`}
+                              className="flex flex-col items-center w-full"
+                            >
+                              {p.avatar_url ? (
+                                <img
+                                  src={p.avatar_url}
+                                  alt={pName}
+                                  className="h-12 w-12 rounded-full object-cover border border-zinc-100 bg-zinc-55"
+                                />
+                              ) : (
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 font-bold text-sm uppercase">
+                                  {pName.slice(0, 2)}
+                                </div>
+                              )}
+                              <span className="text-[10px] font-black text-[#111827] mt-1.5 truncate w-full group-hover:underline">
+                                {pName.split(' ')[0]}
                               </span>
-                            )}
-                          </Link>
+                            </Link>
+                            {p.is_guest ? (
+                              <button
+                                onClick={() => setGuestToClaim({ id: p.id, name: pName })}
+                                className="text-[7px] font-extrabold uppercase bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white px-1.5 py-0.5 rounded transition-all mt-0.5 cursor-pointer border border-orange-500/20"
+                                title="Click to claim this guest's match history into your account"
+                              >
+                                Claim
+                              </button>
+                            ) : null}
+                          </div>
                         );
                       })}
                     </div>
@@ -697,5 +726,65 @@ export default function CommunityTabs({
         )}
       </div>
     </div>
+
+      {/* Claim Guest Modal */}
+      {guestToClaim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl space-y-5 border border-zinc-100 text-[#111827]">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-base uppercase tracking-widest text-orange-500 font-sans">
+                Claim Guest Profile
+              </h3>
+              <button
+                onClick={() => setGuestToClaim(null)}
+                disabled={isClaiming}
+                className="p-1 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-zinc-800">
+                Are you claiming <span className="font-extrabold text-orange-600">"{guestToClaim.name}"</span>?
+              </p>
+              <p className="text-xs text-zinc-500 leading-relaxed font-light">
+                All match history, wins/losses, and Elo rating records previously registered under this guest profile will be transferred and merged into your account.
+              </p>
+            </div>
+
+            {claimError && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
+                {claimError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setGuestToClaim(null)}
+                disabled={isClaiming}
+                className="flex-1 py-3 rounded-xl border border-zinc-200 text-xs font-black uppercase tracking-widest text-zinc-600 hover:bg-zinc-50 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClaim}
+                disabled={isClaiming}
+                className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-xs font-black uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-orange-500/20"
+              >
+                {isClaiming ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Claiming...
+                  </>
+                ) : (
+                  'Confirm Claim'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
