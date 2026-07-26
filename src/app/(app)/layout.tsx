@@ -42,7 +42,7 @@ export default async function AppLayout({
         )}
       </header>
 
-      <main className="flex-1 p-4 w-full flex flex-col min-h-0">
+      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto flex flex-col min-h-0">
         {children}
       </main>
     </div>

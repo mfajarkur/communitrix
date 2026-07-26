@@ -27,7 +27,7 @@ export default function QuickMatchPage() {
       />
 
       {/* Page Content Container */}
-      <div className="relative z-10 w-full max-w-full md:max-w-4xl lg:max-w-5xl space-y-6 my-4">
+      <div className="relative z-10 w-full max-w-7xl mx-auto space-y-6 my-4 px-2 sm:px-4">
         {/* Header Bar */}
         <div className="flex items-center justify-between bg-black/40 border border-white/10 p-4 rounded-2xl backdrop-blur-md shadow-lg">
           <Link
