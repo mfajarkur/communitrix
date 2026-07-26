@@ -2,7 +2,19 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import UnifiedAuthCard from './(auth)/unified-auth-card';
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string; next?: string }>;
+}) {
+  const params = await searchParams;
+
+  // Forward OAuth code to the proper callback handler if it lands on root
+  if (params.code) {
+    const next = params.next ?? '/communities';
+    redirect(`/auth/callback?code=${params.code}&next=${next}`);
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
