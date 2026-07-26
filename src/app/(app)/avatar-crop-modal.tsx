@@ -10,9 +10,23 @@ type Props = {
   imageSrc: string;
   onCancel: () => void;
   onCropComplete: (croppedFile: File) => Promise<void>;
+  aspect?: number;
+  cropShape?: 'round' | 'rect';
+  outputWidth?: number;
+  outputHeight?: number;
+  title?: string;
 };
 
-export default function AvatarCropModal({ imageSrc, onCancel, onCropComplete }: Props) {
+export default function AvatarCropModal({
+  imageSrc,
+  onCancel,
+  onCropComplete,
+  aspect = 1,
+  cropShape = 'round',
+  outputWidth,
+  outputHeight,
+  title = 'Adjust Photo',
+}: Props) {
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -34,7 +48,12 @@ export default function AvatarCropModal({ imageSrc, onCancel, onCropComplete }: 
     if (!croppedAreaPixels) return;
     try {
       setIsProcessing(true);
-      const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const croppedFile = await getCroppedImg(
+        imageSrc,
+        croppedAreaPixels,
+        outputWidth,
+        outputHeight
+      );
       await onCropComplete(croppedFile);
     } catch (err) {
       console.error('Failed to crop image', err);
@@ -43,13 +62,19 @@ export default function AvatarCropModal({ imageSrc, onCancel, onCropComplete }: 
     }
   };
 
+  const isWide = aspect > 1.2;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-sm rounded-3xl bg-zinc-900 border border-zinc-800 text-white shadow-2xl overflow-hidden flex flex-col">
+      <div
+        className={`relative w-full ${
+          isWide ? 'max-w-lg' : 'max-w-sm'
+        } rounded-3xl bg-zinc-900 border border-zinc-800 text-white shadow-2xl overflow-hidden flex flex-col`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <h3 className="font-black text-sm uppercase tracking-widest text-white font-sans">
-            Adjust Photo
+            {title}
           </h3>
           <button
             onClick={onCancel}
@@ -61,14 +86,14 @@ export default function AvatarCropModal({ imageSrc, onCancel, onCropComplete }: 
         </div>
 
         {/* Cropper Container */}
-        <div className="relative w-full h-72 bg-black select-none">
+        <div className={`relative w-full ${isWide ? 'h-64' : 'h-72'} bg-black select-none`}>
           <Cropper
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={1}
-            cropShape="round"
-            showGrid={false}
+            aspect={aspect}
+            cropShape={cropShape}
+            showGrid={cropShape === 'rect'}
             onCropChange={handleCropChange}
             onZoomChange={handleZoomChange}
             onCropComplete={handleCropCompleteInternal}

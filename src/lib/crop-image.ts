@@ -8,7 +8,8 @@ export type Area = {
 export async function getCroppedImg(
   imageSrc: string,
   pixelCrop: Area,
-  outputSize = 512
+  outputWidth?: number,
+  outputHeight?: number
 ): Promise<File> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
@@ -18,10 +19,13 @@ export async function getCroppedImg(
     throw new Error('No 2d context');
   }
 
-  canvas.width = outputSize;
-  canvas.height = outputSize;
+  const width = outputWidth || pixelCrop.width;
+  const height = outputHeight || pixelCrop.height;
 
-  // Draw cropped area resized to outputSize x outputSize
+  canvas.width = width;
+  canvas.height = height;
+
+  // Draw cropped area resized to target width x height
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -30,8 +34,8 @@ export async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    outputSize,
-    outputSize
+    width,
+    height
   );
 
   return new Promise((resolve, reject) => {
@@ -41,7 +45,7 @@ export async function getCroppedImg(
           reject(new Error('Canvas is empty'));
           return;
         }
-        const file = new File([blob], `avatar-${Date.now()}.jpg`, {
+        const file = new File([blob], `crop-${Date.now()}.jpg`, {
           type: 'image/jpeg',
         });
         resolve(file);

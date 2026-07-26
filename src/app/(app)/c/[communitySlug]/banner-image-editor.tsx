@@ -88,6 +88,11 @@ export default function BannerImageEditor({ communityId, communitySlug }: Props)
       {cropImageSrc && (
         <AvatarCropModal
           imageSrc={cropImageSrc}
+          aspect={2.5}
+          cropShape="rect"
+          outputWidth={1200}
+          outputHeight={480}
+          title="Adjust Community Banner"
           onCancel={() => {
             if (cropImageSrc) URL.revokeObjectURL(cropImageSrc);
             setCropImageSrc(null);
