@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, User, Trophy } from 'lucide-react';
+import BannerImageEditor from './banner-image-editor';
 
 export default async function CommunityLayout({
   children,
@@ -60,8 +61,7 @@ export default async function CommunityLayout({
     );
   }
 
-  const isAdmin = member.role === 'ADMIN';
-
+  const isHostOrAdmin = member.role === 'ADMIN' || member.role === 'HOST';
   const bannerImage = community.logo_url || '/community_banner_placeholder.png';
 
   return (
@@ -79,7 +79,7 @@ export default async function CommunityLayout({
         <div className="absolute inset-0 bg-gradient-to-r from-orange-950/40 via-transparent to-transparent" />
 
         {/* Back Link Overlay */}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 z-20">
           <Link
             href="/communities"
             className="inline-flex items-center gap-1 text-[10px] font-bold text-white/95 hover:text-white transition-all bg-black/30 hover:bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm"
@@ -87,6 +87,14 @@ export default async function CommunityLayout({
             ← Back
           </Link>
         </div>
+
+        {/* Edit Banner Button for Admin & Host */}
+        {isHostOrAdmin && (
+          <BannerImageEditor
+            communityId={community.id}
+            communitySlug={communitySlug}
+          />
+        )}
 
         {/* Header content on top */}
         <div className="relative z-10 space-y-1">

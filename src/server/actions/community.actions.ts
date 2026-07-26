@@ -1,8 +1,10 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { requireProfile } from '@/server/guards';
 import { type ActionResult } from '@/server/result';
+import { revalidatePath } from 'next/cache';
 
 export async function createCommunityAction(input: {
   name: string;
@@ -127,4 +129,82 @@ export async function joinCommunityAction(input: {
       message: error.message || 'Authentication required.',
     };
   }
+}
+
+export async function uploadCommunityLogoAction(formData: FormData) {
+  const supabase = await createClient();
+  const communityId = formData.get('community_id') as string;
+  const communitySlug = formData.get('community_slug') as string;
+  const file = formData.get('logo') as File;
+
+  if (!communityId || !file || file.size === 0) {
+    return { error: 'Invalid parameters or file missing' };
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    return { error: 'File size must be under 5MB' };
+  }
+
+  // 1. Check user authentication
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: 'Authentication required' };
+  }
+
+  // 2. Get user profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) {
+    return { error: 'Profile not found' };
+  }
+
+  // 3. Verify user is ADMIN or HOST of this community
+  const { data: member } = await supabase
+    .from('community_members')
+    .select('role')
+    .eq('community_id', communityId)
+    .eq('profile_id', profile.id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!member || (member.role !== 'ADMIN' && member.role !== 'HOST')) {
+    return { error: 'Only community admins or hosts can change the logo' };
+  }
+
+  // 4. Upload logo to Supabase Storage using admin client
+  const ext = file.name.split('.').pop() || 'jpg';
+  const fileName = `community-${communityId}-${Date.now()}.${ext}`;
+
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
+    .from('avatars')
+    .upload(fileName, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) {
+    return { error: uploadError.message };
+  }
+
+  const { data: publicUrlData } = adminClient.storage.from('avatars').getPublicUrl(fileName);
+  const logoUrl = publicUrlData.publicUrl;
+
+  // 5. Update communities table logo_url column
+  const { error: updateError } = await adminClient
+    .from('communities')
+    .update({ logo_url: logoUrl })
+    .eq('id', communityId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  if (communitySlug) {
+    revalidatePath(`/c/${communitySlug}`);
+  }
+  revalidatePath('/', 'layout');
+
+  return { success: true, url: logoUrl };
 }
