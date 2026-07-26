@@ -94,9 +94,16 @@ interface WizardFormProps {
   currentProfile: CurrentProfile;
 }
 
-const POINT_TARGET_OPTIONS = [
+const POINTS_TARGET_OPTIONS = [
   '16 Points',
   '24 Points',
+  '32 Points',
+  '12 Points',
+  '21 Points',
+  '25 Points',
+];
+
+const GENERAL_TARGET_OPTIONS = [
   'Total of 3',
   'Total of 4',
   'Total of 5',
@@ -694,7 +701,13 @@ export default function WizardForm({
               <div className="flex items-center gap-2 p-1 bg-zinc-100 rounded-xl max-w-xs">
                 <button
                   type="button"
-                  onClick={() => setConfig((prev) => ({ ...prev, scoringSystem: 'POINTS' }))}
+                  onClick={() =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      scoringSystem: 'POINTS',
+                      pointTarget: '16 Points',
+                    }))
+                  }
                   className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
                     config.scoringSystem === 'POINTS'
                       ? 'bg-orange-500 text-white shadow-sm'
@@ -705,7 +718,13 @@ export default function WizardForm({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setConfig((prev) => ({ ...prev, scoringSystem: 'GENERAL' }))}
+                  onClick={() =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      scoringSystem: 'GENERAL',
+                      pointTarget: 'Total of 4',
+                    }))
+                  }
                   className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
                     config.scoringSystem === 'GENERAL'
                       ? 'bg-orange-500 text-white shadow-sm'
@@ -723,11 +742,13 @@ export default function WizardForm({
                   onChange={(e) => setConfig((prev) => ({ ...prev, pointTarget: e.target.value }))}
                   className="w-full h-11 pl-4 pr-10 rounded-xl border border-zinc-200 text-sm font-bold text-zinc-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 appearance-none transition-all cursor-pointer"
                 >
-                  {POINT_TARGET_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
+                  {(config.scoringSystem === 'POINTS' ? POINTS_TARGET_OPTIONS : GENERAL_TARGET_OPTIONS).map(
+                    (opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    )
+                  )}
                 </select>
                 <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
               </div>
