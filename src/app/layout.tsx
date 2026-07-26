@@ -45,7 +45,11 @@ const nexa = localFont({
 
 export const metadata: Metadata = {
   title: "Communitrix",
-  description: "Matchmaking and ratings for active sports clubs.",
+  description: "Elevate your community through intelligent matrix. Matchmaking, ELO ratings, and active player rosters for sports clubs.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
