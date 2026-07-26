@@ -972,26 +972,37 @@ export default function WizardForm({
               return (
                 <div
                   key={m.id}
-                  className="p-5 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm"
+                  className="p-4 sm:p-5 rounded-2xl border border-zinc-200 bg-white shadow-xs space-y-3.5"
                 >
-                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                    <span className="font-black text-xs text-[#111827] uppercase tracking-wider">
-                      Match {idx + 1}
-                    </span>
-                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 border border-orange-500/20">
+                  {/* Match Header */}
+                  <div className="flex items-center justify-between border-b border-zinc-100 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-xs text-zinc-900 uppercase tracking-wider">
+                        Match {idx + 1}
+                      </span>
+                      {m.roundNumber && (
+                        <span className="text-[10px] text-zinc-400 font-medium">Round {m.roundNumber}</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-md bg-orange-50 text-orange-600 border border-orange-200">
                       Court {m.courtNumber}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-4 text-center">
+                  {/* Match Teams & Score Box */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-zinc-50/70 p-3.5 rounded-xl border border-zinc-100">
                     {/* Team A */}
-                    <div className="sm:col-span-2 space-y-1 text-center sm:text-right">
-                      <p className="text-xs font-bold text-zinc-900 truncate">{teamANames}</p>
-                      <span className="text-[10px] font-extrabold text-orange-600 uppercase">Team A</span>
+                    <div className="flex-1 flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
+                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-orange-500/10 text-orange-600 border border-orange-500/20 shrink-0">
+                        Team A
+                      </span>
+                      <p className="text-xs font-bold text-zinc-900 truncate max-w-[200px]" title={teamANames}>
+                        {teamANames}
+                      </p>
                     </div>
 
                     {/* Interactive Score Inputs */}
-                    <div className="sm:col-span-1 flex items-center justify-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0 my-1 sm:my-0">
                       <input
                         type="number"
                         min={0}
@@ -1001,10 +1012,10 @@ export default function WizardForm({
                           const val = e.target.value === '' ? null : Number(e.target.value);
                           handleUpdateScore(m.id, val, m.scoreB);
                         }}
-                        placeholder="00"
-                        className="w-12 h-12 text-center text-lg font-black rounded-xl border border-zinc-300 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        placeholder="0"
+                        className="w-11 h-11 text-center text-base font-black rounded-xl border border-zinc-300 bg-white shadow-xs focus:outline-none focus:ring-2 focus:ring-orange-400"
                       />
-                      <span className="text-zinc-400 font-bold">:</span>
+                      <span className="text-zinc-400 font-bold text-sm">:</span>
                       <input
                         type="number"
                         min={0}
@@ -1014,15 +1025,19 @@ export default function WizardForm({
                           const val = e.target.value === '' ? null : Number(e.target.value);
                           handleUpdateScore(m.id, m.scoreA, val);
                         }}
-                        placeholder="00"
-                        className="w-12 h-12 text-center text-lg font-black rounded-xl border border-zinc-300 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        placeholder="0"
+                        className="w-11 h-11 text-center text-base font-black rounded-xl border border-zinc-300 bg-white shadow-xs focus:outline-none focus:ring-2 focus:ring-orange-400"
                       />
                     </div>
 
                     {/* Team B */}
-                    <div className="sm:col-span-2 space-y-1 text-center sm:text-left">
-                      <p className="text-xs font-bold text-zinc-900 truncate">{teamBNames}</p>
-                      <span className="text-[10px] font-extrabold text-blue-600 uppercase">Team B</span>
+                    <div className="flex-1 flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
+                      <p className="text-xs font-bold text-zinc-900 truncate max-w-[200px] text-right" title={teamBNames}>
+                        {teamBNames}
+                      </p>
+                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 border border-blue-500/20 shrink-0">
+                        Team B
+                      </span>
                     </div>
                   </div>
                 </div>
