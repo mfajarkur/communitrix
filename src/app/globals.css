@@ -12,8 +12,9 @@
   --font-mono: monospace;
 }
 
-body {
-  background: var(--background);
+html, body {
+  min-height: 100%;
+  background: #09090b;
   color: var(--foreground);
   font-family: var(--font-nexa), ui-sans-serif, system-ui, sans-serif;
 }
