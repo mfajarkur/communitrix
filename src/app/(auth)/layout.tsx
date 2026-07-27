@@ -39,19 +39,20 @@ export default function AuthLayout({
           {children}
         </div>
 
-        {/* Text directly floating above background */}
-        <div className="text-center text-xs font-normal text-white drop-shadow-md select-none font-sans pt-1">
-          <a
-            href="https://instagram.com/communitrix.id"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-orange-300 hover:underline transition-colors font-bold text-white"
-          >
-            Contact Us
-          </a>
-          <span className="mx-2 opacity-70">•</span>
-          <span className="opacity-90">Version 1.0 © 2026 Communitrix</span>
-        </div>
+      </div>
+
+      {/* Text directly at the very bottom edge of the page, floating over background */}
+      <div className="absolute bottom-4 left-0 right-0 z-10 text-center text-xs font-normal text-white drop-shadow-md select-none font-sans px-4">
+        <a
+          href="https://instagram.com/communitrix.id"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-orange-300 hover:underline transition-colors font-bold text-white"
+        >
+          Contact Us
+        </a>
+        <span className="mx-2 opacity-70">•</span>
+        <span className="opacity-90">Version 1.0 © 2026 Communitrix</span>
       </div>
     </div>
   );
