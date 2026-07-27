@@ -488,13 +488,24 @@ export default function WizardForm({
     <div className="space-y-6 select-none font-sans">
       {/* Wizard Progress Navigation Header */}
       <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
-        {step > 1 ? (
+        {step === 2 || step === 3 ? (
           <button
             onClick={() => setStep((prev) => (prev - 1) as any)}
             className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" /> Back to Step {step - 1}
           </button>
+        ) : step === 5 ? (
+          <button
+            onClick={() => setStep(4)}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to Live Matches (Step 4)
+          </button>
+        ) : step === 4 ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 uppercase tracking-wider">
+            ⚡ Live Matches (Locked)
+          </span>
         ) : (
           <span className="text-xs font-bold uppercase tracking-widest text-orange-600">
             Step 1 of 5
