@@ -240,10 +240,21 @@ export default function WizardForm({
 
   // Step 3: Add Manual Player (Regular or Guest)
   const handleAddManualPlayer = async (isGuest: boolean) => {
-    const name = manualInputName.trim();
-    if (!name) return;
+    const rawName = manualInputName.trim();
+    if (!rawName) return;
 
-    if (isGuest) {
+    // Check duplicate name and append numeric suffix (e.g., Albert 2, Albert 3)
+    let name = rawName;
+    const existingNames = registeredPlayers.map((p) => p.name.trim().toLowerCase());
+    if (existingNames.includes(name.toLowerCase())) {
+      let count = 2;
+      while (existingNames.includes(`${rawName} ${count}`.toLowerCase())) {
+        count++;
+      }
+      name = `${rawName} ${count}`;
+    }
+
+    if (isGuest && !isGuestDemoMode) {
       setIsAddingGuest(true);
       setGuestErrorMessage(null);
       // Create guest profile in database
@@ -264,7 +275,7 @@ export default function WizardForm({
         const tempGuestId = `guest-${Date.now()}`;
         setRegisteredPlayers((prev) => [
           ...prev,
-          { id: tempGuestId, name: `${name} (Guest)`, isGuest: true, avatarUrl: null },
+          { id: tempGuestId, name, isGuest: true, avatarUrl: null },
         ]);
         setManualInputName('');
       }
@@ -355,6 +366,80 @@ export default function WizardForm({
 
     setMatches(generated);
     setStep(4);
+  };
+
+  // Step 4: Generate Next Match Round
+  const handleGenerateNextRound = () => {
+    const maxRound = matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0);
+    const nextRoundNumber = maxRound + 1;
+
+    const attendees: Attendee[] = registeredPlayers.map((p, idx) => {
+      const matchesPlayed = matches.filter(
+        (m) => m.isCompleted && (m.teamA.includes(p.id) || m.teamB.includes(p.id))
+      ).length;
+      return {
+        id: p.id,
+        seedElo: 1000 - idx,
+        matchesPlayed,
+        sitOutCount: 0,
+        lastSitOutRound: null,
+      };
+    });
+
+    const history: PastPairing[] = matches.map((m) => ({
+      roundNumber: m.roundNumber || 1,
+      teamA: m.teamA,
+      teamB: m.teamB,
+    }));
+
+    const activeStandings = standings.map((s) => ({
+      profileId: s.playerId,
+      matchesPlayed: s.wins + s.losses + s.ties,
+      sessionPointsFor: s.pointsWon,
+      sessionPointsAgainst: s.pointsLost,
+      sessionWins: s.wins,
+      sessionLosses: s.losses,
+      sessionDraws: s.ties,
+      seedElo: 1000,
+    }));
+
+    const isMexicano = config.gameType.includes('MEXICANO');
+    try {
+      const roundOutput = isMexicano
+        ? generateMexicanoRound({
+            roundNumber: nextRoundNumber,
+            playersPerMatch: 4,
+            courtCount: config.courtCount,
+            attendees,
+            history,
+            standings: activeStandings,
+            seed: `session-wizard-${nextRoundNumber}`,
+          })
+        : generateAmericanoRound({
+            roundNumber: nextRoundNumber,
+            playersPerMatch: 4,
+            courtCount: config.courtCount,
+            attendees,
+            history,
+            seed: `session-wizard-${nextRoundNumber}`,
+          });
+
+      let matchCounter = matches.length + 1;
+      const newMatches: Match[] = roundOutput.courts.map((c) => ({
+        id: `match-${matchCounter++}`,
+        roundNumber: nextRoundNumber,
+        courtNumber: c.courtNumber,
+        teamA: [c.teamA[0], c.teamA[1] || c.teamA[0]] as [string, string],
+        teamB: [c.teamB[0], c.teamB[1] || c.teamB[0]] as [string, string],
+        scoreA: null,
+        scoreB: null,
+        isCompleted: false,
+      }));
+
+      setMatches((prev) => [...prev, ...newMatches]);
+    } catch (e: any) {
+      setErrorMessage(`Failed to generate round ${nextRoundNumber}: ${e.message || 'Unknown error'}`);
+    }
   };
 
   // Step 4: Update Score in Match
@@ -1091,12 +1176,23 @@ export default function WizardForm({
             })}
           </div>
 
-          <button
-            onClick={() => setStep(5)}
-            className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
-          >
-            View Live Leaderboard Standings
-          </button>
+          <div className="space-y-3 pt-2">
+            <button
+              type="button"
+              onClick={handleGenerateNextRound}
+              className="w-full py-3.5 rounded-xl border-2 border-orange-500 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span>+ Generate Next Round (Round {matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0) + 1})</span>
+            </button>
+
+            <button
+              onClick={() => setStep(5)}
+              className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
+            >
+              View Live Leaderboard Standings
+            </button>
+          </div>
         </div>
       )}
 
