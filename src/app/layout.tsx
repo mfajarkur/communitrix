@@ -52,6 +52,8 @@ export const metadata: Metadata = {
   },
 };
 
+import Footer from "./footer";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -63,8 +65,11 @@ export default function RootLayout({
       className={`${nexa.variable} h-full antialiased`}
     >
       <body className="min-h-screen w-full overflow-y-auto bg-white text-[#111827]">
-        <div className="w-full min-h-screen flex flex-col relative font-sans">
-          {children}
+        <div className="w-full min-h-screen flex flex-col justify-between relative font-sans">
+          <div className="flex-1 flex flex-col">
+            {children}
+          </div>
+          <Footer />
         </div>
       </body>
     </html>
