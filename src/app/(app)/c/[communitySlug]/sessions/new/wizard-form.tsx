@@ -14,6 +14,8 @@ import {
   Zap,
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Plus,
   UserPlus,
   Flame,
@@ -182,6 +184,11 @@ export default function WizardForm({
   // roundSitOuts: Map<roundNumber, Set<playerId>> — records who sat out each generated round
   // This is the source of truth for bye detection, set at round-generation time (not derived from completed matches)
   const [roundSitOuts, setRoundSitOuts] = useState<Map<number, string[]>>(new Map());
+  const [selectedRound, setSelectedRound] = useState<number>(1);
+  const totalRounds = useMemo(() => {
+    return matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 1);
+  }, [matches]);
+
   const [activePicker, setActivePicker] = useState<{
     matchId: string;
     team: 'A' | 'B';
@@ -240,6 +247,7 @@ export default function WizardForm({
           });
           setRoundSitOuts(restoredMap);
         }
+        if (parsed.selectedRound) setSelectedRound(parsed.selectedRound);
       } catch (e) {
         console.error('Failed to restore quick match session state', e);
       }
@@ -258,9 +266,10 @@ export default function WizardForm({
       registeredPlayers,
       matches,
       roundSitOuts: sitOutsObj,
+      selectedRound,
     };
     localStorage.setItem('communitrix_quick_match_session', JSON.stringify(payload));
-  }, [isGuestDemoMode, step, config, registeredPlayers, matches, roundSitOuts]);
+  }, [isGuestDemoMode, step, config, registeredPlayers, matches, roundSitOuts, selectedRound]);
 
   // 3. Reset Quick Match session
   const handleResetQuickMatchSession = () => {
@@ -271,6 +280,7 @@ export default function WizardForm({
     setRegisteredPlayers([]);
     setMatches([]);
     setRoundSitOuts(new Map());
+    setSelectedRound(1);
   };
 
   // ==========================================
@@ -478,6 +488,7 @@ export default function WizardForm({
 
     setMatches(generated);
     setRoundSitOuts(newRoundSitOuts);
+    setSelectedRound(1);
     setStep(4);
   };
 
@@ -559,6 +570,7 @@ export default function WizardForm({
       }
 
       setMatches((prev) => [...prev, ...newMatches]);
+      setSelectedRound(nextRoundNumber);
     } catch (e: any) {
       setErrorMessage(`Failed to generate round ${nextRoundNumber}: ${e.message || 'Unknown error'}`);
     }
@@ -1336,95 +1348,177 @@ export default function WizardForm({
       {/* SCREEN 4: MATCH GENERATION & SCORE INPUT SCREEN */}
       {/* ========================================================= */}
       {step === 4 && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-black uppercase tracking-tight text-[#111827]">
-                Live Matches ({matches.length})
-              </h2>
-              <p className="text-xs text-zinc-500 mt-1">
-                Input scores directly on match cards to update leaderboard live.
-              </p>
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* Round Carousel Navigation Bar */}
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 text-white shadow-md space-y-3">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setSelectedRound((prev) => Math.max(1, prev - 1))}
+                disabled={selectedRound <= 1}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 transition-all text-xs font-extrabold cursor-pointer disabled:cursor-not-allowed text-white shadow-xs"
+              >
+                <ChevronLeft className="h-4 w-4 text-orange-400" />
+                <span className="hidden sm:inline">Prev Round</span>
+              </button>
+
+              <div className="text-center">
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-400 block">
+                  Match Round Navigation
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">
+                  ROUND {selectedRound} <span className="text-zinc-500 font-normal">/ {totalRounds}</span>
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedRound((prev) => Math.min(totalRounds, prev + 1))}
+                disabled={selectedRound >= totalRounds}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 transition-all text-xs font-extrabold cursor-pointer disabled:cursor-not-allowed text-white shadow-xs"
+              >
+                <span className="hidden sm:inline">Next Round</span>
+                <ChevronRight className="h-4 w-4 text-orange-400" />
+              </button>
             </div>
+
+            {/* Quick Round Selector Pills */}
+            {totalRounds > 1 && (
+              <div className="flex items-center justify-center gap-1.5 pt-2.5 border-t border-zinc-800/80 overflow-x-auto py-1">
+                {Array.from({ length: totalRounds }, (_, i) => i + 1).map((rNum) => {
+                  const isSelected = rNum === selectedRound;
+                  const roundMatchesList = matches.filter((m) => (m.roundNumber || 1) === rNum);
+                  const isCompleted = roundMatchesList.length > 0 && roundMatchesList.every((m) => m.isCompleted);
+
+                  return (
+                    <button
+                      key={rNum}
+                      type="button"
+                      onClick={() => setSelectedRound(rNum)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        isSelected
+                          ? 'bg-orange-500 text-white shadow-sm'
+                          : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                      }`}
+                    >
+                      <span>Round {rNum}</span>
+                      {isCompleted && <Check className="h-3 w-3 text-emerald-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Match Cards List */}
+          {/* Sitting Out / Bye Players Banner for Selected Round */}
+          {(() => {
+            const sitOutIds = roundSitOuts.get(selectedRound) || [];
+            if (sitOutIds.length === 0) return null;
+            const sitOutNames = sitOutIds
+              .map((id) => playerMap.get(id)?.name || 'Player')
+              .join(', ');
+
+            return (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-medium flex items-center gap-2">
+                <span className="font-extrabold uppercase text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded shrink-0">
+                  Sitting Out (Bye)
+                </span>
+                <span className="truncate font-bold text-amber-900">{sitOutNames}</span>
+              </div>
+            );
+          })()}
+
+          {/* Match Cards List for Selected Round */}
           <div className="space-y-4">
-            {matches.map((m, idx) => {
-              const teamANames = m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' & ');
-              const teamBNames = m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' & ');
-
-              return (
-                <div
-                  key={m.id}
-                  className="p-5 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm"
-                >
-                  <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                    <span className="font-black text-xs text-[#111827] uppercase tracking-wider">
-                      Match {idx + 1}
-                    </span>
-                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 border border-orange-500/20">
-                      Court {m.courtNumber}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-4 text-center">
-                    {/* Team A */}
-                    <div className="sm:col-span-2 space-y-1 text-center sm:text-right">
-                      <p className="text-xs font-bold text-zinc-900 truncate">{teamANames}</p>
-                      <span className="text-[10px] font-extrabold text-orange-600 uppercase">Team A</span>
-                    </div>
-
-                    {/* Interactive Score Picker Buttons */}
-                    <div className="sm:col-span-1 flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActivePicker({
-                            matchId: m.id,
-                            team: 'A',
-                            teamName: `Team A (${teamANames})`,
-                            currentScore: m.scoreA,
-                          })
-                        }
-                        className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
-                          m.scoreA !== null
-                            ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-                            : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
-                        }`}
-                      >
-                        {m.scoreA !== null ? m.scoreA : '-'}
-                      </button>
-                      <span className="text-zinc-400 font-bold">:</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActivePicker({
-                            matchId: m.id,
-                            team: 'B',
-                            teamName: `Team B (${teamBNames})`,
-                            currentScore: m.scoreB,
-                          })
-                        }
-                        className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
-                          m.scoreB !== null
-                            ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-                            : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
-                        }`}
-                      >
-                        {m.scoreB !== null ? m.scoreB : '-'}
-                      </button>
-                    </div>
-
-                    {/* Team B */}
-                    <div className="sm:col-span-2 space-y-1 text-center sm:text-left">
-                      <p className="text-xs font-bold text-zinc-900 truncate">{teamBNames}</p>
-                      <span className="text-[10px] font-extrabold text-blue-600 uppercase">Team B</span>
-                    </div>
-                  </div>
-                </div>
+            {(() => {
+              const currentRoundMatches = matches.filter(
+                (m) => (m.roundNumber || 1) === selectedRound
               );
-            })}
+
+              if (currentRoundMatches.length === 0) {
+                return (
+                  <div className="p-8 rounded-2xl border border-dashed border-zinc-200 bg-white text-center text-xs text-zinc-400 font-light">
+                    No matches generated for Round {selectedRound} yet.
+                  </div>
+                );
+              }
+
+              return currentRoundMatches.map((m, idx) => {
+                const teamANames = m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' & ');
+                const teamBNames = m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' & ');
+
+                return (
+                  <div
+                    key={m.id}
+                    className="p-5 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                      <span className="font-black text-xs text-[#111827] uppercase tracking-wider">
+                        Court {m.courtNumber}
+                      </span>
+                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 border border-orange-500/20">
+                        Match {idx + 1}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-4 text-center">
+                      {/* Team A */}
+                      <div className="sm:col-span-2 space-y-1 text-center sm:text-right">
+                        <p className="text-xs font-bold text-zinc-900 truncate">{teamANames}</p>
+                        <span className="text-[10px] font-extrabold text-orange-600 uppercase">Team A</span>
+                      </div>
+
+                      {/* Interactive Score Picker Buttons */}
+                      <div className="sm:col-span-1 flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivePicker({
+                              matchId: m.id,
+                              team: 'A',
+                              teamName: `Team A (${teamANames})`,
+                              currentScore: m.scoreA,
+                            })
+                          }
+                          className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                            m.scoreA !== null
+                              ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
+                              : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+                          }`}
+                        >
+                          {m.scoreA !== null ? m.scoreA : '-'}
+                        </button>
+                        <span className="text-zinc-400 font-bold">:</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivePicker({
+                              matchId: m.id,
+                              team: 'B',
+                              teamName: `Team B (${teamBNames})`,
+                              currentScore: m.scoreB,
+                            })
+                          }
+                          className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                            m.scoreB !== null
+                              ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
+                              : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+                          }`}
+                        >
+                          {m.scoreB !== null ? m.scoreB : '-'}
+                        </button>
+                      </div>
+
+                      {/* Team B */}
+                      <div className="sm:col-span-2 space-y-1 text-center sm:text-left">
+                        <p className="text-xs font-bold text-zinc-900 truncate">{teamBNames}</p>
+                        <span className="text-[10px] font-extrabold text-blue-600 uppercase">Team B</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           <div className="pt-2">
@@ -1434,7 +1528,7 @@ export default function WizardForm({
               className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
             >
               <Plus className="h-4 w-4" />
-              <span>+ Generate Next Round (Round {matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0) + 1})</span>
+              <span>+ Generate Next Round (Round {totalRounds + 1})</span>
             </button>
           </div>
         </div>
