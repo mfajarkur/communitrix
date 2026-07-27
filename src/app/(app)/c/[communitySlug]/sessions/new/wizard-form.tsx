@@ -76,9 +76,10 @@ export interface PlayerStanding {
   diff: number;
   totalPoints: number;
   lastMatchPoints: number;
-  byePoints?: number;
-  byesCount?: number;
+  byePoints?: number;      // total accumulated bye points (dynamic)
+  byesCount?: number;      // number of bye rounds
   realMatchesPlayed?: number;
+  byeIsPlaceholder?: boolean; // true = player still has at least one PLACEHOLDER bye (no actual matches played yet)
 }
 
 interface Player {
@@ -171,6 +172,9 @@ export default function WizardForm({
   // STEP 4: MATCH GENERATION & SCORE PICKER STATE
   // ------------------------------------------
   const [matches, setMatches] = useState<Match[]>([]);
+  // roundSitOuts: Map<roundNumber, Set<playerId>> — records who sat out each generated round
+  // This is the source of truth for bye detection, set at round-generation time (not derived from completed matches)
+  const [roundSitOuts, setRoundSitOuts] = useState<Map<number, string[]>>(new Map());
   const [activePicker, setActivePicker] = useState<{
     matchId: string;
     team: 'A' | 'B';
@@ -203,6 +207,14 @@ export default function WizardForm({
         if (parsed.config) setConfig(parsed.config);
         if (parsed.registeredPlayers) setRegisteredPlayers(parsed.registeredPlayers);
         if (parsed.matches) setMatches(parsed.matches);
+        if (parsed.roundSitOuts) {
+          // Restore Map from serialized plain object {"1": ["id1", "id2"], ...}
+          const restoredMap = new Map<number, string[]>();
+          Object.entries(parsed.roundSitOuts).forEach(([k, v]) => {
+            restoredMap.set(Number(k), v as string[]);
+          });
+          setRoundSitOuts(restoredMap);
+        }
       } catch (e) {
         console.error('Failed to restore quick match session state', e);
       }
@@ -212,14 +224,18 @@ export default function WizardForm({
   // 2. Auto-save Quick Match session state when state changes
   useEffect(() => {
     if (typeof window === 'undefined' || !isGuestDemoMode) return;
+    // Convert Map to plain object for JSON serialization
+    const sitOutsObj: Record<string, string[]> = {};
+    roundSitOuts.forEach((v, k) => { sitOutsObj[String(k)] = v; });
     const payload = {
       step,
       config,
       registeredPlayers,
       matches,
+      roundSitOuts: sitOutsObj,
     };
     localStorage.setItem('communitrix_quick_match_session', JSON.stringify(payload));
-  }, [isGuestDemoMode, step, config, registeredPlayers, matches]);
+  }, [isGuestDemoMode, step, config, registeredPlayers, matches, roundSitOuts]);
 
   // 3. Reset Quick Match session
   const handleResetQuickMatchSession = () => {
@@ -229,6 +245,7 @@ export default function WizardForm({
     setStep(1);
     setRegisteredPlayers([]);
     setMatches([]);
+    setRoundSitOuts(new Map());
   };
 
   // ==========================================
@@ -363,6 +380,7 @@ export default function WizardForm({
     }));
 
     const generated: Match[] = [];
+    const newRoundSitOuts = new Map<number, string[]>();
     const history: PastPairing[] = [];
     let matchCounter = 1;
 
@@ -423,12 +441,18 @@ export default function WizardForm({
             att.matchesPlayed += 1;
           }
         });
+
+        // Store sit-outs for this round in the roundSitOuts map (source of truth for bye detection)
+        if (roundOutput.sitOuts.length > 0) {
+          newRoundSitOuts.set(r, roundOutput.sitOuts);
+        }
       } catch (e: any) {
         console.error('Matchmaking error for round', r, e);
       }
     }
 
     setMatches(generated);
+    setRoundSitOuts(newRoundSitOuts);
     setStep(4);
   };
 
@@ -500,6 +524,15 @@ export default function WizardForm({
         isCompleted: false,
       }));
 
+      // Store sit-outs for this new round in roundSitOuts state
+      if (roundOutput.sitOuts.length > 0) {
+        setRoundSitOuts((prev) => {
+          const updated = new Map(prev);
+          updated.set(nextRoundNumber, roundOutput.sitOuts);
+          return updated;
+        });
+      }
+
       setMatches((prev) => [...prev, ...newMatches]);
     } catch (e: any) {
       setErrorMessage(`Failed to generate round ${nextRoundNumber}: ${e.message || 'Unknown error'}`);
@@ -544,11 +577,60 @@ export default function WizardForm({
 
   // ==========================================
   // STEP 5: CALCULATE DYNAMIC LEADERBOARD
+  // Per bye-point-brief.md: PLAYER_AVERAGE method (default)
   // ==========================================
   const standings: PlayerStanding[] = useMemo(() => {
-    const targetPointsNum = parseInt(config.pointTarget) || 24;
-    const dummyByeValue = Math.floor(targetPointsNum / 2); // State A temporary placeholder (e.g., 10 for 21 pts)
+    const N = parseInt(config.pointTarget) || 24; // match points target
 
+    // --- Helper: apply rounding per byeHalfNRounding = ROUND_NEAREST (brief §5 default) ---
+    const roundNearest = (val: number) => Math.round(val); // round-half-up convention
+
+    // --- Helper: calculate bye score for a player at a specific bye round (brief §5 PLAYER_AVERAGE) ---
+    // actualScoresBefore = list of actual (non-placeholder) scores earned in rounds BEFORE this bye round
+    const calcByeScore = (actualScoresBefore: number[]): number => {
+      if (actualScoresBefore.length > 0) {
+        // PLAYER_AVERAGE: average of actual scores from previous rounds
+        return roundNearest(actualScoresBefore.reduce((a, b) => a + b, 0) / actualScoresBefore.length);
+      }
+      // Fallback: no cross-event history in Quick Match (pure guest session) → N/2
+      // Technical note: cross-event history fallback would require persistent player profile — not available in guest mode.
+      return roundNearest(N / 2);
+    };
+
+    // --- Build a chronological per-player actual score history ---
+    // Key: playerId → sorted list of { roundNumber, score } for completed matches only
+    const completedMatches = matches.filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null);
+    const actualScoreHistory = new Map<string, { roundNumber: number; score: number }[]>();
+    registeredPlayers.forEach((p) => actualScoreHistory.set(p.id, []));
+
+    completedMatches.forEach((m) => {
+      const sA = Number(m.scoreA);
+      const sB = Number(m.scoreB);
+      m.teamA.forEach((pId) => {
+        const hist = actualScoreHistory.get(pId);
+        if (hist) hist.push({ roundNumber: m.roundNumber, score: sA });
+      });
+      m.teamB.forEach((pId) => {
+        const hist = actualScoreHistory.get(pId);
+        if (hist) hist.push({ roundNumber: m.roundNumber, score: sB });
+      });
+    });
+    // Sort each player's history by round ascending
+    actualScoreHistory.forEach((hist) => hist.sort((a, b) => a.roundNumber - b.roundNumber));
+
+    // --- Build bye round list per player from roundSitOuts state (set at generation time) ---
+    // roundSitOuts is the source of truth: Map<roundNumber, playerId[]>
+    const byeRoundsPerPlayer = new Map<string, number[]>(); // playerId → sorted bye round numbers
+    registeredPlayers.forEach((p) => byeRoundsPerPlayer.set(p.id, []));
+    roundSitOuts.forEach((sitOutPlayerIds, roundNumber) => {
+      sitOutPlayerIds.forEach((pId) => {
+        const byeList = byeRoundsPerPlayer.get(pId);
+        if (byeList) byeList.push(roundNumber);
+      });
+    });
+    byeRoundsPerPlayer.forEach((list) => list.sort((a, b) => a - b));
+
+    // --- Compute stats per player ---
     const statsMap = new Map<
       string,
       {
@@ -558,36 +640,25 @@ export default function WizardForm({
         actualPointsWon: number;
         actualPointsLost: number;
         lastMatchPoints: number;
-        byesCount: number;
         realMatchesPlayed: number;
       }
     >();
 
     registeredPlayers.forEach((p) => {
       statsMap.set(p.id, {
-        wins: 0,
-        losses: 0,
-        ties: 0,
-        actualPointsWon: 0,
-        actualPointsLost: 0,
-        lastMatchPoints: 0,
-        byesCount: 0,
-        realMatchesPlayed: 0,
+        wins: 0, losses: 0, ties: 0,
+        actualPointsWon: 0, actualPointsLost: 0,
+        lastMatchPoints: 0, realMatchesPlayed: 0,
       });
     });
 
-    const completedMatches = matches.filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null);
-
-    // 1. Process Real Match Scores
     completedMatches.forEach((m) => {
       const sA = Number(m.scoreA);
       const sB = Number(m.scoreB);
-
       const teamAWin = sA > sB;
       const teamBWin = sB > sA;
       const isTie = sA === sB;
 
-      // Update Team A Players
       m.teamA.forEach((pId) => {
         const stat = statsMap.get(pId);
         if (!stat) return;
@@ -600,7 +671,6 @@ export default function WizardForm({
         else if (isTie) stat.ties += 1;
       });
 
-      // Update Team B Players
       m.teamB.forEach((pId) => {
         const stat = statsMap.get(pId);
         if (!stat) return;
@@ -614,57 +684,33 @@ export default function WizardForm({
       });
     });
 
-    // 2. Count Bye Rounds per completed round
-    const roundsMap = new Map<number, Match[]>();
-    completedMatches.forEach((m) => {
-      const rMatches = roundsMap.get(m.roundNumber) || [];
-      rMatches.push(m);
-      roundsMap.set(m.roundNumber, rMatches);
-    });
-
-    roundsMap.forEach((rMatches) => {
-      const playingInRound = new Set<string>();
-      rMatches.forEach((m) => {
-        m.teamA.forEach((id) => playingInRound.add(id));
-        m.teamB.forEach((id) => playingInRound.add(id));
-      });
-
-      registeredPlayers.forEach((p) => {
-        if (!playingInRound.has(p.id)) {
-          const stat = statsMap.get(p.id);
-          if (stat) {
-            stat.byesCount += 1;
-          }
-        }
-      });
-    });
-
-    // 3. Compute Dynamic Bye Points & Total Points per Player (Placeholder & Overwrite Logic)
+    // --- Per player: calculate total bye points using PLAYER_AVERAGE per bye round ---
+    // For each bye round, we use only actual scores from rounds BEFORE that bye round.
+    // This implements the "current average at time of bye" semantics from brief §5.
     const list: PlayerStanding[] = registeredPlayers.map((p) => {
       const stat = statsMap.get(p.id) || {
-        wins: 0,
-        losses: 0,
-        ties: 0,
-        actualPointsWon: 0,
-        actualPointsLost: 0,
-        lastMatchPoints: 0,
-        byesCount: 0,
-        realMatchesPlayed: 0,
+        wins: 0, losses: 0, ties: 0,
+        actualPointsWon: 0, actualPointsLost: 0,
+        lastMatchPoints: 0, realMatchesPlayed: 0,
       };
 
-      let byePointsTotal = 0;
+      const byeRounds = byeRoundsPerPlayer.get(p.id) || [];
+      const playerHistory = actualScoreHistory.get(p.id) || [];
 
-      if (stat.byesCount > 0) {
-        if (stat.realMatchesPlayed === 0) {
-          // State A: No matches played yet -> Assign temporary Dummy Bye Point
-          byePointsTotal = dummyByeValue * stat.byesCount;
-        } else {
-          // State B & C: Has played 1+ matches -> Overwrite Bye Point with Current Average!
-          // Formula: Current Average = (Sum of ALL Actual Scores) / (Total Played Rounds)
-          const currentAverage = stat.actualPointsWon / stat.realMatchesPlayed;
-          byePointsTotal = Math.round(currentAverage * stat.byesCount);
-        }
+      // For each bye round: find actual scores earned in rounds STRICTLY BEFORE this bye round.
+      // IMPORTANT: NEVER include scores from another bye round (only ACTUAL statuses).
+      let byePointsTotal = 0;
+      for (const byeRoundNum of byeRounds) {
+        const actualScoresBefore = playerHistory
+          .filter((h) => h.roundNumber < byeRoundNum)
+          .map((h) => h.score);
+        // calcByeScore applies PLAYER_AVERAGE if history exists, else N/2 fallback
+        byePointsTotal += calcByeScore(actualScoresBefore);
       }
+
+      // byeIsPlaceholder = true when player has bye(s) but has played 0 actual matches
+      // (meaning ALL bye scores are still the N/2 fallback / temporary placeholder)
+      const byeIsPlaceholder = byeRounds.length > 0 && stat.realMatchesPlayed === 0;
 
       const totalPoints = stat.actualPointsWon + byePointsTotal;
       const diff = totalPoints - stat.actualPointsLost;
@@ -684,8 +730,9 @@ export default function WizardForm({
         totalPoints,
         lastMatchPoints: stat.lastMatchPoints,
         byePoints: byePointsTotal,
-        byesCount: stat.byesCount,
+        byesCount: byeRounds.length,
         realMatchesPlayed: stat.realMatchesPlayed,
+        byeIsPlaceholder,
       };
     });
 
@@ -709,7 +756,7 @@ export default function WizardForm({
     });
 
     return list;
-  }, [registeredPlayers, matches, config.leaderboardRankedBy, config.pointTarget]);
+  }, [registeredPlayers, matches, roundSitOuts, config.leaderboardRankedBy, config.pointTarget]);
 
   // Submit Session to backend (or finish Sandbox Demo)
   const handleStartRealSession = async () => {
@@ -1425,8 +1472,17 @@ export default function WizardForm({
                     </td>
                     <td className="py-3 text-right pr-2 font-black text-sm text-[#111827]">
                       {s.byePoints && s.byePoints > 0 ? (
-                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md mr-1.5">
-                          +{s.byePoints} Bye
+                        <span
+                          title={s.byeIsPlaceholder
+                            ? 'Temporary placeholder score (no actual matches played yet)'
+                            : 'Dynamic bye points based on player average'}
+                          className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md mr-1.5 border ${
+                            s.byeIsPlaceholder
+                              ? 'text-zinc-500 bg-zinc-100 border-zinc-300' // greyed out = placeholder
+                              : 'text-amber-700 bg-amber-100 border-amber-300'  // amber = real average
+                          }`}
+                        >
+                          {s.byeIsPlaceholder ? '~' : '+'}{s.byePoints} Bye
                         </span>
                       ) : null}
                       {s.totalPoints}
