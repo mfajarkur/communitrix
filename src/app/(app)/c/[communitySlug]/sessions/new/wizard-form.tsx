@@ -76,6 +76,8 @@ export interface PlayerStanding {
   diff: number;
   totalPoints: number;
   lastMatchPoints: number;
+  byePoints?: number;
+  byesCount?: number;
 }
 
 interface Player {
@@ -491,6 +493,9 @@ export default function WizardForm({
         pointsWon: number;
         pointsLost: number;
         lastMatchPoints: number;
+        byePoints: number;
+        byesCount: number;
+        realMatchesPlayed: number;
       }
     >();
 
@@ -502,12 +507,16 @@ export default function WizardForm({
         pointsWon: 0,
         pointsLost: 0,
         lastMatchPoints: 0,
+        byePoints: 0,
+        byesCount: 0,
+        realMatchesPlayed: 0,
       });
     });
 
-    matches.forEach((m) => {
-      if (m.scoreA === null || m.scoreB === null || !m.isCompleted) return;
+    const completedMatches = matches.filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null);
 
+    // 1. Process Real Match Scores
+    completedMatches.forEach((m) => {
       const sA = Number(m.scoreA);
       const sB = Number(m.scoreB);
 
@@ -522,6 +531,7 @@ export default function WizardForm({
         stat.pointsWon += sA;
         stat.pointsLost += sB;
         stat.lastMatchPoints = sA;
+        stat.realMatchesPlayed += 1;
         if (teamAWin) stat.wins += 1;
         else if (teamBWin) stat.losses += 1;
         else if (isTie) stat.ties += 1;
@@ -534,9 +544,43 @@ export default function WizardForm({
         stat.pointsWon += sB;
         stat.pointsLost += sA;
         stat.lastMatchPoints = sB;
+        stat.realMatchesPlayed += 1;
         if (teamBWin) stat.wins += 1;
         else if (teamAWin) stat.losses += 1;
         else if (isTie) stat.ties += 1;
+      });
+    });
+
+    // 2. Process Bye Points for Sit-Out Players (Rule 5.3: floor(target / 2))
+    // Only awarded to players who sat out in a completed round!
+    const targetPointsNum = parseInt(config.pointTarget) || 24;
+    const byePointValue = Math.floor(targetPointsNum / 2); // e.g. floor(21 / 2) = 10 points
+
+    // Group completed matches by round
+    const roundsMap = new Map<number, Match[]>();
+    completedMatches.forEach((m) => {
+      const rMatches = roundsMap.get(m.roundNumber) || [];
+      rMatches.push(m);
+      roundsMap.set(m.roundNumber, rMatches);
+    });
+
+    roundsMap.forEach((rMatches) => {
+      const playingInRound = new Set<string>();
+      rMatches.forEach((m) => {
+        m.teamA.forEach((id) => playingInRound.add(id));
+        m.teamB.forEach((id) => playingInRound.add(id));
+      });
+
+      // Players who sat out in this completed round get Bye Points
+      registeredPlayers.forEach((p) => {
+        if (!playingInRound.has(p.id)) {
+          const stat = statsMap.get(p.id);
+          if (stat) {
+            stat.pointsWon += byePointValue;
+            stat.byePoints += byePointValue;
+            stat.byesCount += 1;
+          }
+        }
       });
     });
 
@@ -548,6 +592,9 @@ export default function WizardForm({
         pointsWon: 0,
         pointsLost: 0,
         lastMatchPoints: 0,
+        byePoints: 0,
+        byesCount: 0,
+        realMatchesPlayed: 0,
       };
       const diff = stat.pointsWon - stat.pointsLost;
       return {
@@ -564,6 +611,8 @@ export default function WizardForm({
         diff,
         totalPoints: stat.pointsWon,
         lastMatchPoints: stat.lastMatchPoints,
+        byePoints: stat.byePoints,
+        byesCount: stat.byesCount,
       };
     });
 
@@ -587,7 +636,7 @@ export default function WizardForm({
     });
 
     return list;
-  }, [registeredPlayers, matches, config.leaderboardRankedBy]);
+  }, [registeredPlayers, matches, config.leaderboardRankedBy, config.pointTarget]);
 
   // Submit Session to backend (or finish Sandbox Demo)
   const handleStartRealSession = async () => {
@@ -1278,7 +1327,7 @@ export default function WizardForm({
                         </div>
                         <div>
                           <p className="font-bold text-zinc-900">{s.name}</p>
-                          {s.isGuest && (
+                          {!isGuestDemoMode && s.isGuest && (
                             <span className="text-[9px] uppercase font-extrabold bg-amber-100 text-amber-800 px-1 rounded">
                               Guest
                             </span>
@@ -1295,11 +1344,11 @@ export default function WizardForm({
                       </span>
                     </td>
                     <td className="py-3 text-right pr-2 font-black text-sm text-[#111827]">
-                      {s.lastMatchPoints > 0 && (
-                        <span className="text-[11px] font-bold text-orange-500 mr-1.5">
-                          (+{s.lastMatchPoints})
+                      {s.byePoints && s.byePoints > 0 ? (
+                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md mr-1.5">
+                          +{s.byePoints} Bye
                         </span>
-                      )}
+                      ) : null}
                       {s.totalPoints}
                     </td>
                   </tr>
