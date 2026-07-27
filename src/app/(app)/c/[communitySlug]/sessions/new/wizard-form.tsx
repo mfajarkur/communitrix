@@ -1466,8 +1466,8 @@ export default function WizardForm({
               }
 
               return currentRoundMatches.map((m, idx) => {
-                const teamANames = m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' & ');
-                const teamBNames = m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' & ');
+                const teamANamesJoined = m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
+                const teamBNamesJoined = m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
 
                 return (
                   <div
@@ -1483,11 +1483,14 @@ export default function WizardForm({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-4 text-center">
-                      {/* Team A */}
-                      <div className="sm:col-span-2 space-y-1 text-center sm:text-right">
-                        <p className="text-xs font-bold text-zinc-900 truncate">{teamANames}</p>
-                        <span className="text-[10px] font-extrabold text-orange-600 uppercase">Team A</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-3 text-center">
+                      {/* Team A (stacked vertically, no Team A label) */}
+                      <div className="sm:col-span-2 space-y-0.5 text-center sm:text-right">
+                        {m.teamA.map((id, pIdx) => (
+                          <p key={`${id}-${pIdx}`} className="text-xs font-bold text-zinc-900 truncate">
+                            {playerMap.get(id)?.name || 'Player'}
+                          </p>
+                        ))}
                       </div>
 
                       {/* Interactive Score Picker Buttons */}
@@ -1498,7 +1501,7 @@ export default function WizardForm({
                             setActivePicker({
                               matchId: m.id,
                               team: 'A',
-                              teamName: `Team A (${teamANames})`,
+                              teamName: teamANamesJoined,
                               currentScore: m.scoreA,
                             })
                           }
@@ -1517,7 +1520,7 @@ export default function WizardForm({
                             setActivePicker({
                               matchId: m.id,
                               team: 'B',
-                              teamName: `Team B (${teamBNames})`,
+                              teamName: teamBNamesJoined,
                               currentScore: m.scoreB,
                             })
                           }
@@ -1531,10 +1534,13 @@ export default function WizardForm({
                         </button>
                       </div>
 
-                      {/* Team B */}
-                      <div className="sm:col-span-2 space-y-1 text-center sm:text-left">
-                        <p className="text-xs font-bold text-zinc-900 truncate">{teamBNames}</p>
-                        <span className="text-[10px] font-extrabold text-blue-600 uppercase">Team B</span>
+                      {/* Team B (stacked vertically, no Team B label) */}
+                      <div className="sm:col-span-2 space-y-0.5 text-center sm:text-left">
+                        {m.teamB.map((id, pIdx) => (
+                          <p key={`${id}-${pIdx}`} className="text-xs font-bold text-zinc-900 truncate">
+                            {playerMap.get(id)?.name || 'Player'}
+                          </p>
+                        ))}
                       </div>
                     </div>
                   </div>
