@@ -701,46 +701,68 @@ export default function WizardForm({
 
   return (
     <div className="space-y-6 select-none font-sans">
-      {/* Wizard Progress Navigation Header */}
-      <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
-        {step === 2 || step === 3 ? (
-          <button
-            onClick={() => setStep((prev) => (prev - 1) as any)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to Step {step - 1}
-          </button>
-        ) : step === 5 ? (
-          <button
-            onClick={() => setStep(4)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to Live Matches (Step 4)
-          </button>
-        ) : step === 4 ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 uppercase tracking-wider">
-            ⚡ Live Matches (Locked)
-          </span>
-        ) : (
-          <span className="text-xs font-bold uppercase tracking-widest text-orange-600">
-            Step 1 of 5
-          </span>
-        )}
+      {/* Wizard Progress Navigation Header / Live Session 2-Tab Switcher */}
+      {step >= 4 ? (
+        <div className="w-full pb-2 border-b border-zinc-100 dark:border-zinc-800">
+          <div className="flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-2xl max-w-md mx-auto shadow-inner">
+            <button
+              type="button"
+              onClick={() => setStep(4)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                step === 4
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              }`}
+            >
+              <Zap className="h-4 w-4" />
+              <span>LIVE MATCHES</span>
+            </button>
 
-        <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-400">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div
-              key={s}
-              className={`h-2.5 rounded-full transition-all ${s === step
-                ? 'w-7 bg-orange-500'
-                : s < step
-                  ? 'w-2.5 bg-orange-200'
-                  : 'w-2.5 bg-zinc-200 dark:bg-zinc-800'
-                }`}
-            />
-          ))}
+            <button
+              type="button"
+              onClick={() => setStep(5)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                step === 5
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              }`}
+            >
+              <Trophy className="h-4 w-4" />
+              <span>LEADERBOARD</span>
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
+          {step > 1 ? (
+            <button
+              onClick={() => setStep((prev) => (prev - 1) as any)}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to Step {step - 1}
+            </button>
+          ) : (
+            <span className="text-xs font-bold uppercase tracking-widest text-orange-600">
+              Step 1 of 3
+            </span>
+          )}
+
+          <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-400">
+            {[1, 2, 3].map((s) => (
+              <div
+                key={s}
+                className={`h-2.5 rounded-full transition-all ${
+                  s === step
+                    ? 'w-7 bg-orange-500'
+                    : s < step
+                    ? 'w-2.5 bg-orange-200'
+                    : 'w-2.5 bg-zinc-200 dark:bg-zinc-800'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="flex items-center gap-2.5 rounded-2xl bg-red-50 border border-red-200 p-4 text-xs font-medium text-red-700">
@@ -1180,19 +1202,12 @@ export default function WizardForm({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-black uppercase tracking-tight text-[#111827]">
-                4. Live Matches ({matches.length})
+                Live Matches ({matches.length})
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
                 Input scores directly on match cards to update leaderboard live.
               </p>
             </div>
-            <button
-              onClick={() => setStep(5)}
-              className="px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-black uppercase tracking-wider hover:bg-orange-600 transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-            >
-              <Award className="h-4 w-4" />
-              View Leaderboard
-            </button>
           </div>
 
           {/* Match Cards List */}
@@ -1274,21 +1289,14 @@ export default function WizardForm({
             })}
           </div>
 
-          <div className="space-y-3 pt-2">
+          <div className="pt-2">
             <button
               type="button"
               onClick={handleGenerateNextRound}
-              className="w-full py-3.5 rounded-xl border-2 border-orange-500 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+              className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
             >
               <Plus className="h-4 w-4" />
               <span>+ Generate Next Round (Round {matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0) + 1})</span>
-            </button>
-
-            <button
-              onClick={() => setStep(5)}
-              className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
-            >
-              View Live Leaderboard Standings
             </button>
           </div>
         </div>
@@ -1302,19 +1310,12 @@ export default function WizardForm({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-black uppercase tracking-tight text-[#111827]">
-                5. Leaderboard Standings
+                Leaderboard Standings
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
                 Ranked by <span className="font-bold text-orange-600 uppercase">{config.leaderboardRankedBy}</span>
               </p>
             </div>
-
-            <button
-              onClick={() => setStep(4)}
-              className="px-4 py-2 rounded-xl border border-zinc-300 text-zinc-700 text-xs font-bold uppercase hover:bg-zinc-50 transition-all cursor-pointer"
-            >
-              Edit Scores
-            </button>
           </div>
 
           {/* Standings Table Card */}
