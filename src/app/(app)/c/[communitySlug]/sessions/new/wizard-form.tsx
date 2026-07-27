@@ -1043,7 +1043,15 @@ export default function WizardForm({
                   type="text"
                   value={manualInputName}
                   onChange={(e) => setManualInputName(e.target.value)}
-                  placeholder="Type player name..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (manualInputName.trim()) {
+                        handleAddManualPlayer(isGuestDemoMode);
+                      }
+                    }
+                  }}
+                  placeholder="Type player name and press Enter..."
                   className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all bg-zinc-50 focus:bg-white"
                 />
                 <button
