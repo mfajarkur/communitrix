@@ -670,14 +670,23 @@ export default function WizardForm({
       });
     });
 
-    // --- BUG #2 FIX: Detect BYE rounds ONLY from roundSitOuts (set at generation time) ---
-    // A player gets a BYE entry for round R IF AND ONLY IF they were NOT assigned a court in round R.
-    // roundSitOuts is the authoritative source of truth — set when round is generated.
-    // Do NOT derive byes from completed matches (causes false positives when count % 4 == 0).
+    // --- BUG FIX: Only count BYE entries for rounds that have actually been PLAYED ---
+    // Americano pre-generates 3-4 rounds at once. roundSitOuts is populated for ALL pre-generated
+    // rounds, including future ones. This caused players who played in round 1 to incorrectly show
+    // bye badges from rounds 2/3/4 that haven't been played yet.
+    //
+    // Rule: a bye entry for round R only counts once round R has been "played" —
+    // i.e., at least one completed match exists for that round number.
+    // Future pre-generated rounds are ignored until they actually happen.
+    const completedRoundNumbers = new Set(completedMatches.map((m) => m.roundNumber));
+
     const byeScoresPerPlayer = new Map<string, { roundNum: number; score: number }[]>();
     registeredPlayers.forEach((p) => byeScoresPerPlayer.set(p.id, []));
 
     roundSitOuts.forEach((sitOutPlayerIds, roundNumber) => {
+      // Skip bye entries for rounds that haven't been played yet (no completed matches)
+      if (!completedRoundNumbers.has(roundNumber)) return;
+
       sitOutPlayerIds.forEach((pId) => {
         // Only compute bye score for players actually in this session
         const byeList = byeScoresPerPlayer.get(pId);
@@ -685,10 +694,10 @@ export default function WizardForm({
 
         // Get ONLY this player's MATCH scores from rounds BEFORE this bye round
         // (brief §3 Method A: "all of this player's entries where type == MATCH")
-        // Filter to rounds < byeRoundNum to avoid using future rounds in the average.
+        // Filter to rounds < roundNumber to avoid using future rounds in the average.
         const matchScoresBeforeBye = completedMatches
           .filter((m) => m.roundNumber < roundNumber && (m.teamA.includes(pId) || m.teamB.includes(pId)))
-          .map((m) => m.teamA.includes(pId) ? Number(m.scoreA) : Number(m.scoreB));
+          .map((m) => (m.teamA.includes(pId) ? Number(m.scoreA) : Number(m.scoreB)));
 
         const byeScore = calcByeScore(matchScoresBeforeBye);
         byeList.push({ roundNum: roundNumber, score: byeScore });
