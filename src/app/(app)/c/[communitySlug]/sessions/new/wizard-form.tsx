@@ -100,12 +100,12 @@ interface WizardFormProps {
 }
 
 const POINTS_TARGET_OPTIONS = [
-  '16 Points',
-  '24 Points',
-  '32 Points',
   '12 Points',
+  '16 Points',
   '21 Points',
+  '24 Points',
   '25 Points',
+  '32 Points',
 ];
 
 const GENERAL_TARGET_OPTIONS = [
