@@ -762,20 +762,14 @@ export default function WizardForm({
       };
     });
 
-    // Sort standings:
-    // Total Points (which includes Bye Points) is ALWAYS the primary ranking metric.
-    // Bye points are compensatory and count fully towards ranking.
-    // Tie-breakers:
-    // - If Ranked by WIN: 1. Total Points, 2. Wins, 3. Point Diff
-    // - If Ranked by POINT: 1. Total Points, 2. Point Diff, 3. Wins
+    // Sort by leaderboardRankedBy setting
     list.sort((a, b) => {
-      if (b.totalPoints !== a.totalPoints) {
-        return b.totalPoints - a.totalPoints;
-      }
       if (config.leaderboardRankedBy === 'WIN') {
         if (b.wins !== a.wins) return b.wins - a.wins;
-        return b.diff - a.diff;
+        if (b.diff !== a.diff) return b.diff - a.diff;
+        return b.totalPoints - a.totalPoints;
       } else {
+        if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
         if (b.diff !== a.diff) return b.diff - a.diff;
         return b.wins - a.wins;
       }
