@@ -546,16 +546,18 @@ export default function WizardForm({
   // STEP 5: CALCULATE DYNAMIC LEADERBOARD
   // ==========================================
   const standings: PlayerStanding[] = useMemo(() => {
+    const targetPointsNum = parseInt(config.pointTarget) || 24;
+    const dummyByeValue = Math.floor(targetPointsNum / 2); // State A temporary placeholder (e.g., 10 for 21 pts)
+
     const statsMap = new Map<
       string,
       {
         wins: number;
         losses: number;
         ties: number;
-        pointsWon: number;
-        pointsLost: number;
+        actualPointsWon: number;
+        actualPointsLost: number;
         lastMatchPoints: number;
-        byePoints: number;
         byesCount: number;
         realMatchesPlayed: number;
       }
@@ -566,10 +568,9 @@ export default function WizardForm({
         wins: 0,
         losses: 0,
         ties: 0,
-        pointsWon: 0,
-        pointsLost: 0,
+        actualPointsWon: 0,
+        actualPointsLost: 0,
         lastMatchPoints: 0,
-        byePoints: 0,
         byesCount: 0,
         realMatchesPlayed: 0,
       });
@@ -590,8 +591,8 @@ export default function WizardForm({
       m.teamA.forEach((pId) => {
         const stat = statsMap.get(pId);
         if (!stat) return;
-        stat.pointsWon += sA;
-        stat.pointsLost += sB;
+        stat.actualPointsWon += sA;
+        stat.actualPointsLost += sB;
         stat.lastMatchPoints = sA;
         stat.realMatchesPlayed += 1;
         if (teamAWin) stat.wins += 1;
@@ -603,8 +604,8 @@ export default function WizardForm({
       m.teamB.forEach((pId) => {
         const stat = statsMap.get(pId);
         if (!stat) return;
-        stat.pointsWon += sB;
-        stat.pointsLost += sA;
+        stat.actualPointsWon += sB;
+        stat.actualPointsLost += sA;
         stat.lastMatchPoints = sB;
         stat.realMatchesPlayed += 1;
         if (teamBWin) stat.wins += 1;
@@ -613,12 +614,7 @@ export default function WizardForm({
       });
     });
 
-    // 2. Process Bye Points for Sit-Out Players (Rule 5.3: floor(target / 2))
-    // Only awarded to players who sat out in a completed round!
-    const targetPointsNum = parseInt(config.pointTarget) || 24;
-    const byePointValue = Math.floor(targetPointsNum / 2); // e.g. floor(21 / 2) = 10 points
-
-    // Group completed matches by round
+    // 2. Count Bye Rounds per completed round
     const roundsMap = new Map<number, Match[]>();
     completedMatches.forEach((m) => {
       const rMatches = roundsMap.get(m.roundNumber) || [];
@@ -633,32 +629,46 @@ export default function WizardForm({
         m.teamB.forEach((id) => playingInRound.add(id));
       });
 
-      // Players who sat out in this completed round get Bye Points
       registeredPlayers.forEach((p) => {
         if (!playingInRound.has(p.id)) {
           const stat = statsMap.get(p.id);
           if (stat) {
-            stat.pointsWon += byePointValue;
-            stat.byePoints += byePointValue;
             stat.byesCount += 1;
           }
         }
       });
     });
 
+    // 3. Compute Dynamic Bye Points & Total Points per Player (Placeholder & Overwrite Logic)
     const list: PlayerStanding[] = registeredPlayers.map((p) => {
       const stat = statsMap.get(p.id) || {
         wins: 0,
         losses: 0,
         ties: 0,
-        pointsWon: 0,
-        pointsLost: 0,
+        actualPointsWon: 0,
+        actualPointsLost: 0,
         lastMatchPoints: 0,
-        byePoints: 0,
         byesCount: 0,
         realMatchesPlayed: 0,
       };
-      const diff = stat.pointsWon - stat.pointsLost;
+
+      let byePointsTotal = 0;
+
+      if (stat.byesCount > 0) {
+        if (stat.realMatchesPlayed === 0) {
+          // State A: No matches played yet -> Assign temporary Dummy Bye Point
+          byePointsTotal = dummyByeValue * stat.byesCount;
+        } else {
+          // State B & C: Has played 1+ matches -> Overwrite Bye Point with Current Average!
+          // Formula: Current Average = (Sum of ALL Actual Scores) / (Total Played Rounds)
+          const currentAverage = stat.actualPointsWon / stat.realMatchesPlayed;
+          byePointsTotal = Math.round(currentAverage * stat.byesCount);
+        }
+      }
+
+      const totalPoints = stat.actualPointsWon + byePointsTotal;
+      const diff = totalPoints - stat.actualPointsLost;
+
       return {
         rank: 0,
         playerId: p.id,
@@ -668,12 +678,12 @@ export default function WizardForm({
         wins: stat.wins,
         losses: stat.losses,
         ties: stat.ties,
-        pointsWon: stat.pointsWon,
-        pointsLost: stat.pointsLost,
+        pointsWon: stat.actualPointsWon,
+        pointsLost: stat.actualPointsLost,
         diff,
-        totalPoints: stat.pointsWon,
+        totalPoints,
         lastMatchPoints: stat.lastMatchPoints,
-        byePoints: stat.byePoints,
+        byePoints: byePointsTotal,
         byesCount: stat.byesCount,
         realMatchesPlayed: stat.realMatchesPlayed,
       };
