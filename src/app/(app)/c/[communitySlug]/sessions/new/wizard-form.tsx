@@ -442,16 +442,36 @@ export default function WizardForm({
     }
   };
 
-  // Step 4: Update Score in Match
-  const handleUpdateScore = (matchId: string, scoreA: number | null, scoreB: number | null) => {
+  // Step 4: Update Score in Match (auto-calculates complementary score N - X when scoringSystem === 'POINTS')
+  const handleUpdateScore = (
+    matchId: string,
+    scoreA: number | null,
+    scoreB: number | null,
+    updatedTeam?: 'A' | 'B'
+  ) => {
+    const isPointsMode = config.scoringSystem === 'POINTS';
+    const targetN = parseInt(config.pointTarget) || 24;
+
     setMatches((prev) =>
       prev.map((m) => {
         if (m.id !== matchId) return m;
-        const isComp = scoreA !== null && scoreB !== null && !isNaN(scoreA) && !isNaN(scoreB);
+
+        let finalA = scoreA;
+        let finalB = scoreB;
+
+        if (isPointsMode && targetN > 0) {
+          if (updatedTeam === 'A' && scoreA !== null) {
+            finalB = Math.max(0, targetN - scoreA);
+          } else if (updatedTeam === 'B' && scoreB !== null) {
+            finalA = Math.max(0, targetN - scoreB);
+          }
+        }
+
+        const isComp = finalA !== null && finalB !== null && !isNaN(finalA) && !isNaN(finalB);
         return {
           ...m,
-          scoreA,
-          scoreB,
+          scoreA: finalA,
+          scoreB: finalB,
           isCompleted: isComp,
         };
       })
@@ -1371,9 +1391,9 @@ export default function WizardForm({
             const match = matches.find((m) => m.id === activePicker.matchId);
             if (match) {
               if (activePicker.team === 'A') {
-                handleUpdateScore(activePicker.matchId, score, match.scoreB);
+                handleUpdateScore(activePicker.matchId, score, match.scoreB, 'A');
               } else {
-                handleUpdateScore(activePicker.matchId, match.scoreA, score);
+                handleUpdateScore(activePicker.matchId, match.scoreA, score, 'B');
               }
             }
           }}

@@ -90,20 +90,31 @@ export default function ScorerForm({
     }
   }, [matchId]);
 
-  // 2. Save draft when score modifications occur
-  const updateScoreA = (val: number) => {
-    setScoreA(val);
+  // 2. Save draft when score modifications occur (auto-calculates complementary score N-x when POINTS mode)
+  const isPointsSystem = sessionConfig.scoringType === 'POINTS' || sessionConfig.pointsMode === 'FIXED_TOTAL';
+  const targetN = sessionConfig.maxScoreTarget || 24;
+
+  const updateScoreA = (valA: number) => {
+    const newA = Math.max(0, valA);
+    const newB = isPointsSystem && targetN > 0 ? Math.max(0, targetN - newA) : scoreB;
+
+    setScoreA(newA);
+    setScoreB(newB);
     localStorage.setItem(
       `courtside-draft-${matchId}`,
-      JSON.stringify({ a: val, b: scoreB, dirty: false })
+      JSON.stringify({ a: newA, b: newB, dirty: false })
     );
   };
 
-  const updateScoreB = (val: number) => {
-    setScoreB(val);
+  const updateScoreB = (valB: number) => {
+    const newB = Math.max(0, valB);
+    const newA = isPointsSystem && targetN > 0 ? Math.max(0, targetN - newB) : scoreA;
+
+    setScoreA(newA);
+    setScoreB(newB);
     localStorage.setItem(
       `courtside-draft-${matchId}`,
-      JSON.stringify({ a: scoreA, b: val, dirty: false })
+      JSON.stringify({ a: newA, b: newB, dirty: false })
     );
   };
 
