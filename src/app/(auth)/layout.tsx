@@ -38,6 +38,20 @@ export default function AuthLayout({
         <div className="rounded-2xl bg-black/35 border border-orange-500 shadow-[0_0_25px_rgba(249,115,22,0.35)] backdrop-blur-md p-7 text-white">
           {children}
         </div>
+
+        {/* Text directly floating above background */}
+        <div className="text-center text-xs font-normal text-white drop-shadow-md select-none font-sans pt-1">
+          <a
+            href="https://instagram.com/communitrix.id"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-orange-300 hover:underline transition-colors font-bold text-white"
+          >
+            Contact Us
+          </a>
+          <span className="mx-2 opacity-70">•</span>
+          <span className="opacity-90">Version 1.0 © 2026 Communitrix</span>
+        </div>
       </div>
     </div>
   );
