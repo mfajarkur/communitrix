@@ -20,6 +20,9 @@ import {
   Award,
   Sparkles,
 } from 'lucide-react';
+import { generateAmericanoRound } from '@/lib/matchmaking/americano';
+import { generateMexicanoRound } from '@/lib/matchmaking/mexicano';
+import { Attendee, PastPairing } from '@/lib/matchmaking/types';
 
 // ==========================================
 // 1. DATA MODELS & STATE INTERFACES
@@ -272,7 +275,7 @@ export default function WizardForm({
     setRegisteredPlayers((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // Step 3 -> 4: Generate Matches
+  // Step 3 -> 4: Generate Matches based on official Ruleset (Americano / Mexicano)
   const handleGenerateMatches = () => {
     if (registeredPlayers.length < 4) {
       setErrorMessage('Minimum 4 players required to generate matches.');
@@ -280,36 +283,66 @@ export default function WizardForm({
     }
     setErrorMessage(null);
 
-    // Round-robin / Americano doubles match generation algorithm
+    const attendees: Attendee[] = registeredPlayers.map((p, idx) => ({
+      id: p.id,
+      seedElo: 1000 - idx,
+      matchesPlayed: 0,
+      sitOutCount: 0,
+      lastSitOutRound: null,
+    }));
+
     const generated: Match[] = [];
-    const p = registeredPlayers;
-    const numPlayers = p.length;
-
+    const history: PastPairing[] = [];
     let matchCounter = 1;
-    // Generate balanced 2v2 doubles matches
-    for (let i = 0; i < numPlayers; i++) {
-      for (let j = i + 1; j < numPlayers; j++) {
-        for (let k = j + 1; k < numPlayers; k++) {
-          for (let l = k + 1; l < numPlayers; l++) {
-            if (matchCounter > 12) break; // Cap at 12 matches for smooth session play
 
-            const courtNum = ((matchCounter - 1) % config.courtCount) + 1;
-            const roundNum = Math.ceil(matchCounter / config.courtCount);
+    const isMexicano = config.gameType.includes('MEXICANO');
+    // For Americano: pre-compute 3-4 rounds upfront.
+    // For Mexicano: generate Round 1 upfront (Round 2+ generated sequentially after scores per Rule 2.2).
+    const totalRoundsToGenerate = isMexicano ? 1 : Math.min(4, Math.max(1, registeredPlayers.length - 1));
 
-            generated.push({
-              id: `match-${matchCounter}`,
-              roundNumber: roundNum,
-              courtNumber: courtNum,
-              teamA: [p[i].id, p[j].id],
-              teamB: [p[k].id, p[l].id],
-              scoreA: null,
-              scoreB: null,
-              isCompleted: false,
+    for (let r = 1; r <= totalRoundsToGenerate; r++) {
+      try {
+        const roundOutput = isMexicano
+          ? generateMexicanoRound({
+              roundNumber: r,
+              playersPerMatch: 4,
+              courtCount: config.courtCount,
+              attendees,
+              history,
+              standings: [],
+              seed: `session-wizard-${r}`,
+            })
+          : generateAmericanoRound({
+              roundNumber: r,
+              playersPerMatch: 4,
+              courtCount: config.courtCount,
+              attendees,
+              history,
+              seed: `session-wizard-${r}`,
             });
 
-            matchCounter++;
-          }
-        }
+        roundOutput.courts.forEach((c) => {
+          generated.push({
+            id: `match-${matchCounter}`,
+            roundNumber: r,
+            courtNumber: c.courtNumber,
+            teamA: [c.teamA[0], c.teamA[1] || c.teamA[0]] as [string, string],
+            teamB: [c.teamB[0], c.teamB[1] || c.teamB[0]] as [string, string],
+            scoreA: null,
+            scoreB: null,
+            isCompleted: false,
+          });
+
+          history.push({
+            roundNumber: r,
+            teamA: c.teamA,
+            teamB: c.teamB,
+          });
+
+          matchCounter++;
+        });
+      } catch (e: any) {
+        console.error('Matchmaking error for round', r, e);
       }
     }
 
