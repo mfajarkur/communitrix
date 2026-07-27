@@ -584,52 +584,41 @@ export default function WizardForm({
 
   // ==========================================
   // STEP 5: CALCULATE DYNAMIC LEADERBOARD
-  // Per bye-point-brief.md v2 — Strict Rules
   //
-  // DATA MODEL: One entry per (player, round) — either MATCH or BYE, never both.
-  // BYE entries use roundSitOuts state as source of truth (populated at generation time).
-  //
-  // HARD CONSTRAINT: 0 <= byeScore <= N always. Never cap after the fact — if violated,
-  // the formula itself is wrong (likely including BYE entries in average).
+  // BYE POINT LOGIC — simple rule:
+  //   1. Find maxMatchesPlayed = highest match count among all players
+  //   2. Any player with fewer matches gets bye points to compensate
+  //   3. matchesBehind = maxMatchesPlayed - player.matchesPlayed
+  //   4. byeScore per missing match:
+  //      - PLAYER_AVERAGE: their own match score average (or N/2 if no history yet)
+  //      - HALF_N: always round(N/2)
+  //   5. Hard constraint: 0 <= byeScore <= N always
   // ==========================================
   const standings: PlayerStanding[] = useMemo(() => {
-    const N = parseInt(config.pointTarget) || 24; // match points target (N)
-
-    // Helper: round(N/2) — the HALF_N formula and PLAYER_AVERAGE fallback
+    const N = parseInt(config.pointTarget) || 24;
     const halfN = Math.round(N / 2);
 
-    // Helper: calculate bye score per brief §3
-    // ONLY receives MATCH-type scores (never BYE entries) — brief §6 anti-pattern
+    // Helper: calculate bye score per missing match
+    // matchScores = this player's actual match scores (never from bye rounds)
     const calcByeScore = (matchScores: number[]): number => {
       let score: number;
       if (config.byeScoringMethod === 'HALF_N' || matchScores.length === 0) {
-        // HALF_N or no match history yet → N/2 fallback
-        score = halfN;
+        score = halfN; // HALF_N method, or PLAYER_AVERAGE with no history yet → N/2 fallback
       } else {
-        // PLAYER_AVERAGE: average of real MATCH entries only (brief §3 Method A)
+        // PLAYER_AVERAGE: simple average of all actual match scores
         score = Math.round(matchScores.reduce((a, b) => a + b, 0) / matchScores.length);
       }
-      // HARD CONSTRAINT per brief BUG #1 fix: 0 <= byeScore <= N (always, no exceptions)
-      return Math.max(0, Math.min(N, score));
+      return Math.max(0, Math.min(N, score)); // hard constraint: 0 <= byeScore <= N
     };
 
-    // --- Build per-player MATCH score history (chronological, excluding BYE entries) ---
     const completedMatches = matches.filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null);
-    const matchScoreHistory = new Map<string, number[]>(); // playerId → list of real match scores
-    registeredPlayers.forEach((p) => matchScoreHistory.set(p.id, []));
 
-    completedMatches.forEach((m) => {
-      const sA = Number(m.scoreA);
-      const sB = Number(m.scoreB);
-      m.teamA.forEach((pId) => { matchScoreHistory.get(pId)?.push(sA); });
-      m.teamB.forEach((pId) => { matchScoreHistory.get(pId)?.push(sB); });
-    });
-
-    // --- Compute stats per player from real MATCH entries only ---
+    // Build stats per player from completed matches
     const statsMap = new Map<string, {
       wins: number; losses: number; ties: number;
       actualPointsWon: number; actualPointsLost: number;
       lastMatchPoints: number; realMatchesPlayed: number;
+      matchScores: number[]; // for PLAYER_AVERAGE calculation
     }>();
 
     registeredPlayers.forEach((p) => {
@@ -637,6 +626,7 @@ export default function WizardForm({
         wins: 0, losses: 0, ties: 0,
         actualPointsWon: 0, actualPointsLost: 0,
         lastMatchPoints: 0, realMatchesPlayed: 0,
+        matchScores: [],
       });
     });
 
@@ -652,6 +642,7 @@ export default function WizardForm({
         stat.actualPointsLost += sB;
         stat.lastMatchPoints = sA;
         stat.realMatchesPlayed += 1;
+        stat.matchScores.push(sA);
         if (teamAWin) stat.wins += 1;
         else if (teamBWin) stat.losses += 1;
         else if (isTie) stat.ties += 1;
@@ -664,62 +655,37 @@ export default function WizardForm({
         stat.actualPointsLost += sA;
         stat.lastMatchPoints = sB;
         stat.realMatchesPlayed += 1;
+        stat.matchScores.push(sB);
         if (teamBWin) stat.wins += 1;
         else if (teamAWin) stat.losses += 1;
         else if (isTie) stat.ties += 1;
       });
     });
 
-    // --- BUG FIX: Only count BYE entries for rounds that have actually been PLAYED ---
-    // Americano pre-generates 3-4 rounds at once. roundSitOuts is populated for ALL pre-generated
-    // rounds, including future ones. This caused players who played in round 1 to incorrectly show
-    // bye badges from rounds 2/3/4 that haven't been played yet.
-    //
-    // Rule: a bye entry for round R only counts once round R has been "played" —
-    // i.e., at least one completed match exists for that round number.
-    // Future pre-generated rounds are ignored until they actually happen.
-    const completedRoundNumbers = new Set(completedMatches.map((m) => m.roundNumber));
-
-    const byeScoresPerPlayer = new Map<string, { roundNum: number; score: number }[]>();
-    registeredPlayers.forEach((p) => byeScoresPerPlayer.set(p.id, []));
-
-    roundSitOuts.forEach((sitOutPlayerIds, roundNumber) => {
-      // Skip bye entries for rounds that haven't been played yet (no completed matches)
-      if (!completedRoundNumbers.has(roundNumber)) return;
-
-      sitOutPlayerIds.forEach((pId) => {
-        // Only compute bye score for players actually in this session
-        const byeList = byeScoresPerPlayer.get(pId);
-        if (!byeList) return;
-
-        // Get ONLY this player's MATCH scores from rounds BEFORE this bye round
-        // (brief §3 Method A: "all of this player's entries where type == MATCH")
-        // Filter to rounds < roundNumber to avoid using future rounds in the average.
-        const matchScoresBeforeBye = completedMatches
-          .filter((m) => m.roundNumber < roundNumber && (m.teamA.includes(pId) || m.teamB.includes(pId)))
-          .map((m) => (m.teamA.includes(pId) ? Number(m.scoreA) : Number(m.scoreB)));
-
-        const byeScore = calcByeScore(matchScoresBeforeBye);
-        byeList.push({ roundNum: roundNumber, score: byeScore });
-      });
+    // Find the max matches played by any player — bye goes to players BEHIND this number
+    let maxMatchesPlayed = 0;
+    statsMap.forEach((stat) => {
+      if (stat.realMatchesPlayed > maxMatchesPlayed) maxMatchesPlayed = stat.realMatchesPlayed;
     });
 
-    // --- Build final standings ---
+    // Build final standings
     const list: PlayerStanding[] = registeredPlayers.map((p) => {
       const stat = statsMap.get(p.id) || {
         wins: 0, losses: 0, ties: 0,
         actualPointsWon: 0, actualPointsLost: 0,
         lastMatchPoints: 0, realMatchesPlayed: 0,
+        matchScores: [],
       };
 
-      const byeEntries = byeScoresPerPlayer.get(p.id) || [];
-      const byePointsTotal = byeEntries.reduce((sum, e) => sum + e.score, 0);
+      // How many matches is this player behind the leader?
+      const matchesBehind = maxMatchesPlayed - stat.realMatchesPlayed;
 
-      // byeIsPlaceholder = player has bye(s) but has NOT yet played any real match
-      // (all bye scores are N/2 fallback = temporary placeholder, brief §3 PLAYER_AVERAGE fallback)
-      const byeIsPlaceholder = byeEntries.length > 0 && stat.realMatchesPlayed === 0;
+      // Bye points = matchesBehind × byeScore per round
+      // byeIsPlaceholder = true when player has ZERO real matches (pure N/2 fallback)
+      const byeScore = calcByeScore(stat.matchScores);
+      const byePointsTotal = matchesBehind > 0 ? matchesBehind * byeScore : 0;
+      const byeIsPlaceholder = matchesBehind > 0 && stat.realMatchesPlayed === 0;
 
-      // Total score = SUM(all MATCH scores) + SUM(all BYE scores) — brief §1 data model
       const totalPoints = stat.actualPointsWon + byePointsTotal;
       const diff = totalPoints - stat.actualPointsLost;
 
@@ -738,13 +704,13 @@ export default function WizardForm({
         totalPoints,
         lastMatchPoints: stat.lastMatchPoints,
         byePoints: byePointsTotal,
-        byesCount: byeEntries.length,
+        byesCount: matchesBehind,
         realMatchesPlayed: stat.realMatchesPlayed,
         byeIsPlaceholder,
       };
     });
 
-    // Dynamic Sorting Logic based on config.leaderboardRankedBy ('POINT' or 'WIN')
+    // Sort by leaderboardRankedBy setting
     list.sort((a, b) => {
       if (config.leaderboardRankedBy === 'WIN') {
         if (b.wins !== a.wins) return b.wins - a.wins;
@@ -759,7 +725,7 @@ export default function WizardForm({
 
     list.forEach((item, index) => { item.rank = index + 1; });
     return list;
-  }, [registeredPlayers, matches, roundSitOuts, config.leaderboardRankedBy, config.pointTarget, config.byeScoringMethod]);
+  }, [registeredPlayers, matches, config.leaderboardRankedBy, config.pointTarget, config.byeScoringMethod]);
 
   // Submit Session to backend (or finish Sandbox Demo)
   const handleStartRealSession = async () => {
