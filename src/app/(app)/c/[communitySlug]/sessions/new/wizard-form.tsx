@@ -34,6 +34,8 @@ export type GameType = 'AMERICANO' | 'MEXICANO' | 'TEAM_AMERICANO' | 'TEAM_MEXIC
 export type ScoringSystem = 'POINTS' | 'GENERAL';
 export type LeaderboardRankBy = 'POINT' | 'WIN';
 
+export type ByeScoringMethod = 'PLAYER_AVERAGE' | 'HALF_N';
+
 export interface GameConfiguration {
   sport: SportType;
   gameType: GameType;
@@ -42,6 +44,10 @@ export interface GameConfiguration {
   scoringSystem: ScoringSystem;
   pointTarget: string;
   leaderboardRankedBy: LeaderboardRankBy;
+  // Bye Point Method — locked once Round 1 is generated (brief §4)
+  // PLAYER_AVERAGE: average of player's own MATCH entries, fallback round(N/2)
+  // HALF_N: always round(N/2), fixed & non-adaptive
+  byeScoringMethod: ByeScoringMethod;
 }
 
 export interface PlayerRegistration {
@@ -155,6 +161,7 @@ export default function WizardForm({
     scoringSystem: 'POINTS',
     pointTarget: '16 Points',
     leaderboardRankedBy: 'POINT',
+    byeScoringMethod: 'PLAYER_AVERAGE', // default per brief §3
   });
 
   // ------------------------------------------
@@ -577,72 +584,53 @@ export default function WizardForm({
 
   // ==========================================
   // STEP 5: CALCULATE DYNAMIC LEADERBOARD
-  // Per bye-point-brief.md: PLAYER_AVERAGE method (default)
+  // Per bye-point-brief.md v2 — Strict Rules
+  //
+  // DATA MODEL: One entry per (player, round) — either MATCH or BYE, never both.
+  // BYE entries use roundSitOuts state as source of truth (populated at generation time).
+  //
+  // HARD CONSTRAINT: 0 <= byeScore <= N always. Never cap after the fact — if violated,
+  // the formula itself is wrong (likely including BYE entries in average).
   // ==========================================
   const standings: PlayerStanding[] = useMemo(() => {
-    const N = parseInt(config.pointTarget) || 24; // match points target
+    const N = parseInt(config.pointTarget) || 24; // match points target (N)
 
-    // --- Helper: apply rounding per byeHalfNRounding = ROUND_NEAREST (brief §5 default) ---
-    const roundNearest = (val: number) => Math.round(val); // round-half-up convention
+    // Helper: round(N/2) — the HALF_N formula and PLAYER_AVERAGE fallback
+    const halfN = Math.round(N / 2);
 
-    // --- Helper: calculate bye score for a player at a specific bye round (brief §5 PLAYER_AVERAGE) ---
-    // actualScoresBefore = list of actual (non-placeholder) scores earned in rounds BEFORE this bye round
-    const calcByeScore = (actualScoresBefore: number[]): number => {
-      if (actualScoresBefore.length > 0) {
-        // PLAYER_AVERAGE: average of actual scores from previous rounds
-        return roundNearest(actualScoresBefore.reduce((a, b) => a + b, 0) / actualScoresBefore.length);
+    // Helper: calculate bye score per brief §3
+    // ONLY receives MATCH-type scores (never BYE entries) — brief §6 anti-pattern
+    const calcByeScore = (matchScores: number[]): number => {
+      let score: number;
+      if (config.byeScoringMethod === 'HALF_N' || matchScores.length === 0) {
+        // HALF_N or no match history yet → N/2 fallback
+        score = halfN;
+      } else {
+        // PLAYER_AVERAGE: average of real MATCH entries only (brief §3 Method A)
+        score = Math.round(matchScores.reduce((a, b) => a + b, 0) / matchScores.length);
       }
-      // Fallback: no cross-event history in Quick Match (pure guest session) → N/2
-      // Technical note: cross-event history fallback would require persistent player profile — not available in guest mode.
-      return roundNearest(N / 2);
+      // HARD CONSTRAINT per brief BUG #1 fix: 0 <= byeScore <= N (always, no exceptions)
+      return Math.max(0, Math.min(N, score));
     };
 
-    // --- Build a chronological per-player actual score history ---
-    // Key: playerId → sorted list of { roundNumber, score } for completed matches only
+    // --- Build per-player MATCH score history (chronological, excluding BYE entries) ---
     const completedMatches = matches.filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null);
-    const actualScoreHistory = new Map<string, { roundNumber: number; score: number }[]>();
-    registeredPlayers.forEach((p) => actualScoreHistory.set(p.id, []));
+    const matchScoreHistory = new Map<string, number[]>(); // playerId → list of real match scores
+    registeredPlayers.forEach((p) => matchScoreHistory.set(p.id, []));
 
     completedMatches.forEach((m) => {
       const sA = Number(m.scoreA);
       const sB = Number(m.scoreB);
-      m.teamA.forEach((pId) => {
-        const hist = actualScoreHistory.get(pId);
-        if (hist) hist.push({ roundNumber: m.roundNumber, score: sA });
-      });
-      m.teamB.forEach((pId) => {
-        const hist = actualScoreHistory.get(pId);
-        if (hist) hist.push({ roundNumber: m.roundNumber, score: sB });
-      });
+      m.teamA.forEach((pId) => { matchScoreHistory.get(pId)?.push(sA); });
+      m.teamB.forEach((pId) => { matchScoreHistory.get(pId)?.push(sB); });
     });
-    // Sort each player's history by round ascending
-    actualScoreHistory.forEach((hist) => hist.sort((a, b) => a.roundNumber - b.roundNumber));
 
-    // --- Build bye round list per player from roundSitOuts state (set at generation time) ---
-    // roundSitOuts is the source of truth: Map<roundNumber, playerId[]>
-    const byeRoundsPerPlayer = new Map<string, number[]>(); // playerId → sorted bye round numbers
-    registeredPlayers.forEach((p) => byeRoundsPerPlayer.set(p.id, []));
-    roundSitOuts.forEach((sitOutPlayerIds, roundNumber) => {
-      sitOutPlayerIds.forEach((pId) => {
-        const byeList = byeRoundsPerPlayer.get(pId);
-        if (byeList) byeList.push(roundNumber);
-      });
-    });
-    byeRoundsPerPlayer.forEach((list) => list.sort((a, b) => a - b));
-
-    // --- Compute stats per player ---
-    const statsMap = new Map<
-      string,
-      {
-        wins: number;
-        losses: number;
-        ties: number;
-        actualPointsWon: number;
-        actualPointsLost: number;
-        lastMatchPoints: number;
-        realMatchesPlayed: number;
-      }
-    >();
+    // --- Compute stats per player from real MATCH entries only ---
+    const statsMap = new Map<string, {
+      wins: number; losses: number; ties: number;
+      actualPointsWon: number; actualPointsLost: number;
+      lastMatchPoints: number; realMatchesPlayed: number;
+    }>();
 
     registeredPlayers.forEach((p) => {
       statsMap.set(p.id, {
@@ -655,9 +643,7 @@ export default function WizardForm({
     completedMatches.forEach((m) => {
       const sA = Number(m.scoreA);
       const sB = Number(m.scoreB);
-      const teamAWin = sA > sB;
-      const teamBWin = sB > sA;
-      const isTie = sA === sB;
+      const teamAWin = sA > sB, teamBWin = sB > sA, isTie = sA === sB;
 
       m.teamA.forEach((pId) => {
         const stat = statsMap.get(pId);
@@ -684,9 +670,32 @@ export default function WizardForm({
       });
     });
 
-    // --- Per player: calculate total bye points using PLAYER_AVERAGE per bye round ---
-    // For each bye round, we use only actual scores from rounds BEFORE that bye round.
-    // This implements the "current average at time of bye" semantics from brief §5.
+    // --- BUG #2 FIX: Detect BYE rounds ONLY from roundSitOuts (set at generation time) ---
+    // A player gets a BYE entry for round R IF AND ONLY IF they were NOT assigned a court in round R.
+    // roundSitOuts is the authoritative source of truth — set when round is generated.
+    // Do NOT derive byes from completed matches (causes false positives when count % 4 == 0).
+    const byeScoresPerPlayer = new Map<string, { roundNum: number; score: number }[]>();
+    registeredPlayers.forEach((p) => byeScoresPerPlayer.set(p.id, []));
+
+    roundSitOuts.forEach((sitOutPlayerIds, roundNumber) => {
+      sitOutPlayerIds.forEach((pId) => {
+        // Only compute bye score for players actually in this session
+        const byeList = byeScoresPerPlayer.get(pId);
+        if (!byeList) return;
+
+        // Get ONLY this player's MATCH scores from rounds BEFORE this bye round
+        // (brief §3 Method A: "all of this player's entries where type == MATCH")
+        // Filter to rounds < byeRoundNum to avoid using future rounds in the average.
+        const matchScoresBeforeBye = completedMatches
+          .filter((m) => m.roundNumber < roundNumber && (m.teamA.includes(pId) || m.teamB.includes(pId)))
+          .map((m) => m.teamA.includes(pId) ? Number(m.scoreA) : Number(m.scoreB));
+
+        const byeScore = calcByeScore(matchScoresBeforeBye);
+        byeList.push({ roundNum: roundNumber, score: byeScore });
+      });
+    });
+
+    // --- Build final standings ---
     const list: PlayerStanding[] = registeredPlayers.map((p) => {
       const stat = statsMap.get(p.id) || {
         wins: 0, losses: 0, ties: 0,
@@ -694,24 +703,14 @@ export default function WizardForm({
         lastMatchPoints: 0, realMatchesPlayed: 0,
       };
 
-      const byeRounds = byeRoundsPerPlayer.get(p.id) || [];
-      const playerHistory = actualScoreHistory.get(p.id) || [];
+      const byeEntries = byeScoresPerPlayer.get(p.id) || [];
+      const byePointsTotal = byeEntries.reduce((sum, e) => sum + e.score, 0);
 
-      // For each bye round: find actual scores earned in rounds STRICTLY BEFORE this bye round.
-      // IMPORTANT: NEVER include scores from another bye round (only ACTUAL statuses).
-      let byePointsTotal = 0;
-      for (const byeRoundNum of byeRounds) {
-        const actualScoresBefore = playerHistory
-          .filter((h) => h.roundNumber < byeRoundNum)
-          .map((h) => h.score);
-        // calcByeScore applies PLAYER_AVERAGE if history exists, else N/2 fallback
-        byePointsTotal += calcByeScore(actualScoresBefore);
-      }
+      // byeIsPlaceholder = player has bye(s) but has NOT yet played any real match
+      // (all bye scores are N/2 fallback = temporary placeholder, brief §3 PLAYER_AVERAGE fallback)
+      const byeIsPlaceholder = byeEntries.length > 0 && stat.realMatchesPlayed === 0;
 
-      // byeIsPlaceholder = true when player has bye(s) but has played 0 actual matches
-      // (meaning ALL bye scores are still the N/2 fallback / temporary placeholder)
-      const byeIsPlaceholder = byeRounds.length > 0 && stat.realMatchesPlayed === 0;
-
+      // Total score = SUM(all MATCH scores) + SUM(all BYE scores) — brief §1 data model
       const totalPoints = stat.actualPointsWon + byePointsTotal;
       const diff = totalPoints - stat.actualPointsLost;
 
@@ -730,7 +729,7 @@ export default function WizardForm({
         totalPoints,
         lastMatchPoints: stat.lastMatchPoints,
         byePoints: byePointsTotal,
-        byesCount: byeRounds.length,
+        byesCount: byeEntries.length,
         realMatchesPlayed: stat.realMatchesPlayed,
         byeIsPlaceholder,
       };
@@ -743,20 +742,15 @@ export default function WizardForm({
         if (b.diff !== a.diff) return b.diff - a.diff;
         return b.totalPoints - a.totalPoints;
       } else {
-        // Ranked by POINT
         if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
         if (b.diff !== a.diff) return b.diff - a.diff;
         return b.wins - a.wins;
       }
     });
 
-    // Assign rank numbers
-    list.forEach((item, index) => {
-      item.rank = index + 1;
-    });
-
+    list.forEach((item, index) => { item.rank = index + 1; });
     return list;
-  }, [registeredPlayers, matches, roundSitOuts, config.leaderboardRankedBy, config.pointTarget]);
+  }, [registeredPlayers, matches, roundSitOuts, config.leaderboardRankedBy, config.pointTarget, config.byeScoringMethod]);
 
   // Submit Session to backend (or finish Sandbox Demo)
   const handleStartRealSession = async () => {
@@ -1114,6 +1108,58 @@ export default function WizardForm({
                     }`}
                 >
                   Win
+                </button>
+              </div>
+            </div>
+
+            {/* Bye Point Method — required before Round 1, locked once started (brief §4) */}
+            <div className="space-y-2 pt-2 border-t border-zinc-100">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                    Bye Point Method
+                  </label>
+                  <p className="text-[11px] text-zinc-400 font-light mt-0.5">
+                    Score awarded when a player sits out a round
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-stretch gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfig((prev) => ({ ...prev, byeScoringMethod: 'PLAYER_AVERAGE' }))}
+                  className={`flex-1 py-3 px-3 rounded-xl text-left border-2 transition-all cursor-pointer ${
+                    config.byeScoringMethod === 'PLAYER_AVERAGE'
+                      ? 'border-orange-500 bg-orange-50'
+                      : 'border-zinc-200 bg-white hover:border-zinc-300'
+                  }`}
+                >
+                  <p className={`text-xs font-extrabold uppercase ${
+                    config.byeScoringMethod === 'PLAYER_AVERAGE' ? 'text-orange-600' : 'text-zinc-600'
+                  }`}>
+                    Player's Own Average
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-light mt-0.5 leading-snug">
+                    Uses each player's real match average (adaptive)
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfig((prev) => ({ ...prev, byeScoringMethod: 'HALF_N' }))}
+                  className={`flex-1 py-3 px-3 rounded-xl text-left border-2 transition-all cursor-pointer ${
+                    config.byeScoringMethod === 'HALF_N'
+                      ? 'border-orange-500 bg-orange-50'
+                      : 'border-zinc-200 bg-white hover:border-zinc-300'
+                  }`}
+                >
+                  <p className={`text-xs font-extrabold uppercase ${
+                    config.byeScoringMethod === 'HALF_N' ? 'text-orange-600' : 'text-zinc-600'
+                  }`}>
+                    Half of Match Points
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-light mt-0.5 leading-snug">
+                    Fixed N÷2 for everyone (predictable)
+                  </p>
                 </button>
               </div>
             </div>
