@@ -78,6 +78,7 @@ export interface PlayerStanding {
   lastMatchPoints: number;
   byePoints?: number;
   byesCount?: number;
+  realMatchesPlayed?: number;
 }
 
 interface Player {
@@ -361,6 +362,17 @@ export default function WizardForm({
 
           matchCounter++;
         });
+
+        // Update attendees state for next round sit-out selection so sit-outs are balanced
+        const sitOutSet = new Set(roundOutput.sitOuts);
+        attendees.forEach((att) => {
+          if (sitOutSet.has(att.id)) {
+            att.sitOutCount += 1;
+            att.lastSitOutRound = r;
+          } else {
+            att.matchesPlayed += 1;
+          }
+        });
       } catch (e: any) {
         console.error('Matchmaking error for round', r, e);
       }
@@ -613,6 +625,7 @@ export default function WizardForm({
         lastMatchPoints: stat.lastMatchPoints,
         byePoints: stat.byePoints,
         byesCount: stat.byesCount,
+        realMatchesPlayed: stat.realMatchesPlayed,
       };
     });
 
@@ -1295,8 +1308,8 @@ export default function WizardForm({
                 <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
                   <th className="pb-3 pl-2">Rank</th>
                   <th className="pb-3">Player</th>
+                  <th className="pb-3 text-center">Matches</th>
                   <th className="pb-3 text-center">W-L-T</th>
-                  <th className="pb-3 text-center">Diff</th>
                   <th className="pb-3 text-right pr-2">Points</th>
                 </tr>
               </thead>
@@ -1335,13 +1348,11 @@ export default function WizardForm({
                         </div>
                       </div>
                     </td>
+                    <td className="py-3 text-center font-bold text-zinc-900">
+                      {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
+                    </td>
                     <td className="py-3 text-center font-mono font-bold text-zinc-700">
                       {s.wins}-{s.losses}-{s.ties}
-                    </td>
-                    <td className="py-3 text-center font-bold">
-                      <span className={s.diff > 0 ? 'text-green-600' : s.diff < 0 ? 'text-red-500' : 'text-zinc-400'}>
-                        {s.diff > 0 ? `+${s.diff}` : s.diff}
-                      </span>
                     </td>
                     <td className="py-3 text-right pr-2 font-black text-sm text-[#111827]">
                       {s.byePoints && s.byePoints > 0 ? (
