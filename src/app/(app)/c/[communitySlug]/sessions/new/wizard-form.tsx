@@ -563,81 +563,70 @@ export default function WizardForm({
 
           {/* 4 Tournament Type Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Americano */}
-            <div
-              onClick={() => handleSelectGameType('AMERICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'AMERICANO'
-                ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-                }`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
-                  Americano
-                </h3>
-                <Sparkles className="h-5 w-5 text-orange-500" />
-              </div>
-              <p className="text-xs text-zinc-500 font-light leading-relaxed">
-                All players play with everyone. Ideal for friendly social match sessions and fair partner rotation.
-              </p>
-            </div>
-
-            {/* Mexicano */}
-            <div
-              onClick={() => handleSelectGameType('MEXICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'MEXICANO'
-                ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-                }`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
-                  Mexicano
-                </h3>
-                <Flame className="h-5 w-5 text-orange-500" />
-              </div>
-              <p className="text-xs text-zinc-500 font-light leading-relaxed">
-                Like Americano but results in more even games. After every round, a new game is generated depending on the current scoreboard.
-              </p>
-            </div>
-
-            {/* Team Americano */}
-            <div
-              onClick={() => handleSelectGameType('TEAM_AMERICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'TEAM_AMERICANO'
-                ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-                }`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
-                  Team Americano
-                </h3>
-                <Users className="h-5 w-5 text-orange-500" />
-              </div>
-              <p className="text-xs text-zinc-500 font-light leading-relaxed">
-                Each team plays against all other teams one time. Fixed pair teams competing across rounds.
-              </p>
-            </div>
-
-            {/* Team Mexicano */}
-            <div
-              onClick={() => handleSelectGameType('TEAM_MEXICANO')}
-              className={`p-6 rounded-2xl border transition-all cursor-pointer group space-y-3 ${config.gameType === 'TEAM_MEXICANO'
-                ? 'border-orange-500 bg-orange-500/10 shadow-md'
-                : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-zinc-50/60'
-                }`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-black text-lg text-[#111827] uppercase tracking-wide group-hover:text-orange-600">
-                  Team Mexicano
-                </h3>
-                <Trophy className="h-5 w-5 text-orange-500" />
-              </div>
-              <p className="text-xs text-zinc-500 font-light leading-relaxed">
-                Mexicano with fixed teams. Keeps pre-paired teams matching against closest leaderboard competitors.
-              </p>
-            </div>
+            {[
+              {
+                type: 'AMERICANO',
+                title: 'Americano',
+                description: 'All players play with everyone. Ideal for friendly social match sessions and fair partner rotation.',
+                icon: Sparkles,
+              },
+              {
+                type: 'MEXICANO',
+                title: 'Mexicano',
+                description: 'Like Americano but results in more even games. After every round, a new game is generated depending on current scoreboard.',
+                icon: Flame,
+              },
+              {
+                type: 'TEAM_AMERICANO',
+                title: 'Team Americano',
+                description: 'Each team plays against all other teams one time. Fixed pair teams competing across rounds.',
+                icon: Users,
+              },
+              {
+                type: 'TEAM_MEXICANO',
+                title: 'Team Mexicano',
+                description: 'Mexicano with fixed teams. Keeps pre-paired teams matching against closest leaderboard competitors.',
+                icon: Trophy,
+              },
+            ].map((gt) => {
+              const isSelected = config.gameType === gt.type;
+              const Icon = gt.icon;
+              return (
+                <div
+                  key={gt.type}
+                  onClick={() => handleSelectGameType(gt.type as any)}
+                  className={`p-5 sm:p-6 rounded-2xl border-2 transition-all cursor-pointer space-y-3 relative overflow-hidden ${
+                    isSelected
+                      ? 'border-orange-500 bg-orange-50/80 shadow-md shadow-orange-500/10'
+                      : 'border-zinc-200 bg-white hover:border-orange-300 hover:bg-orange-50/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3
+                      className={`font-black text-lg uppercase tracking-wide transition-colors ${
+                        isSelected ? 'text-orange-600' : 'text-zinc-900'
+                      }`}
+                    >
+                      {gt.title}
+                    </h3>
+                    <div
+                      className={`p-2 rounded-xl transition-colors ${
+                        isSelected ? 'bg-orange-500 text-white' : 'bg-zinc-100 text-zinc-400'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                    </div>
+                  </div>
+                  <p
+                    className={`text-xs font-light leading-relaxed transition-colors ${
+                      isSelected ? 'text-zinc-800' : 'text-zinc-500'
+                    }`}
+                  >
+                    {gt.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
