@@ -832,117 +832,114 @@ export default function WizardForm({
       {step === 3 && (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Summary Header Card */}
-          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-6 text-white shadow-md text-center space-y-2">
-            <h2 className="text-2xl font-black uppercase tracking-wide text-white">
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-5 sm:p-6 text-white shadow-md text-center space-y-2">
+            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white">
               {config.activityName}
             </h2>
-            <div className="flex items-center justify-center gap-8 text-xs text-zinc-400 font-medium pt-1">
+            <div className="flex items-center justify-center gap-6 sm:gap-8 text-xs text-zinc-400 font-medium pt-1">
               <div>
                 <span className="block text-[10px] uppercase font-bold text-orange-400">Court</span>
                 <span className="text-base font-bold text-white">{config.courtCount}</span>
               </div>
               <div className="h-6 w-px bg-zinc-800" />
               <div>
-                <span className="block text-[10px] uppercase font-bold text-orange-400">Points</span>
+                <span className="block text-[10px] uppercase font-bold text-orange-400 font-sans">Points</span>
                 <span className="text-base font-bold text-white">{config.pointTarget}</span>
               </div>
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl border border-zinc-200 bg-white space-y-5 shadow-sm">
-            {/* Input Field & Add Guest Button */}
-            <div className="space-y-3">
-              <div className="flex gap-2">
+          {/* Registration Form Card */}
+          <div className="p-5 sm:p-6 rounded-2xl border border-zinc-200 bg-white space-y-5 shadow-sm">
+            {/* Input Field & Add Button */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                Add Player Name
+              </label>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (manualInputName.trim()) {
+                    handleAddManualPlayer(isGuestDemoMode);
+                  }
+                }}
+                className="flex flex-col sm:flex-row gap-2.5"
+              >
                 <input
                   type="text"
                   value={manualInputName}
                   onChange={(e) => setManualInputName(e.target.value)}
-                  placeholder="Input Player Manually"
-                  className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 text-xs font-light text-zinc-900 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all"
+                  placeholder="Type player name..."
+                  className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all bg-zinc-50 focus:bg-white"
                 />
                 <button
-                  type="button"
-                  onClick={() => handleAddManualPlayer(true)}
+                  type="submit"
                   disabled={!manualInputName.trim() || isAddingGuest}
-                  className="px-4 py-3 rounded-xl border border-zinc-200 bg-zinc-100 hover:bg-zinc-200 text-xs font-bold text-zinc-800 transition-all disabled:opacity-40 cursor-pointer shrink-0 flex items-center gap-1.5"
+                  className="px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
                 >
-                  {isAddingGuest ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                  <span>+ Add Guest Player</span>
+                  {isAddingGuest ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <UserPlus className="h-4 w-4" />
+                  )}
+                  <span>+ Add Player</span>
                 </button>
-              </div>
-              <p className="text-[11px] text-zinc-400 font-light text-center">
-                Guest player can be added, Exp will not be counted
-              </p>
+              </form>
             </div>
 
-            {/* Action Buttons: Add Yourself (Community Mode) vs Add Player (Demo Mode) */}
-            {!isGuestDemoMode ? (
-              <div className="grid grid-cols-2 gap-3 pt-2">
+            {/* Action Button: Add Yourself (Community Mode Only) */}
+            {!isGuestDemoMode && (
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={handleAddYourself}
                   disabled={registeredPlayers.some((p) => p.id === currentProfile.id)}
-                  className="py-3 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
+                  className="w-full py-3 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
                 >
-                  + ADD YOURSELF
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAddManualPlayer(false)}
-                  disabled={!manualInputName.trim()}
-                  className="py-3 rounded-xl border border-zinc-300 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
-                >
-                  + ADD PLAYER
-                </button>
-              </div>
-            ) : (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleAddManualPlayer(false)}
-                  disabled={!manualInputName.trim()}
-                  className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shadow-sm"
-                >
-                  + ADD PLAYER
+                  + ADD YOURSELF ({currentProfile.name})
                 </button>
               </div>
             )}
 
             {/* Player List Counter Header */}
             <div className="pt-4 border-t border-zinc-100 text-center space-y-1">
-              <h3 className="text-xl font-black uppercase tracking-wide text-[#111827]">
-                Player List ({registeredPlayers.length})
+              <h3 className="text-lg sm:text-xl font-black uppercase tracking-wide text-[#111827]">
+                Player Roster ({registeredPlayers.length})
               </h3>
-              <p className="text-xs text-zinc-400 italic font-light">*Minimum 4 players</p>
+              <p className="text-xs text-zinc-400 italic font-light">*Minimum 4 players required</p>
             </div>
 
             {/* Selected Registered Players Badges */}
-            {registeredPlayers.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2">
+            {registeredPlayers.length > 0 ? (
+              <div className="flex flex-wrap gap-2 pt-1 max-h-56 overflow-y-auto pr-1">
                 {registeredPlayers.map((p) => (
                   <span
                     key={p.id}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 border border-zinc-200 text-xs font-bold text-zinc-800"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-xs font-bold text-zinc-800 shadow-2xs"
                   >
-                    <span>{p.name}</span>
+                    <span className="truncate max-w-[150px]">{p.name}</span>
                     {p.isGuest && (
-                      <span className="text-[9px] uppercase font-extrabold bg-amber-200 text-amber-900 px-1 rounded">
+                      <span className="text-[9px] uppercase font-extrabold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">
                         Guest
                       </span>
                     )}
                     <button
                       type="button"
                       onClick={() => handleRemovePlayer(p.id)}
-                      className="text-zinc-400 hover:text-red-500 text-sm leading-none ml-1 cursor-pointer"
+                      className="text-zinc-400 hover:text-red-500 text-base leading-none ml-1 cursor-pointer font-bold"
                     >
                       ×
                     </button>
                   </span>
                 ))}
               </div>
+            ) : (
+              <div className="p-4 rounded-xl border border-dashed border-zinc-200 text-center text-xs text-zinc-400 font-light">
+                No players added yet. Add at least 4 players to start the session.
+              </div>
             )}
 
-            {/* Quick Community Member Selection Checklist (Only for Community Mode) */}
+            {/* Quick Community Member Selection Checklist (Community Mode Only) */}
             {!isGuestDemoMode && availableCommunityPlayers.length > 0 && (
               <div className="space-y-2 pt-4 border-t border-zinc-100">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
