@@ -204,15 +204,19 @@ export default function WizardForm({
   //   POINTS mode:  "16 Points" → 16,  "21 Points" → 21
   //   GENERAL mode: "Total of 4" → 4,  "First to 5" → 5
   // Uses last-integer regex so it works for all formats without hardcoding.
-  const extractN = (pt: string, fallback = 24): number => {
-    const m = pt.match(/(\d+)(?!.*\d)/); // last number in the string
+  const extractN = (pt: string | undefined | null, fallback = 16): number => {
+    if (!pt) return fallback;
+    const m = String(pt).match(/(\d+)(?!.*\d)/); // last number in the string
     const n = m ? parseInt(m[1], 10) : NaN;
     return isNaN(n) || n <= 0 ? fallback : n;
   };
 
   // configN = the numeric target for the current match (N)
   // Used for: bye score calculation, score picker max, auto-complement in POINTS mode
-  const configN = extractN(config.pointTarget);
+  const configN = extractN(
+    config.pointTarget,
+    config.scoringSystem === 'POINTS' ? 16 : 4
+  );
 
   // ------------------------------------------
   // QUICK MATCH PERSISTENCE (AUTO-SAVE & AUTO-RESTORE ON REFRESH)
