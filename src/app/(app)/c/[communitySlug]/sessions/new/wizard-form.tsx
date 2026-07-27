@@ -23,6 +23,7 @@ import {
 import { generateAmericanoRound } from '@/lib/matchmaking/americano';
 import { generateMexicanoRound } from '@/lib/matchmaking/mexicano';
 import { Attendee, PastPairing } from '@/lib/matchmaking/types';
+import ScorePickerModal from '@/components/score-picker-modal';
 
 // ==========================================
 // 1. DATA MODELS & STATE INTERFACES
@@ -164,9 +165,15 @@ export default function WizardForm({
   const [availableCommunityPlayers, setAvailableCommunityPlayers] = useState<Player[]>(initialPlayers);
 
   // ------------------------------------------
-  // STEP 4: MATCHES STATE
+  // STEP 4: MATCH GENERATION & SCORE PICKER STATE
   // ------------------------------------------
   const [matches, setMatches] = useState<Match[]>([]);
+  const [activePicker, setActivePicker] = useState<{
+    matchId: string;
+    team: 'A' | 'B';
+    teamName: string;
+    currentScore: number | null;
+  } | null>(null);
 
   // System Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1032,33 +1039,45 @@ export default function WizardForm({
                       <span className="text-[10px] font-extrabold text-orange-600 uppercase">Team A</span>
                     </div>
 
-                    {/* Interactive Score Inputs */}
+                    {/* Interactive Score Picker Buttons */}
                     <div className="sm:col-span-1 flex items-center justify-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={99}
-                        value={m.scoreA !== null ? m.scoreA : ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? null : Number(e.target.value);
-                          handleUpdateScore(m.id, val, m.scoreB);
-                        }}
-                        placeholder="00"
-                        className="w-12 h-12 text-center text-lg font-black rounded-xl border border-zinc-300 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActivePicker({
+                            matchId: m.id,
+                            team: 'A',
+                            teamName: `Team A (${teamANames})`,
+                            currentScore: m.scoreA,
+                          })
+                        }
+                        className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                          m.scoreA !== null
+                            ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
+                            : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+                        }`}
+                      >
+                        {m.scoreA !== null ? m.scoreA : '-'}
+                      </button>
                       <span className="text-zinc-400 font-bold">:</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={99}
-                        value={m.scoreB !== null ? m.scoreB : ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? null : Number(e.target.value);
-                          handleUpdateScore(m.id, m.scoreA, val);
-                        }}
-                        placeholder="00"
-                        className="w-12 h-12 text-center text-lg font-black rounded-xl border border-zinc-300 bg-zinc-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActivePicker({
+                            matchId: m.id,
+                            team: 'B',
+                            teamName: `Team B (${teamBNames})`,
+                            currentScore: m.scoreB,
+                          })
+                        }
+                        className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                          m.scoreB !== null
+                            ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
+                            : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+                        }`}
+                      >
+                        {m.scoreB !== null ? m.scoreB : '-'}
+                      </button>
                     </div>
 
                     {/* Team B */}
@@ -1242,6 +1261,27 @@ export default function WizardForm({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Interactive Score Picker Modal */}
+      {activePicker && (
+        <ScorePickerModal
+          isOpen={!!activePicker}
+          onClose={() => setActivePicker(null)}
+          teamName={activePicker.teamName}
+          currentScore={activePicker.currentScore}
+          maxTarget={parseInt(config.pointTarget) || 24}
+          onSelectScore={(score) => {
+            const match = matches.find((m) => m.id === activePicker.matchId);
+            if (match) {
+              if (activePicker.team === 'A') {
+                handleUpdateScore(activePicker.matchId, score, match.scoreB);
+              } else {
+                handleUpdateScore(activePicker.matchId, match.scoreA, score);
+              }
+            }
+          }}
+        />
       )}
     </div>
   );

@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
+import ScorePickerModal from '@/components/score-picker-modal';
 
 interface ScorerPlayer {
   id: string;
@@ -70,6 +71,11 @@ export default function ScorerForm({
   const [showConfirm, setShowConfirm] = useState(false);
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pickerState, setPickerState] = useState<{
+    team: 'A' | 'B';
+    teamName: string;
+    currentScore: number;
+  } | null>(null);
 
   // 1. Load draft from localStorage on mount
   useEffect(() => {
@@ -309,9 +315,19 @@ export default function ScorerForm({
             >
               <Minus className="h-6 w-6" />
             </button>
-            <span className="text-5xl font-black tabular-nums tracking-tight text-[#111827]">
+            <button
+              type="button"
+              onClick={() =>
+                setPickerState({
+                  team: 'A',
+                  teamName: `Team A (${teamAPlayers.map((p) => p.fullName).join(' & ')})`,
+                  currentScore: scoreA,
+                })
+              }
+              className="text-5xl font-black tabular-nums tracking-tight text-[#111827] hover:text-orange-600 transition-colors cursor-pointer px-3 py-1 rounded-xl hover:bg-orange-500/10 border border-transparent hover:border-orange-300"
+            >
               {scoreA}
-            </span>
+            </button>
             <button
               type="button"
               onClick={handleIncrementA}
@@ -342,9 +358,19 @@ export default function ScorerForm({
             >
               <Minus className="h-6 w-6" />
             </button>
-            <span className="text-5xl font-black tabular-nums tracking-tight text-[#111827]">
+            <button
+              type="button"
+              onClick={() =>
+                setPickerState({
+                  team: 'B',
+                  teamName: `Team B (${teamBPlayers.map((p) => p.fullName).join(' & ')})`,
+                  currentScore: scoreB,
+                })
+              }
+              className="text-5xl font-black tabular-nums tracking-tight text-[#111827] hover:text-orange-600 transition-colors cursor-pointer px-3 py-1 rounded-xl hover:bg-orange-500/10 border border-transparent hover:border-orange-300"
+            >
               {scoreB}
-            </span>
+            </button>
             <button
               type="button"
               onClick={handleIncrementB}
@@ -552,6 +578,23 @@ export default function ScorerForm({
             </div>
           </div>
         </div>
+      )}
+      {/* Interactive Score Picker Modal */}
+      {pickerState && (
+        <ScorePickerModal
+          isOpen={!!pickerState}
+          onClose={() => setPickerState(null)}
+          teamName={pickerState.teamName}
+          currentScore={pickerState.currentScore}
+          maxTarget={sessionConfig.maxScoreTarget || 24}
+          onSelectScore={(score) => {
+            if (pickerState.team === 'A') {
+              updateScoreA(score);
+            } else {
+              updateScoreB(score);
+            }
+          }}
+        />
       )}
     </div>
   );
