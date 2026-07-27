@@ -576,7 +576,10 @@ export default function WizardForm({
     }
   };
 
-  // Step 4: Update Score in Match (auto-calculates complementary score N - X when scoringSystem === 'POINTS')
+  // Step 4: Update Score in Match
+  // Enforces that total score (Score A + Score B) NEVER exceeds targetN:
+  // - POINTS & "Total of N": Score A + Score B = targetN (auto-complementary)
+  // - "First to N" / General: Score A + Score B <= targetN (capped)
   const handleUpdateScore = (
     matchId: string,
     scoreA: number | null,
@@ -584,6 +587,7 @@ export default function WizardForm({
     updatedTeam?: 'A' | 'B'
   ) => {
     const isPointsMode = config.scoringSystem === 'POINTS';
+    const isTotalOf = config.pointTarget.toLowerCase().includes('total of');
     const targetN = configN;
 
     setMatches((prev) =>
@@ -593,11 +597,29 @@ export default function WizardForm({
         let finalA = scoreA;
         let finalB = scoreB;
 
-        if (isPointsMode && targetN > 0) {
-          if (updatedTeam === 'A' && scoreA !== null) {
-            finalB = Math.max(0, targetN - scoreA);
-          } else if (updatedTeam === 'B' && scoreB !== null) {
-            finalA = Math.max(0, targetN - scoreB);
+        if (targetN > 0) {
+          if (isPointsMode || isTotalOf) {
+            // POINTS or "Total of N": Total score MUST equal targetN (Score A + Score B = targetN)
+            if (updatedTeam === 'A' && scoreA !== null) {
+              finalA = Math.min(targetN, Math.max(0, scoreA));
+              finalB = Math.max(0, targetN - finalA);
+            } else if (updatedTeam === 'B' && scoreB !== null) {
+              finalB = Math.min(targetN, Math.max(0, scoreB));
+              finalA = Math.max(0, targetN - finalB);
+            }
+          } else {
+            // "First to N" / General: Total score (finalA + finalB) MUST NOT exceed targetN
+            if (updatedTeam === 'A' && finalA !== null) {
+              finalA = Math.min(targetN, Math.max(0, finalA));
+              if (finalB !== null && finalA + finalB > targetN) {
+                finalB = Math.max(0, targetN - finalA);
+              }
+            } else if (updatedTeam === 'B' && finalB !== null) {
+              finalB = Math.min(targetN, Math.max(0, finalB));
+              if (finalA !== null && finalA + finalB > targetN) {
+                finalA = Math.max(0, targetN - finalB);
+              }
+            }
           }
         }
 
@@ -1698,25 +1720,40 @@ export default function WizardForm({
       )}
 
       {/* Interactive Score Picker Modal */}
-      {activePicker && (
-        <ScorePickerModal
-          isOpen={!!activePicker}
-          onClose={() => setActivePicker(null)}
-          teamName={activePicker.teamName}
-          currentScore={activePicker.currentScore}
-          maxTarget={configN}
-          onSelectScore={(score) => {
-            const match = matches.find((m) => m.id === activePicker.matchId);
-            if (match) {
-              if (activePicker.team === 'A') {
-                handleUpdateScore(activePicker.matchId, score, match.scoreB, 'A');
-              } else {
-                handleUpdateScore(activePicker.matchId, match.scoreA, score, 'B');
+      {activePicker && (() => {
+        const activeMatch = matches.find((m) => m.id === activePicker.matchId);
+        const isPointsMode = config.scoringSystem === 'POINTS';
+        const isTotalOf = config.pointTarget.toLowerCase().includes('total of');
+        
+        let maxAllowed = configN;
+        if (!isPointsMode && !isTotalOf && activeMatch) {
+          // For First to N / General mode: max score allowed for this team = configN - (other team's score || 0)
+          const otherScore = activePicker.team === 'A' ? activeMatch.scoreB : activeMatch.scoreA;
+          if (otherScore !== null && otherScore !== undefined) {
+            maxAllowed = Math.max(0, configN - Number(otherScore));
+          }
+        }
+
+        return (
+          <ScorePickerModal
+            isOpen={!!activePicker}
+            onClose={() => setActivePicker(null)}
+            teamName={activePicker.teamName}
+            currentScore={activePicker.currentScore}
+            maxTarget={configN}
+            maxAllowedScore={maxAllowed}
+            onSelectScore={(score) => {
+              if (activeMatch) {
+                if (activePicker.team === 'A') {
+                  handleUpdateScore(activePicker.matchId, score, activeMatch.scoreB, 'A');
+                } else {
+                  handleUpdateScore(activePicker.matchId, activeMatch.scoreA, score, 'B');
+                }
               }
-            }
-          }}
-        />
-      )}
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -8,6 +8,7 @@ interface ScorePickerModalProps {
   teamName: string;
   currentScore: number | null;
   maxTarget?: number;
+  maxAllowedScore?: number;
   onSelectScore: (score: number) => void;
 }
 
@@ -17,6 +18,7 @@ export default function ScorePickerModal({
   teamName,
   currentScore,
   maxTarget = 24,
+  maxAllowedScore,
   onSelectScore,
 }: ScorePickerModalProps) {
   if (!isOpen) return null;
@@ -51,18 +53,22 @@ export default function ScorePickerModal({
         <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 pt-1">
           {numbers.map((num) => {
             const isSelected = currentScore === num;
+            const isDisabled = maxAllowedScore !== undefined && num > maxAllowedScore;
             return (
               <button
                 key={num}
                 type="button"
+                disabled={isDisabled}
                 onClick={() => {
                   onSelectScore(num);
                   onClose();
                 }}
-                className={`h-12 rounded-xl text-base font-black transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
-                  isSelected
-                    ? 'bg-orange-500 text-white border-2 border-orange-600 shadow-md scale-105'
-                    : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-800 border border-zinc-200 hover:border-orange-300 hover:text-orange-600'
+                className={`h-12 rounded-xl text-base font-black transition-all flex items-center justify-center shadow-2xs ${
+                  isDisabled
+                    ? 'opacity-25 cursor-not-allowed bg-zinc-100 text-zinc-300 border border-zinc-200'
+                    : isSelected
+                    ? 'bg-orange-500 text-white border-2 border-orange-600 shadow-md scale-105 cursor-pointer'
+                    : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-800 border border-zinc-200 hover:border-orange-300 hover:text-orange-600 cursor-pointer'
                 }`}
               >
                 {num}
