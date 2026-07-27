@@ -1572,80 +1572,97 @@ export default function WizardForm({
             </div>
           </div>
 
-          {/* Standings Table Card */}
-          <div className="p-6 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans">
-              <thead>
-                <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
-                  <th className="pb-3 pl-2">Rank</th>
-                  <th className="pb-3">Player</th>
-                  <th className="pb-3 text-center">Matches</th>
-                  <th className="pb-3 text-center">W-L-T</th>
-                  <th className="pb-3 text-right pr-2">Points</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {standings.map((s) => (
-                  <tr key={s.playerId} className="hover:bg-zinc-50/60 transition-colors">
-                    <td className="py-3 pl-2 font-black text-sm text-[#111827]">
-                      {s.rank === 1 ? (
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-white font-black text-xs shadow-sm">
-                          1
-                        </span>
-                      ) : s.rank === 2 ? (
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-zinc-800 font-black text-xs shadow-sm">
-                          2
-                        </span>
-                      ) : s.rank === 3 ? (
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-700 text-white font-black text-xs shadow-sm">
-                          3
-                        </span>
-                      ) : (
-                        `#${s.rank}`
-                      )}
-                    </td>
-                    <td className="py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase">
-                          {s.name.slice(0, 2)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-zinc-900">{s.name}</p>
-                          {!isGuestDemoMode && s.isGuest && (
-                            <span className="text-[9px] uppercase font-extrabold bg-amber-100 text-amber-800 px-1 rounded">
-                              Guest
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 text-center font-bold text-zinc-900">
-                      {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
-                    </td>
-                    <td className="py-3 text-center font-mono font-bold text-zinc-700">
-                      {s.wins}-{s.losses}-{s.ties}
-                    </td>
-                    <td className="py-3 text-right pr-2 font-black text-sm text-[#111827]">
-                      {s.byePoints && s.byePoints > 0 ? (
-                        <span
-                          title={s.byeIsPlaceholder
-                            ? 'Temporary placeholder score (no actual matches played yet)'
-                            : 'Dynamic bye points based on player average'}
-                          className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md mr-1.5 border ${
-                            s.byeIsPlaceholder
-                              ? 'text-zinc-500 bg-zinc-100 border-zinc-300' // greyed out = placeholder
-                              : 'text-amber-700 bg-amber-100 border-amber-300'  // amber = real average
-                          }`}
-                        >
-                          {s.byeIsPlaceholder ? '~' : '+'}{s.byePoints} Bye
-                        </span>
-                      ) : null}
-                      {s.totalPoints}
-                    </td>
+          {/* Standings Table Card with Horizontal Scroll */}
+          <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden space-y-2">
+            <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-zinc-200">
+              <table className="w-full text-left text-xs font-sans min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
+                    <th className="pb-3 pl-2">Rank</th>
+                    <th className="pb-3">Player</th>
+                    <th className="pb-3 text-center">Matches</th>
+                    <th className="pb-3 text-center">W-L-T</th>
+                    <th className="pb-3 text-center">Diff</th>
+                    <th className="pb-3 text-right pr-2">Points</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {standings.map((s) => (
+                    <tr key={s.playerId} className="hover:bg-zinc-50/60 transition-colors">
+                      <td className="py-3 pl-2 font-black text-sm text-[#111827]">
+                        {s.rank === 1 ? (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-white font-black text-xs shadow-sm">
+                            1
+                          </span>
+                        ) : s.rank === 2 ? (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-zinc-800 font-black text-xs shadow-sm">
+                            2
+                          </span>
+                        ) : s.rank === 3 ? (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-700 text-white font-black text-xs shadow-sm">
+                            3
+                          </span>
+                        ) : (
+                          `#${s.rank}`
+                        )}
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase shrink-0">
+                            {s.name.slice(0, 2)}
+                          </div>
+                          <div className="truncate max-w-[130px] sm:max-w-none">
+                            <p className="font-bold text-zinc-900 truncate">{s.name}</p>
+                            {!isGuestDemoMode && s.isGuest && (
+                              <span className="text-[9px] uppercase font-extrabold bg-amber-100 text-amber-800 px-1 rounded">
+                                Guest
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 text-center font-bold text-zinc-900">
+                        {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
+                      </td>
+                      <td className="py-3 text-center font-mono font-bold text-zinc-700">
+                        {s.wins}-{s.losses}-{s.ties}
+                      </td>
+                      <td className="py-3 text-center font-mono font-bold text-zinc-900">
+                        <span className={`px-2 py-0.5 rounded-md text-xs ${
+                          s.diff > 0
+                            ? 'bg-emerald-50 text-emerald-700 font-extrabold'
+                            : s.diff < 0
+                            ? 'bg-rose-50 text-rose-600 font-extrabold'
+                            : 'text-zinc-500'
+                        }`}>
+                          {s.diff > 0 ? `+${s.diff}` : s.diff}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right pr-2 font-black text-sm text-[#111827] whitespace-nowrap">
+                        {s.byePoints && s.byePoints > 0 ? (
+                          <span
+                            title={s.byeIsPlaceholder
+                              ? 'Temporary placeholder score (no actual matches played yet)'
+                              : 'Dynamic bye points based on player average'}
+                            className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md mr-1.5 border ${
+                              s.byeIsPlaceholder
+                                ? 'text-zinc-500 bg-zinc-100 border-zinc-300' // greyed out = placeholder
+                                : 'text-amber-700 bg-amber-100 border-amber-300'  // amber = real average
+                            }`}
+                          >
+                            {s.byeIsPlaceholder ? '~' : '+'}{s.byePoints} Bye
+                          </span>
+                        ) : null}
+                        {s.totalPoints}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="block sm:hidden text-center text-[10px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
+              ← Scroll horizontally to view full stats →
+            </div>
           </div>
 
           {/* Start Real Live Session or Finish Demo Button */}
