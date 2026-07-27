@@ -21,9 +21,9 @@ export default function ScorePickerModal({
 }: ScorePickerModalProps) {
   if (!isOpen) return null;
 
-  // Generate array of numbers from 0 to maxTarget (or default 24)
-  const targetCount = Math.max(16, Math.min(32, maxTarget));
-  const numbers = Array.from({ length: targetCount + 1 }, (_, i) => i);
+  // Generate 0..maxTarget options — strictly respects the configured target.
+  // e.g. "Total of 4" → maxTarget=4 → shows 0,1,2,3,4 only (no higher numbers).
+  const numbers = Array.from({ length: maxTarget + 1 }, (_, i) => i);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150">

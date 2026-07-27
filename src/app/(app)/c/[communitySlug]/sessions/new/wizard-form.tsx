@@ -200,6 +200,20 @@ export default function WizardForm({
     return map;
   }, [registeredPlayers]);
 
+  // Extracts the numeric target N from ANY pointTarget string format:
+  //   POINTS mode:  "16 Points" → 16,  "21 Points" → 21
+  //   GENERAL mode: "Total of 4" → 4,  "First to 5" → 5
+  // Uses last-integer regex so it works for all formats without hardcoding.
+  const extractN = (pt: string, fallback = 24): number => {
+    const m = pt.match(/(\d+)(?!.*\d)/); // last number in the string
+    const n = m ? parseInt(m[1], 10) : NaN;
+    return isNaN(n) || n <= 0 ? fallback : n;
+  };
+
+  // configN = the numeric target for the current match (N)
+  // Used for: bye score calculation, score picker max, auto-complement in POINTS mode
+  const configN = extractN(config.pointTarget);
+
   // ------------------------------------------
   // QUICK MATCH PERSISTENCE (AUTO-SAVE & AUTO-RESTORE ON REFRESH)
   // ------------------------------------------
@@ -554,7 +568,7 @@ export default function WizardForm({
     updatedTeam?: 'A' | 'B'
   ) => {
     const isPointsMode = config.scoringSystem === 'POINTS';
-    const targetN = parseInt(config.pointTarget) || 24;
+    const targetN = configN;
 
     setMatches((prev) =>
       prev.map((m) => {
@@ -595,7 +609,7 @@ export default function WizardForm({
   //   5. Hard constraint: 0 <= byeScore <= N always
   // ==========================================
   const standings: PlayerStanding[] = useMemo(() => {
-    const N = parseInt(config.pointTarget) || 24;
+    const N = configN;
     const halfN = Math.round(N / 2);
 
     // Helper: calculate bye score per missing match
@@ -744,7 +758,7 @@ export default function WizardForm({
         sport: config.sport,
         scoringType: config.scoringSystem === 'POINTS' ? 'POINTS' : 'GAMES',
         pointsMode: 'FIRST_TO_TARGET',
-        maxScoreTarget: parseInt(config.pointTarget) || 16,
+        maxScoreTarget: configN,
         courtCount: config.courtCount,
         roundsPlanned: matches.length,
         attendeeIds: registeredPlayers.map((p) => p.id),
@@ -1592,7 +1606,7 @@ export default function WizardForm({
           onClose={() => setActivePicker(null)}
           teamName={activePicker.teamName}
           currentScore={activePicker.currentScore}
-          maxTarget={parseInt(config.pointTarget) || 24}
+          maxTarget={configN}
           onSelectScore={(score) => {
             const match = matches.find((m) => m.id === activePicker.matchId);
             if (match) {
