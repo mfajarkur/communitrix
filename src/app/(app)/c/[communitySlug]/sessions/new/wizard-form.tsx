@@ -831,7 +831,7 @@ export default function WizardForm({
               </p>
             </div>
 
-            {/* Action Buttons: Add Yourself (Community Mode) vs Quick Fill (Demo Mode) */}
+            {/* Action Buttons: Add Yourself (Community Mode) vs Add Player (Demo Mode) */}
             {!isGuestDemoMode ? (
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
@@ -852,32 +852,14 @@ export default function WizardForm({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="pt-2">
                 <button
                   type="button"
                   onClick={() => handleAddManualPlayer(false)}
                   disabled={!manualInputName.trim()}
-                  className="py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                  className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shadow-sm"
                 >
                   + ADD PLAYER
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const samples = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
-                    setRegisteredPlayers(
-                      samples.map((name, i) => ({
-                        id: `sample-${i}-${Date.now()}`,
-                        name,
-                        isGuest: true,
-                        avatarUrl: null,
-                      }))
-                    );
-                  }}
-                  className="py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Zap className="h-3.5 w-3.5 text-amber-600" />
-                  Auto-Fill 4 Players
                 </button>
               </div>
             )}
