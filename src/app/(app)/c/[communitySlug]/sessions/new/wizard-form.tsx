@@ -241,9 +241,17 @@ export default function WizardForm({
     }
   };
 
+  // Helper function to format strings to Title Case (e.g., "fajar kurniawan" -> "Fajar Kurniawan")
+  const formatTitleCase = (str: string) =>
+    str
+      .trim()
+      .split(/\s+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+
   // Step 3: Add Manual Player (Regular or Guest)
   const handleAddManualPlayer = async (isGuest: boolean) => {
-    const rawName = manualInputName.trim();
+    const rawName = formatTitleCase(manualInputName);
     if (!rawName) return;
 
     // Check duplicate name and append numeric suffix (e.g., Albert 2, Albert 3)
