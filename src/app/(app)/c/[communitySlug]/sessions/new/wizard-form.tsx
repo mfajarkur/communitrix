@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { startSessionAction } from '@/server/actions/session.actions';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
@@ -188,6 +188,48 @@ export default function WizardForm({
     registeredPlayers.forEach((p) => map.set(p.id, p));
     return map;
   }, [registeredPlayers]);
+
+  // ------------------------------------------
+  // QUICK MATCH PERSISTENCE (AUTO-SAVE & AUTO-RESTORE ON REFRESH)
+  // ------------------------------------------
+  // 1. Restore saved Quick Match session state on mount
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isGuestDemoMode) return;
+    const saved = localStorage.getItem('communitrix_quick_match_session');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.step) setStep(parsed.step);
+        if (parsed.config) setConfig(parsed.config);
+        if (parsed.registeredPlayers) setRegisteredPlayers(parsed.registeredPlayers);
+        if (parsed.matches) setMatches(parsed.matches);
+      } catch (e) {
+        console.error('Failed to restore quick match session state', e);
+      }
+    }
+  }, [isGuestDemoMode]);
+
+  // 2. Auto-save Quick Match session state when state changes
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isGuestDemoMode) return;
+    const payload = {
+      step,
+      config,
+      registeredPlayers,
+      matches,
+    };
+    localStorage.setItem('communitrix_quick_match_session', JSON.stringify(payload));
+  }, [isGuestDemoMode, step, config, registeredPlayers, matches]);
+
+  // 3. Reset Quick Match session
+  const handleResetQuickMatchSession = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('communitrix_quick_match_session');
+    }
+    setStep(1);
+    setRegisteredPlayers([]);
+    setMatches([]);
+  };
 
   // ==========================================
   // HELPER ACTIONS & LOGIC
@@ -1438,7 +1480,7 @@ export default function WizardForm({
               <button
                 onClick={() => {
                   setShowDemoCompleteModal(false);
-                  setStep(1);
+                  handleResetQuickMatchSession();
                 }}
                 className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
               >
