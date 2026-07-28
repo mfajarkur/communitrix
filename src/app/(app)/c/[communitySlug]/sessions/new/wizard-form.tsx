@@ -854,6 +854,8 @@ export default function WizardForm({
           borderRadius: '0px',
           width: `${targetWidth}px`,
           height: `${targetHeight}px`,
+          margin: '0px',
+          padding: '32px',
           transform: 'none',
         },
       });
