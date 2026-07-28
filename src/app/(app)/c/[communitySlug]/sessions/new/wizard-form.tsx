@@ -371,7 +371,7 @@ export default function WizardForm({
       name = `${rawName} ${count}`;
     }
 
-    if (isGuest && !isGuestDemoMode) {
+    if (!isGuestDemoMode) {
       setIsAddingGuest(true);
       setGuestErrorMessage(null);
       // Create guest profile in database
@@ -389,7 +389,7 @@ export default function WizardForm({
         setManualInputName('');
       } else {
         // Fallback to local guest if offline / dev
-        const tempGuestId = `guest-${Date.now()}`;
+        const tempGuestId = crypto.randomUUID();
         setRegisteredPlayers((prev) => [
           ...prev,
           { id: tempGuestId, name, isGuest: true, avatarUrl: null },
@@ -397,7 +397,7 @@ export default function WizardForm({
         setManualInputName('');
       }
     } else {
-      const tempId = `player-${Date.now()}`;
+      const tempId = crypto.randomUUID();
       setRegisteredPlayers((prev) => [
         ...prev,
         { id: tempId, name, isGuest: false, avatarUrl: null },
@@ -440,7 +440,7 @@ export default function WizardForm({
         setPlayer1NameInput('');
         setPlayer2NameInput('');
       } else {
-        const tempId = `team-${Date.now()}`;
+        const tempId = crypto.randomUUID();
         setRegisteredPlayers((prev) => [
           ...prev,
           { id: tempId, name: fullName, isGuest: true, avatarUrl: null },
@@ -450,7 +450,7 @@ export default function WizardForm({
         setPlayer2NameInput('');
       }
     } else {
-      const tempId = `team-${Date.now()}`;
+      const tempId = crypto.randomUUID();
       setRegisteredPlayers((prev) => [
         ...prev,
         { id: tempId, name: fullName, isGuest: true, avatarUrl: null },
@@ -893,45 +893,36 @@ export default function WizardForm({
     return list;
   }, [registeredPlayers, matches, config.leaderboardRankedBy, config.pointTarget, config.byeScoringMethod]);
 
-  // Submit Session to backend (or finish Sandbox Demo)
+  // Submit Session to backend (or finish Sandbox Demo / Community Session)
   const handleStartRealSession = async () => {
-    if (isGuestDemoMode) {
-      setShowConfirmEndModal(true);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage(null);
-    try {
-      const result = await startSessionAction({
-        communityId,
-        name: config.activityName,
-        format: config.gameType.includes('MEXICANO') ? 'MEXICANO' : 'AMERICANO',
-        sport: config.sport,
-        scoringType: config.scoringSystem === 'POINTS' ? 'POINTS' : 'GAMES',
-        pointsMode: 'FIRST_TO_TARGET',
-        maxScoreTarget: configN,
-        courtCount: config.courtCount,
-        roundsPlanned: matches.length,
-        attendeeIds: registeredPlayers.map((p) => p.id),
-      });
-
-      if (result.ok) {
-        router.push(`/c/${communitySlug}/sessions/${result.data.sessionId}`);
-        router.refresh();
-      } else {
-        setIsSubmitting(false);
-        setErrorMessage(result.message);
-      }
-    } catch (err: any) {
-      setIsSubmitting(false);
-      setErrorMessage(err?.message || 'Failed to start session');
-    }
+    setShowConfirmEndModal(true);
   };
 
-  const handleConfirmEndMatch = () => {
+  const handleConfirmEndMatch = async () => {
     setShowConfirmEndModal(false);
     setShowPodium(true);
+
+    if (!isGuestDemoMode) {
+      setIsSubmitting(true);
+      try {
+        await startSessionAction({
+          communityId,
+          name: config.activityName,
+          format: config.gameType.includes('MEXICANO') ? 'MEXICANO' : 'AMERICANO',
+          sport: config.sport,
+          scoringType: config.scoringSystem === 'POINTS' ? 'POINTS' : 'GAMES',
+          pointsMode: 'FIRST_TO_TARGET',
+          maxScoreTarget: configN,
+          courtCount: config.courtCount,
+          roundsPlanned: matches.length,
+          attendeeIds: registeredPlayers.map((p) => p.id),
+        });
+      } catch (err: any) {
+        console.error('Failed to save community session to DB:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   const handleDownloadImage = async () => {
@@ -2165,7 +2156,7 @@ export default function WizardForm({
             ) : (
               <Trophy className="h-5 w-5" />
             )}
-            <span>{isGuestDemoMode ? '⚡ End Match Session' : 'Save & Open Live Court Session'}</span>
+            <span>⚡ End Match Session</span>
           </button>
         </div>
       )}
