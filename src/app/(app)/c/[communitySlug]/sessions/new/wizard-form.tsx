@@ -1202,14 +1202,25 @@ export default function WizardForm({
             <span>⚡ Play Again</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => router.push('/login')}
-            className="flex-1 py-3.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
-          >
-            <Users className="h-4 w-4" />
-            <span>Create Communitrix Account</span>
-          </button>
+          {isGuestDemoMode ? (
+            <button
+              type="button"
+              onClick={() => router.push('/login')}
+              className="flex-1 py-3.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              <span>Create Communitrix Account</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push(`/c/${communitySlug}`)}
+              className="flex-1 py-3.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              <span>Back to Community</span>
+            </button>
+          )}
         </div>
       </div>
     );
