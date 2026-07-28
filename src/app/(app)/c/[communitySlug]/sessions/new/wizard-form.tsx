@@ -885,7 +885,7 @@ export default function WizardForm({
         {/* Downloadable Poster Container */}
         <div
           id="podium-download-area"
-          className="bg-zinc-950 text-white p-6 sm:p-8 rounded-3xl border border-orange-500/25 relative shadow-2xl overflow-hidden bg-gradient-to-br from-[#09090b] via-[#2c0f02] to-[#09090b]"
+          className="max-w-2xl mx-auto w-full bg-zinc-950 text-white p-6 sm:p-8 rounded-3xl border border-orange-500/25 relative shadow-2xl overflow-hidden bg-gradient-to-br from-[#09090b] via-[#2c0f02] to-[#09090b]"
         >
           {/* Decorative background grid and shapes */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
@@ -987,29 +987,28 @@ export default function WizardForm({
               </div>
             )}
           </div>
-
           {/* Detailed Leaderboard Table */}
-          <div className="space-y-4 pt-6 relative z-10">
-            <h3 className="text-xs font-black uppercase tracking-wider text-zinc-550">
+          <div className="space-y-4 pt-6 relative z-10 max-w-xl mx-auto w-full">
+            <h3 className="text-xs font-black uppercase tracking-wider text-zinc-550 pl-2">
               Complete Standings
             </h3>
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 backdrop-blur-xs shadow-sm overflow-hidden">
               <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-zinc-800">
-                <table className="w-full text-left text-xs font-sans min-w-[560px] text-zinc-300">
+                <table className="w-full text-left text-xs font-sans text-zinc-300">
                   <thead>
                     <tr className="border-b border-zinc-800 text-zinc-500 font-extrabold uppercase text-[10px] tracking-wider">
-                      <th className="pb-3 pl-2">Rank</th>
-                      <th className="pb-3">Player</th>
-                      <th className="pb-3 text-center">Matches</th>
-                      <th className="pb-3 text-center">W-L-T</th>
-                      <th className="pb-3 text-center">Diff</th>
-                      <th className="pb-3 text-right pr-2">Points</th>
+                      <th className="pb-3 pl-2 w-12 sm:w-16">Rank</th>
+                      <th className="pb-3 w-auto">Player</th>
+                      <th className="pb-3 text-center w-16 sm:w-20">Matches</th>
+                      <th className="pb-3 text-center w-20 sm:w-24">W-L-T</th>
+                      <th className="pb-3 text-center w-16 sm:w-20">Diff</th>
+                      <th className="pb-3 text-right pr-2 w-16 sm:w-20">Points</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850">
                     {standings.map((s) => (
                       <tr key={s.playerId} className="hover:bg-zinc-800/20 transition-colors">
-                        <td className="py-3 pl-2 font-black text-sm text-white">
+                        <td className="py-3 pl-2 font-black text-sm text-white w-12 sm:w-16">
                           {s.rank === 1 ? (
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-zinc-950 font-black text-xs shadow-sm">
                               1
@@ -1026,34 +1025,34 @@ export default function WizardForm({
                             <span className="text-zinc-500 font-bold">#{s.rank}</span>
                           )}
                         </td>
-                        <td className="py-3">
+                        <td className="py-3 w-auto">
                           <div className="flex items-center gap-2.5">
                             <div className="h-8 w-8 rounded-full bg-zinc-850 border border-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-300 uppercase shrink-0">
                               {s.name.slice(0, 2)}
                             </div>
                             <div>
-                              <p className="font-bold text-white truncate">{s.name}</p>
+                              <p className="font-bold text-white truncate max-w-[120px] sm:max-w-none">{s.name}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 text-center font-bold text-white">
+                        <td className="py-3 text-center font-bold text-white w-16 sm:w-20">
                           {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
                         </td>
-                        <td className="py-3 text-center font-mono font-bold text-zinc-400">
+                        <td className="py-3 text-center font-mono font-bold text-zinc-400 w-20 sm:w-24">
                           {s.wins}-{s.losses}-{s.ties}
                         </td>
-                        <td className="py-3 text-center font-mono font-bold">
+                        <td className="py-3 text-center font-mono font-bold w-16 sm:w-20">
                           <span className={`px-2 py-0.5 rounded-md text-xs ${
                             s.diff > 0
                               ? 'bg-emerald-500/10 text-emerald-400 font-extrabold border border-emerald-500/20'
                               : s.diff < 0
-                              ? 'bg-rose-500/10 text-rose-400 font-extrabold border border-rose-500/20'
+                              ? 'bg-rose-500/10 text-rose-455 font-extrabold border border-rose-500/20'
                               : 'text-zinc-500'
                           }`}>
                             {s.diff > 0 ? `+${s.diff}` : s.diff}
                           </span>
                         </td>
-                        <td className="py-3 text-right pr-2 font-black text-sm text-white">
+                        <td className="py-3 text-right pr-2 font-black text-sm text-white w-16 sm:w-20">
                           {s.totalPoints}
                         </td>
                       </tr>
