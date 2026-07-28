@@ -882,11 +882,13 @@ export default function WizardForm({
 
     return (
       <div className="space-y-6 font-sans">
-        {/* Downloadable Poster Container */}
-        <div
-          id="podium-download-area"
-          className="max-w-2xl mx-auto w-full bg-zinc-950 text-white p-6 sm:p-8 rounded-3xl border border-orange-500/25 relative shadow-2xl overflow-hidden bg-gradient-to-br from-[#09090b] via-[#2c0f02] to-[#09090b]"
-        >
+        {/* Scrollable Wrapper for Mobile Viewports to prevent clipping */}
+        <div className="overflow-x-auto w-full pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
+          {/* Downloadable Poster Container with fixed width to ensure unclipped image output */}
+          <div
+            id="podium-download-area"
+            className="w-[640px] shrink-0 mx-auto bg-zinc-950 text-white p-6 sm:p-8 rounded-3xl border border-orange-500/25 relative shadow-2xl overflow-hidden bg-gradient-to-br from-[#09090b] via-[#2c0f02] to-[#09090b]"
+          >
           {/* Decorative background grid and shapes */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
           <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
@@ -1074,6 +1076,7 @@ export default function WizardForm({
             </span>
           </div>
         </div>
+      </div>
 
         {/* Action Controls */}
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
