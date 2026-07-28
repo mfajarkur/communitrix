@@ -184,4 +184,55 @@ describe('Mexicano Matchmaking Scheduler Tests', () => {
                        (match.teamB.includes('p1') && match.teamB.includes('p2'));
     expect(inSameTeam).toBe(false);
   });
+
+  test('Proximity clustering: Priority players play and courts are clustered by rank proximity', () => {
+    // 13 players: p1..p13
+    // p8 (Awan) and p9 (Bayu) have 1 match played (1 bye). Others have 2 matches played.
+    const attendees: Attendee[] = Array.from({ length: 13 }, (_, i) => ({
+      id: `p${i + 1}`,
+      seedElo: 1000 - i,
+      matchesPlayed: (i === 7 || i === 8) ? 1 : 2,
+      sitOutCount: (i === 7 || i === 8) ? 1 : 0,
+      lastSitOutRound: (i === 7 || i === 8) ? 3 : null,
+    }));
+
+    const standings: StandingRow[] = Array.from({ length: 13 }, (_, i) => ({
+      profileId: `p${i + 1}`,
+      matchesPlayed: (i === 7 || i === 8) ? 1 : 2,
+      sessionPointsFor: 20 - i,
+      sessionPointsAgainst: 10 + i,
+      sessionWins: i < 3 ? 2 : i < 7 ? 1 : 0,
+      sessionLosses: 0,
+      sessionDraws: 0,
+      seedElo: 1000 - i,
+    }));
+
+    const round = generateMexicanoRound({
+      roundNumber: 4,
+      playersPerMatch: 4,
+      courtCount: 2,
+      attendees,
+      history: [],
+      standings,
+      seed: 'session-wizard-4',
+    });
+
+    expect(round.courts.length).toBe(2);
+
+    // Priority players p8 (Awan) and p9 (Bayu) MUST play (not sit out)
+    expect(round.sitOuts).not.toContain('p8');
+    expect(round.sitOuts).not.toContain('p9');
+
+    // Court 1 should get top ranked playing players (from p1..p5) and NOT contain p8 or p9
+    const court1Players = [...round.courts[0].teamA, ...round.courts[0].teamB];
+    expect(court1Players).not.toContain('p8');
+    expect(court1Players).not.toContain('p9');
+
+    // Court 2 should contain p8 and p9 with their closest proximity neighbors (p10, p11)
+    const court2Players = [...round.courts[1].teamA, ...round.courts[1].teamB];
+    expect(court2Players).toContain('p8');
+    expect(court2Players).toContain('p9');
+    expect(court2Players).toContain('p10');
+    expect(court2Players).toContain('p11');
+  });
 });
