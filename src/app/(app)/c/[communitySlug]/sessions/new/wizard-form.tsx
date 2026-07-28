@@ -356,7 +356,7 @@ export default function WizardForm({
       .join(' ');
 
   // Step 3: Add Manual Player (Regular or Guest)
-  const handleAddManualPlayer = async (isGuest: boolean) => {
+  const handleAddManualPlayer = (isGuest: boolean) => {
     const rawName = formatTitleCase(manualInputName);
     if (!rawName) return;
 
@@ -371,43 +371,35 @@ export default function WizardForm({
       name = `${rawName} ${count}`;
     }
 
-    if (!isGuestDemoMode) {
-      setIsAddingGuest(true);
-      setGuestErrorMessage(null);
-      // Create guest profile in database
-      const result = await addGuestPlayerAction({ communityId, fullName: name });
-      setIsAddingGuest(false);
+    const tempId = crypto.randomUUID();
+    const newPlayer: PlayerRegistration = {
+      id: tempId,
+      name,
+      isGuest: true,
+      avatarUrl: null,
+    };
 
-      if (result.ok && result.data) {
-        const newGuest: PlayerRegistration = {
-          id: result.data.id,
-          name: result.data.full_name || name,
-          isGuest: true,
-          avatarUrl: null,
-        };
-        setRegisteredPlayers((prev) => [...prev, newGuest]);
-        setManualInputName('');
-      } else {
-        // Fallback to local guest if offline / dev
-        const tempGuestId = crypto.randomUUID();
-        setRegisteredPlayers((prev) => [
-          ...prev,
-          { id: tempGuestId, name, isGuest: true, avatarUrl: null },
-        ]);
-        setManualInputName('');
-      }
-    } else {
-      const tempId = crypto.randomUUID();
-      setRegisteredPlayers((prev) => [
-        ...prev,
-        { id: tempId, name, isGuest: false, avatarUrl: null },
-      ]);
-      setManualInputName('');
+    // INSTANT UI UPDATE - 0ms delay, clears input immediately
+    setRegisteredPlayers((prev) => [...prev, newPlayer]);
+    setManualInputName('');
+
+    // Asynchronously create guest member in DB for community mode
+    if (!isGuestDemoMode && communityId) {
+      addGuestPlayerAction({ communityId, fullName: name })
+        .then((result) => {
+          if (result.ok && result.data) {
+            const dbId = result.data.id;
+            setRegisteredPlayers((prev) =>
+              prev.map((p) => (p.id === tempId ? { ...p, id: dbId, name: result.data.full_name || name } : p))
+            );
+          }
+        })
+        .catch((err) => console.error('Background guest creation error:', err));
     }
   };
 
   // Step 3: Add Manual Team
-  const handleAddTeam = async () => {
+  const handleAddTeam = () => {
     const rawP1 = formatTitleCase(player1NameInput);
     const rawP2 = formatTitleCase(player2NameInput);
     const rawT = formatTitleCase(teamNameInput);
@@ -427,37 +419,32 @@ export default function WizardForm({
       fullName = checkName;
     }
 
-    if (!isGuestDemoMode) {
-      setIsAddingGuest(true);
-      const result = await addGuestPlayerAction({ communityId, fullName });
-      setIsAddingGuest(false);
-      if (result.ok && result.data) {
-        setRegisteredPlayers((prev) => [
-          ...prev,
-          { id: result.data.id, name: fullName, isGuest: true, avatarUrl: null },
-        ]);
-        setTeamNameInput('');
-        setPlayer1NameInput('');
-        setPlayer2NameInput('');
-      } else {
-        const tempId = crypto.randomUUID();
-        setRegisteredPlayers((prev) => [
-          ...prev,
-          { id: tempId, name: fullName, isGuest: true, avatarUrl: null },
-        ]);
-        setTeamNameInput('');
-        setPlayer1NameInput('');
-        setPlayer2NameInput('');
-      }
-    } else {
-      const tempId = crypto.randomUUID();
-      setRegisteredPlayers((prev) => [
-        ...prev,
-        { id: tempId, name: fullName, isGuest: true, avatarUrl: null },
-      ]);
-      setTeamNameInput('');
-      setPlayer1NameInput('');
-      setPlayer2NameInput('');
+    const tempId = crypto.randomUUID();
+    const newTeam: PlayerRegistration = {
+      id: tempId,
+      name: fullName,
+      isGuest: true,
+      avatarUrl: null,
+    };
+
+    // INSTANT UI UPDATE - 0ms delay, clears input fields immediately
+    setRegisteredPlayers((prev) => [...prev, newTeam]);
+    setTeamNameInput('');
+    setPlayer1NameInput('');
+    setPlayer2NameInput('');
+
+    // Asynchronously create guest member in DB for community mode
+    if (!isGuestDemoMode && communityId) {
+      addGuestPlayerAction({ communityId, fullName })
+        .then((result) => {
+          if (result.ok && result.data) {
+            const dbId = result.data.id;
+            setRegisteredPlayers((prev) =>
+              prev.map((p) => (p.id === tempId ? { ...p, id: dbId } : p))
+            );
+          }
+        })
+        .catch((err) => console.error('Background team creation error:', err));
     }
   };
 
