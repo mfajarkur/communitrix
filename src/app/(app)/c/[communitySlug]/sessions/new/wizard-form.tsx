@@ -2055,6 +2055,8 @@ export default function WizardForm({
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
                 Ranked by <span className="font-bold text-orange-600 uppercase">{config.leaderboardRankedBy}</span>
+                <span className="mx-1.5 text-zinc-300">•</span>
+                <span className="font-bold text-zinc-700 uppercase">{config.gameType.replace('_', ' ')}</span>
               </p>
             </div>
           </div>
