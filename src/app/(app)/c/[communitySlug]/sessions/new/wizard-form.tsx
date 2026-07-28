@@ -1748,7 +1748,7 @@ export default function WizardForm({
                     className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-xs font-bold text-zinc-800 shadow-2xs"
                   >
                     <span className="truncate max-w-[150px]">{p.name}</span>
-                    {p.isGuest && (
+                    {!isGuestDemoMode && p.isGuest && (
                       <span className="text-[9px] uppercase font-extrabold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">
                         Guest
                       </span>
