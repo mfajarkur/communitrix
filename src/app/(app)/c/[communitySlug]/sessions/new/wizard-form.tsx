@@ -21,6 +21,8 @@ import {
   Flame,
   Award,
   Sparkles,
+  Crown,
+  RotateCcw,
 } from 'lucide-react';
 import { generateAmericanoRound } from '@/lib/matchmaking/americano';
 import { generateMexicanoRound } from '@/lib/matchmaking/mexicano';
@@ -151,6 +153,8 @@ export default function WizardForm({
   // Wizard Step State (1: Game Type, 2: Setup Config, 3: Registration, 4: Match Generation, 5: Leaderboard)
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [showDemoCompleteModal, setShowDemoCompleteModal] = useState(false);
+  const [showConfirmEndModal, setShowConfirmEndModal] = useState(false);
+  const [showPodium, setShowPodium] = useState(false);
 
   // ------------------------------------------
   // STEP 1 & 2: CONFIGURATION STATE
@@ -281,6 +285,8 @@ export default function WizardForm({
     setMatches([]);
     setRoundSitOuts(new Map());
     setSelectedRound(1);
+    setShowPodium(false);
+    setShowConfirmEndModal(false);
   };
 
   // ==========================================
@@ -782,7 +788,7 @@ export default function WizardForm({
   // Submit Session to backend (or finish Sandbox Demo)
   const handleStartRealSession = async () => {
     if (isGuestDemoMode) {
-      setShowDemoCompleteModal(true);
+      setShowConfirmEndModal(true);
       return;
     }
 
@@ -815,9 +821,206 @@ export default function WizardForm({
     }
   };
 
+  const handleConfirmEndMatch = () => {
+    setShowConfirmEndModal(false);
+    setShowPodium(true);
+  };
+
   // ==========================================
   // RENDER SCREENS
   // ==========================================
+
+  if (showPodium) {
+    const firstPlace = standings.find((s) => s.rank === 1) || standings[0];
+    const secondPlace = standings.find((s) => s.rank === 2) || standings[1];
+    const thirdPlace = standings.find((s) => s.rank === 3) || standings[2];
+
+    return (
+      <div className="space-y-8 animate-in fade-in duration-300 font-sans text-zinc-900 pb-4">
+        {/* Header section with Trophy/Sparkles */}
+        <div className="text-center space-y-2 relative">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6 flex justify-between w-64 pointer-events-none opacity-40">
+            <Sparkles className="h-6 w-6 text-amber-400 animate-float" />
+            <Flame className="h-6 w-6 text-orange-500 animate-float animation-delay-200" />
+            <Sparkles className="h-5 w-5 text-amber-300 animate-float animation-delay-400" />
+          </div>
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 animate-celebrate shadow-sm">
+            <Trophy className="h-8 w-8" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-wider bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 bg-clip-text text-transparent">
+            Final Match Standings
+          </h2>
+          <p className="text-xs text-zinc-500 max-w-sm mx-auto font-medium">
+            Match session completed! Here are the champions and final player rankings.
+          </p>
+        </div>
+
+        {/* Podium Pedestals Row */}
+        <div className="flex justify-center items-end gap-3 sm:gap-6 pt-12 pb-6 max-w-md mx-auto relative border-b border-zinc-100">
+          {/* 2nd Place */}
+          {secondPlace && (
+            <div className="flex flex-col items-center flex-1 animate-fade-in-up animation-delay-200 opacity-0">
+              <div className="relative mb-2.5 flex flex-col items-center">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-3 border-zinc-350 bg-zinc-100 flex items-center justify-center text-sm sm:text-base font-bold text-zinc-700 uppercase shadow-md shrink-0">
+                  {secondPlace.name.slice(0, 2)}
+                </div>
+                <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[80px] sm:max-w-[100px]">
+                  {secondPlace.name}
+                </p>
+                <p className="text-[10px] text-zinc-500 font-bold">
+                  {secondPlace.totalPoints} pts
+                </p>
+              </div>
+              <div className="w-full h-24 sm:h-32 bg-gradient-to-b from-zinc-300 to-zinc-400 rounded-t-xl flex flex-col items-center justify-center border-t border-zinc-200 shadow-md">
+                <span className="text-3xl sm:text-4xl font-black text-zinc-100 drop-shadow-xs">2</span>
+                <span className="text-[9px] uppercase tracking-wider font-extrabold text-zinc-550">Silver</span>
+              </div>
+            </div>
+          )}
+
+          {/* 1st Place */}
+          {firstPlace && (
+            <div className="flex flex-col items-center flex-1 z-10 animate-fade-in-up opacity-0">
+              <div className="relative mb-2.5 flex flex-col items-center">
+                <Crown className="h-6 w-6 text-amber-500 absolute -top-5 transform -rotate-12 animate-bounce" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-4 border-amber-400 bg-amber-50 flex items-center justify-center text-base sm:text-lg font-black text-amber-600 uppercase shadow-lg shadow-amber-400/25 shrink-0">
+                  {firstPlace.name.slice(0, 2)}
+                </div>
+                <p className="text-xs sm:text-sm font-extrabold text-zinc-950 mt-2 text-center truncate max-w-[90px] sm:max-w-[120px]">
+                  {firstPlace.name}
+                </p>
+                <p className="text-[11px] text-amber-600 font-black">
+                  {firstPlace.totalPoints} pts
+                </p>
+              </div>
+              <div className="w-full h-32 sm:h-40 bg-gradient-to-b from-amber-400 to-amber-500 rounded-t-2xl flex flex-col items-center justify-center border-t border-amber-300 shadow-xl shadow-amber-500/10">
+                <span className="text-4xl sm:text-5xl font-black text-amber-100 drop-shadow-md">1</span>
+                <span className="text-[10px] uppercase tracking-wider font-black text-amber-800/80">Champion</span>
+              </div>
+            </div>
+          )}
+
+          {/* 3rd Place */}
+          {thirdPlace && (
+            <div className="flex flex-col items-center flex-1 animate-fade-in-up animation-delay-400 opacity-0">
+              <div className="relative mb-2.5 flex flex-col items-center">
+                <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-full border-3 border-amber-700 bg-amber-50 flex items-center justify-center text-xs sm:text-sm font-bold text-amber-800 uppercase shadow-sm shrink-0">
+                  {thirdPlace.name.slice(0, 2)}
+                </div>
+                <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[80px] sm:max-w-[100px]">
+                  {thirdPlace.name}
+                </p>
+                <p className="text-[10px] text-zinc-500 font-bold">
+                  {thirdPlace.totalPoints} pts
+                </p>
+              </div>
+              <div className="w-full h-18 sm:h-24 bg-gradient-to-b from-amber-700 to-amber-800 rounded-t-xl flex flex-col items-center justify-center border-t border-amber-600 shadow-sm">
+                <span className="text-2xl sm:text-3xl font-black text-amber-200 drop-shadow-2xs">3</span>
+                <span className="text-[9px] uppercase tracking-wider font-extrabold text-amber-200/70">Bronze</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Detailed Leaderboard Table */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-black uppercase tracking-wider text-zinc-400">
+            Complete Standings
+          </h3>
+          <div className="rounded-2xl border border-zinc-205 bg-white shadow-sm overflow-hidden">
+            <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-zinc-200">
+              <table className="w-full text-left text-xs font-sans min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
+                    <th className="pb-3 pl-2">Rank</th>
+                    <th className="pb-3">Player</th>
+                    <th className="pb-3 text-center">Matches</th>
+                    <th className="pb-3 text-center">W-L-T</th>
+                    <th className="pb-3 text-center">Diff</th>
+                    <th className="pb-3 text-right pr-2">Points</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {standings.map((s) => (
+                    <tr key={s.playerId} className="hover:bg-zinc-50/60 transition-colors">
+                      <td className="py-3 pl-2 font-black text-sm text-[#111827]">
+                        {s.rank === 1 ? (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-white font-black text-xs shadow-sm">
+                            1
+                          </span>
+                        ) : s.rank === 2 ? (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-zinc-800 font-black text-xs shadow-sm">
+                            2
+                          </span>
+                        ) : s.rank === 3 ? (
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-700 text-white font-black text-xs shadow-sm">
+                            3
+                          </span>
+                        ) : (
+                          `#${s.rank}`
+                        )}
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-650 uppercase shrink-0">
+                            {s.name.slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="font-bold text-zinc-900 truncate">{s.name}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 text-center font-bold text-zinc-900">
+                        {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
+                      </td>
+                      <td className="py-3 text-center font-mono font-bold text-zinc-700">
+                        {s.wins}-{s.losses}-{s.ties}
+                      </td>
+                      <td className="py-3 text-center font-mono font-bold text-zinc-900">
+                        <span className={`px-2 py-0.5 rounded-md text-xs ${
+                          s.diff > 0
+                            ? 'bg-emerald-50 text-emerald-700 font-extrabold'
+                            : s.diff < 0
+                            ? 'bg-rose-50 text-rose-600 font-extrabold'
+                            : 'text-zinc-500'
+                        }`}>
+                          {s.diff > 0 ? `+${s.diff}` : s.diff}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right pr-2 font-black text-sm text-[#111827]">
+                        {s.totalPoints}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-zinc-100">
+          <button
+            type="button"
+            onClick={handleResetQuickMatchSession}
+            className="flex-1 py-3.5 rounded-xl border border-zinc-250 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>⚡ Play Again</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push('/login')}
+            className="flex-1 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            <span>Create Communitrix Account</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 select-none font-sans">
@@ -1682,60 +1885,42 @@ export default function WizardForm({
             ) : (
               <Trophy className="h-5 w-5" />
             )}
-            <span>{isGuestDemoMode ? '⚡ Finish Quick Match (Sandbox)' : 'Save & Open Live Court Session'}</span>
+            <span>{isGuestDemoMode ? '⚡ End Match Session' : 'Save & Open Live Court Session'}</span>
           </button>
         </div>
       )}
 
-      {/* Demo Completion Modal for Guest Quick Match Mode */}
-      {showDemoCompleteModal && (
+      {/* Confirmation End Session Modal */}
+      {showConfirmEndModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-md rounded-3xl bg-zinc-900 border border-zinc-800 p-6 text-white shadow-2xl space-y-5 text-center font-sans">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/20 text-orange-400">
-              <Sparkles className="h-7 w-7" />
+              <Trophy className="h-7 w-7 animate-celebrate" />
             </div>
 
             <div className="space-y-1.5">
               <h3 className="text-xl font-black uppercase tracking-wide">
-                Quick Match Completed! 🎉
+                End Match Session? ⚡
               </h3>
               <p className="text-xs text-zinc-400 font-light leading-relaxed">
-                This was a sandbox demonstration session. No data or player names were saved.
+                Are you sure you want to end this Quick Match session? The match will be finalized, and the final results will be displayed on the podium.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-2 text-left">
-              <span className="text-[10px] font-bold uppercase text-orange-400">Match Summary</span>
-              <div className="flex justify-between text-xs text-zinc-300">
-                <span>Winner:</span>
-                <span className="font-bold text-white">
-                  {standings[0]?.name || 'N/A'} ({standings[0]?.totalPoints || 0} pts)
-                </span>
-              </div>
-              <div className="flex justify-between text-xs text-zinc-300">
-                <span>Format:</span>
-                <span className="font-bold text-white">
-                  {config.gameType} ({config.sport})
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2.5 pt-2">
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={() => {
-                  setShowDemoCompleteModal(false);
-                  handleResetQuickMatchSession();
-                }}
-                className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                type="button"
+                onClick={() => setShowConfirmEndModal(false)}
+                className="flex-1 py-3 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
               >
-                ⚡ Play Another Quick Match
+                Cancel
               </button>
-
               <button
-                onClick={() => router.push('/login')}
-                className="w-full py-3 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                type="button"
+                onClick={handleConfirmEndMatch}
+                className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
               >
-                Create Account to Join Communities & Save History
+                Yes, End
               </button>
             </div>
           </div>

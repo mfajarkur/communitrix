@@ -143,7 +143,7 @@ describeOrSkip('TypeScript and PL/pgSQL ELO Logic Synchronization Tests', () => 
 
       const { data: verifyAuthData, error: verifyErr } = await userClient.auth.verifyOtp({
         email: tempEmail,
-        token: linkData!.properties.email_otp,
+        token: linkData?.properties?.email_otp || '',
         type: 'magiclink',
       });
       expect(verifyErr).toBeNull();
