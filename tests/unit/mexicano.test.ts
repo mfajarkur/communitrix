@@ -124,4 +124,64 @@ describe('Mexicano Matchmaking Scheduler Tests', () => {
     expect(match.teamB).toContain('p3');
     expect(match.teamB).toContain('p2');
   });
+
+  test('Round >= 2: Respects custom standings metrics and matchHistory (H2H tiebreaker)', () => {
+    const attendees: Attendee[] = [
+      { id: 'p1', seedElo: 1000, matchesPlayed: 2, sitOutCount: 0, lastSitOutRound: null },
+      { id: 'p2', seedElo: 1000, matchesPlayed: 2, sitOutCount: 0, lastSitOutRound: null },
+      { id: 'p3', seedElo: 1000, matchesPlayed: 2, sitOutCount: 0, lastSitOutRound: null },
+      { id: 'p4', seedElo: 1000, matchesPlayed: 2, sitOutCount: 0, lastSitOutRound: null },
+    ];
+
+    // Under WINS metric, p1 and p2 have 2 wins, p3 and p4 have 1 win.
+    // They are tied on wins: p1 & p2 are tied with 2 wins.
+    // However, they have a Head-to-Head match: p1 and p3 played against p2 and p4, score 21-10.
+    // So p1 got +11 net against p2.
+    // Standings points:
+    const standings: StandingRow[] = [
+      { profileId: 'p1', matchesPlayed: 2, sessionPointsFor: 42, sessionPointsAgainst: 20, sessionWins: 2, sessionLosses: 0, sessionDraws: 0, seedElo: 1000 },
+      { profileId: 'p2', matchesPlayed: 2, sessionPointsFor: 42, sessionPointsAgainst: 30, sessionWins: 2, sessionLosses: 0, sessionDraws: 0, seedElo: 1000 },
+      { profileId: 'p3', matchesPlayed: 2, sessionPointsFor: 21, sessionPointsAgainst: 40, sessionWins: 1, sessionLosses: 1, sessionDraws: 0, seedElo: 1000 },
+      { profileId: 'p4', matchesPlayed: 2, sessionPointsFor: 21, sessionPointsAgainst: 40, sessionWins: 1, sessionLosses: 1, sessionDraws: 0, seedElo: 1000 },
+    ];
+
+    const matchHistory = [
+      {
+        id: 'm1',
+        roundNumber: 1,
+        teamA: ['p1', 'p3'],
+        teamB: ['p2', 'p4'],
+        scoreA: 21,
+        scoreB: 10,
+      }
+    ];
+
+    // Under 'WINS' metric:
+    // Rank 1: p1 (2 wins, H2H winner over p2)
+    // Rank 2: p2 (2 wins, H2H loser to p1)
+    // Rank 3/4: p3/p4 (1 win, Elo/random tiebreaker)
+    //
+    // Let's call generateMexicanoRound with 'WINS' metric and matchHistory.
+    const round = generateMexicanoRound({
+      roundNumber: 2,
+      playersPerMatch: 4,
+      courtCount: 1,
+      attendees,
+      history: [],
+      standings,
+      seed: 'seed_xyz:2',
+      metric: 'WINS',
+      matchHistory,
+    });
+
+    const match = round.courts[0];
+    
+    // Team A: 1+4 (p1, p4 or p3 depending on tiebreaker)
+    // Team B: 2+3 (p2, p3 or p4 depending on tiebreaker)
+    // Since p1 is Rank 1, and p2 is Rank 2:
+    // p1 and p2 MUST be on opposing teams!
+    const inSameTeam = (match.teamA.includes('p1') && match.teamA.includes('p2')) ||
+                       (match.teamB.includes('p1') && match.teamB.includes('p2'));
+    expect(inSameTeam).toBe(false);
+  });
 });

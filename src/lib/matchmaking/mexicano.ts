@@ -1,6 +1,6 @@
-import { Attendee, PastPairing, PlannedMatch, RoundOutput, StandingRow } from './types';
+import { Attendee, PastPairing, PlannedMatch, RoundOutput, StandingRow, MatchHistory } from './types';
 import { selectSitOuts } from './sitout';
-import { sortStandings } from './standings';
+import { sortStandings, StandingsMetric } from './standings';
 import { createRNG } from './rng';
 
 export interface MexicanoOptions {
@@ -16,8 +16,10 @@ export function generateMexicanoRound(input: {
   standings: StandingRow[];
   seed: string;
   options?: MexicanoOptions;
+  metric?: StandingsMetric;
+  matchHistory?: MatchHistory[];
 }): RoundOutput {
-  const { roundNumber, playersPerMatch, courtCount, attendees, history, standings, seed, options } = input;
+  const { roundNumber, playersPerMatch, courtCount, attendees, history, standings, seed, options, metric, matchHistory } = input;
   const activeCount = attendees.length;
 
   // 1. Calculate capacity
@@ -45,9 +47,8 @@ export function generateMexicanoRound(input: {
   } else {
     // Round n >= 2: Sort by standings (we map standings to only active playing pool)
     const activeStandings = standings.filter(s => playingPool.some(p => p.id === s.profileId));
-    // Sort them
-    // Note: standing metric is AVG_POINT_DIFF by default
-    const sortedActiveStandings = sortStandings(activeStandings, [], 'AVG_POINT_DIFF', seed);
+    // Sort them using the provided metric (defaulting to 'AVG_POINT_DIFF') and match history
+    const sortedActiveStandings = sortStandings(activeStandings, matchHistory || [], metric || 'AVG_POINT_DIFF', seed);
     
     // Map back to attendees
     const idToAttendee = new Map(playingPool.map(a => [a.id, a]));

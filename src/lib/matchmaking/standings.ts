@@ -72,23 +72,39 @@ export function sortStandings(
       return valB - valA;
     }
 
-    // 2. Session wins desc
-    if (a.sessionWins !== b.sessionWins) {
-      return b.sessionWins - a.sessionWins;
+    // 2. Point Differential desc (if the metric itself is not AVG_POINT_DIFF)
+    if (metric !== 'AVG_POINT_DIFF') {
+      const diffA = a.sessionPointsFor - a.sessionPointsAgainst;
+      const diffB = b.sessionPointsFor - b.sessionPointsAgainst;
+      if (diffA !== diffB) {
+        return diffB - diffA;
+      }
     }
 
-    // 3. Head-to-head point differential desc
+    // 3. Session wins desc (if not already sorted by WINS)
+    if (metric !== 'WINS') {
+      if (a.sessionWins !== b.sessionWins) {
+        return b.sessionWins - a.sessionWins;
+      }
+    }
+
+    // 4. Matches played (fewer matches played ranks higher when points/wins are tied)
+    if (a.matchesPlayed !== b.matchesPlayed) {
+      return a.matchesPlayed - b.matchesPlayed;
+    }
+
+    // 5. Head-to-head point differential desc
     const h2h = getHeadToHeadDiff(a.profileId, b.profileId, matches);
     if (h2h !== 0) {
       return h2h < 0 ? 1 : -1; // h2h is for A against B, so if positive A is better, return negative
     }
 
-    // 4. Seed Elo desc
+    // 6. Seed Elo desc
     if (a.seedElo !== b.seedElo) {
       return b.seedElo - a.seedElo;
     }
 
-    // 5. Seeded random (guarantees a total order, always)
+    // 7. Seeded random (guarantees a total order, always)
     const rngA = createRNG(`${seed}:${a.profileId}`)();
     const rngB = createRNG(`${seed}:${b.profileId}`)();
     return rngB - rngA;

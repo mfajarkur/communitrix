@@ -27,7 +27,8 @@ import {
 } from 'lucide-react';
 import { generateAmericanoRound } from '@/lib/matchmaking/americano';
 import { generateMexicanoRound } from '@/lib/matchmaking/mexicano';
-import { Attendee, PastPairing } from '@/lib/matchmaking/types';
+import { Attendee, PastPairing, MatchHistory, StandingRow } from '@/lib/matchmaking/types';
+import { sortStandings, StandingsMetric } from '@/lib/matchmaking/standings';
 import ScorePickerModal from '@/components/score-picker-modal';
 
 // ==========================================
@@ -603,14 +604,26 @@ export default function WizardForm({
 
     const activeStandings = standings.map((s) => ({
       profileId: s.playerId,
-      matchesPlayed: s.wins + s.losses + s.ties,
-      sessionPointsFor: s.pointsWon,
+      matchesPlayed: s.realMatchesPlayed + s.byesCount,
+      sessionPointsFor: s.totalPoints,
       sessionPointsAgainst: s.pointsLost,
       sessionWins: s.wins,
       sessionLosses: s.losses,
       sessionDraws: s.ties,
-      seedElo: 1000,
+      seedElo: 1000 - registeredPlayers.findIndex((p) => p.id === s.playerId),
     }));
+
+    const completedMatches = matches.filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null);
+    const matchHistory: MatchHistory[] = completedMatches.map((m) => ({
+      id: m.id,
+      roundNumber: m.roundNumber || 1,
+      teamA: m.teamA,
+      teamB: m.teamB,
+      scoreA: m.scoreA,
+      scoreB: m.scoreB,
+    }));
+
+    const standingsMetric: StandingsMetric = config.leaderboardRankedBy === 'WIN' ? 'WINS' : 'TOTAL_POINTS';
 
     const isMexicano = config.gameType.includes('MEXICANO');
     try {
@@ -623,6 +636,9 @@ export default function WizardForm({
             history,
             standings: activeStandings,
             seed: `session-wizard-${nextRoundNumber}`,
+            options: { avoidRepeatPartner: true },
+            metric: standingsMetric,
+            matchHistory,
           })
         : generateAmericanoRound({
             roundNumber: nextRoundNumber,
@@ -847,18 +863,31 @@ export default function WizardForm({
       };
     });
 
-    // Sort by leaderboardRankedBy setting
-    list.sort((a, b) => {
-      if (config.leaderboardRankedBy === 'WIN') {
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.diff !== a.diff) return b.diff - a.diff;
-        return b.totalPoints - a.totalPoints;
-      } else {
-        if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-        if (b.diff !== a.diff) return b.diff - a.diff;
-        return b.wins - a.wins;
-      }
-    });
+    // Sort using sortStandings to keep visual standings 100% aligned with matchmaking
+    const standingsRows: StandingRow[] = list.map((item) => ({
+      profileId: item.playerId,
+      matchesPlayed: item.realMatchesPlayed + item.byesCount,
+      sessionPointsFor: item.totalPoints,
+      sessionPointsAgainst: item.pointsLost,
+      sessionWins: item.wins,
+      sessionLosses: item.losses,
+      sessionDraws: item.ties,
+      seedElo: 1000 - registeredPlayers.findIndex((p) => p.id === item.playerId),
+    }));
+
+    const standingsMetric: StandingsMetric = config.leaderboardRankedBy === 'WIN' ? 'WINS' : 'TOTAL_POINTS';
+    const matchHistory: MatchHistory[] = completedMatches.map((m) => ({
+      id: m.id,
+      roundNumber: m.roundNumber || 1,
+      teamA: m.teamA,
+      teamB: m.teamB,
+      scoreA: m.scoreA,
+      scoreB: m.scoreB,
+    }));
+
+    const sortedRows = sortStandings(standingsRows, matchHistory, standingsMetric, 'wizard-session-seed');
+    const rankMap = new Map(sortedRows.map((row, idx) => [row.profileId, idx]));
+    list.sort((a, b) => (rankMap.get(a.playerId) ?? 0) - (rankMap.get(b.playerId) ?? 0));
 
     list.forEach((item, index) => { item.rank = index + 1; });
     return list;
