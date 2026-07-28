@@ -885,7 +885,7 @@ export default function WizardForm({
         {/* Downloadable Poster Container */}
         <div
           id="podium-download-area"
-          className="bg-zinc-950 text-white p-6 sm:p-8 rounded-3xl border border-zinc-800 relative shadow-2xl overflow-hidden bg-gradient-to-b from-zinc-950 via-zinc-900 to-black"
+          className="bg-zinc-950 text-white p-6 sm:p-8 rounded-3xl border border-orange-500/25 relative shadow-2xl overflow-hidden bg-gradient-to-br from-[#09090b] via-[#2c0f02] to-[#09090b]"
         >
           {/* Decorative background grid and shapes */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
