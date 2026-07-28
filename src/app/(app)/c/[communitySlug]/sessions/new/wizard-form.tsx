@@ -1093,7 +1093,7 @@ export default function WizardForm({
               <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-orange-100/30">
                 <table className="w-full text-left text-xs font-sans text-white">
                   <thead>
-                    <tr className="border-b border-white/10 text-orange-100/90 font-black uppercase text-[10px] tracking-wider">
+                    <tr className="border-b border-white/20 text-orange-100 font-black uppercase text-[10px] tracking-wider">
                       <th className="pb-3 pl-2 w-12 sm:w-16">Rank</th>
                       <th className="pb-3 w-auto">Player</th>
                       <th className="pb-3 text-center w-16 sm:w-20">Matches</th>
@@ -1111,20 +1111,20 @@ export default function WizardForm({
                               1
                             </span>
                           ) : s.rank === 2 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200/90 text-zinc-900 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200 text-zinc-900 font-black text-xs shadow-sm">
                               2
                             </span>
                           ) : s.rank === 3 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-900/90 text-amber-100 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-900 text-amber-100 font-black text-xs shadow-sm">
                               3
                             </span>
                           ) : (
-                            <span className="text-orange-100/80 font-bold">#{s.rank}</span>
+                            <span className="text-orange-100 font-bold">#{s.rank}</span>
                           )}
                         </td>
                         <td className="py-3 w-auto">
                           <div className="flex items-center gap-2.5">
-                            <div className="h-8 w-8 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
+                            <div className="h-8 w-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
                               {s.name.slice(0, 2)}
                             </div>
                             <div>
@@ -1135,16 +1135,16 @@ export default function WizardForm({
                         <td className="py-3 text-center font-bold text-white w-16 sm:w-20">
                           {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
                         </td>
-                        <td className="py-3 text-center font-mono font-bold text-orange-100/90 w-20 sm:w-24">
+                        <td className="py-3 text-center font-mono font-black text-white w-20 sm:w-24">
                           {s.wins}-{s.losses}-{s.ties}
                         </td>
                         <td className="py-3 text-center font-mono font-bold w-16 sm:w-20">
-                          <span className={`px-2 py-0.5 rounded-md text-xs ${
+                          <span className={`px-2 py-0.5 rounded-md text-xs font-black ${
                             s.diff > 0
-                              ? 'bg-emerald-500/20 text-emerald-300 font-extrabold border border-emerald-500/30'
+                              ? 'bg-emerald-600 text-white shadow-sm'
                               : s.diff < 0
-                              ? 'bg-rose-500/20 text-rose-300 font-extrabold border border-rose-500/30'
-                              : 'text-orange-100/60'
+                              ? 'bg-rose-600 text-white shadow-sm'
+                              : 'text-white bg-white/10'
                           }`}>
                             {s.diff > 0 ? `+${s.diff}` : s.diff}
                           </span>
