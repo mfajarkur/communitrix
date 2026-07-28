@@ -898,12 +898,29 @@ export default function WizardForm({
           {/* Downloadable Poster Container with fixed width to ensure unclipped image output */}
           <div
             id="podium-download-area"
-            className="w-[640px] shrink-0 mx-auto bg-zinc-950 text-white p-6 sm:p-8 rounded-3xl border border-orange-500/25 relative shadow-2xl overflow-hidden bg-gradient-to-br from-[#09090b] via-[#2c0f02] to-[#09090b]"
+            className="w-[640px] shrink-0 mx-auto bg-orange-950 text-white p-6 sm:p-8 rounded-3xl border border-orange-500/30 relative shadow-2xl overflow-hidden"
           >
-          {/* Decorative background grid and shapes */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
-          <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+            {/* Video background - bottom layer */}
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              crossOrigin="anonymous"
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ zIndex: 0 }}
+            >
+              <source src="https://lzzzjtijagandsrodaaj.supabase.co/storage/v1/object/public/assets/splash-bg.mp4" type="video/mp4" />
+            </video>
+
+            {/* Orange gradient overlay on top of video */}
+            <div
+              className="absolute inset-0 bg-gradient-to-b from-orange-600/80 via-orange-500/50 to-orange-950/90 pointer-events-none"
+              style={{ zIndex: 1 }}
+            />
+
+            {/* Decorative background grid and shapes */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" style={{ zIndex: 2 }} />
 
           {/* Header Branding */}
           <div className="flex justify-between items-center border-b border-zinc-800/80 pb-4 mb-6 shrink-0 relative z-10">
@@ -1005,11 +1022,11 @@ export default function WizardForm({
             <h3 className="text-xs font-black uppercase tracking-wider text-zinc-550 pl-2">
               Complete Standings
             </h3>
-            <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg overflow-hidden">
-              <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-orange-600/40">
-                <table className="w-full text-left text-xs font-sans text-zinc-950">
+            <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-[#3d1302] via-[#260c02] to-[#140601] shadow-lg overflow-hidden">
+              <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-orange-650/40">
+                <table className="w-full text-left text-xs font-sans text-white">
                   <thead>
-                    <tr className="border-b border-zinc-950/15 text-zinc-950/70 font-black uppercase text-[10px] tracking-wider">
+                    <tr className="border-b border-orange-550/15 text-orange-200/80 font-black uppercase text-[10px] tracking-wider">
                       <th className="pb-3 pl-2 w-12 sm:w-16">Rank</th>
                       <th className="pb-3 w-auto">Player</th>
                       <th className="pb-3 text-center w-16 sm:w-20">Matches</th>
@@ -1018,54 +1035,54 @@ export default function WizardForm({
                       <th className="pb-3 text-right pr-2 w-16 sm:w-20">Points</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-950/10">
+                  <tbody className="divide-y divide-orange-500/10">
                     {standings.map((s) => (
-                      <tr key={s.playerId} className="hover:bg-zinc-950/5 transition-colors">
-                        <td className="py-3 pl-2 font-black text-sm text-zinc-950 w-12 sm:w-16">
+                      <tr key={s.playerId} className="hover:bg-orange-500/5 transition-colors">
+                        <td className="py-3 pl-2 font-black text-sm text-white w-12 sm:w-16">
                           {s.rank === 1 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-950 text-orange-400 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-zinc-955 font-black text-xs shadow-sm">
                               1
                             </span>
                           ) : s.rank === 2 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-zinc-100 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-zinc-950 font-black text-xs shadow-sm">
                               2
                             </span>
                           ) : s.rank === 3 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-900 text-amber-100 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-800 text-white font-black text-xs shadow-sm">
                               3
                             </span>
                           ) : (
-                            <span className="text-zinc-900 font-bold">#{s.rank}</span>
+                            <span className="text-zinc-400 font-bold">#{s.rank}</span>
                           )}
                         </td>
                         <td className="py-3 w-auto">
                           <div className="flex items-center gap-2.5">
-                            <div className="h-8 w-8 rounded-full bg-zinc-950/10 border border-zinc-950/15 flex items-center justify-center text-xs font-bold text-zinc-900 uppercase shrink-0">
+                            <div className="h-8 w-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
                               {s.name.slice(0, 2)}
                             </div>
                             <div>
-                              <p className="font-black text-zinc-950 truncate max-w-[120px] sm:max-w-none">{s.name}</p>
+                              <p className="font-bold text-white truncate max-w-[120px] sm:max-w-none">{s.name}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 text-center font-bold text-zinc-950 w-16 sm:w-20">
+                        <td className="py-3 text-center font-bold text-white w-16 sm:w-20">
                           {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
                         </td>
-                        <td className="py-3 text-center font-mono font-bold text-zinc-800 w-20 sm:w-24">
+                        <td className="py-3 text-center font-mono font-bold text-zinc-300 w-20 sm:w-24">
                           {s.wins}-{s.losses}-{s.ties}
                         </td>
                         <td className="py-3 text-center font-mono font-bold w-16 sm:w-20">
                           <span className={`px-2 py-0.5 rounded-md text-xs ${
                             s.diff > 0
-                              ? 'bg-emerald-950/10 text-emerald-900 font-extrabold border border-emerald-950/15'
+                              ? 'bg-emerald-500/15 text-emerald-450 font-extrabold border border-emerald-500/20'
                               : s.diff < 0
-                              ? 'bg-rose-950/10 text-rose-900 font-extrabold border border-rose-950/15'
-                              : 'text-zinc-700'
+                              ? 'bg-rose-500/15 text-rose-455 font-extrabold border border-rose-500/20'
+                              : 'text-zinc-400'
                           }`}>
                             {s.diff > 0 ? `+${s.diff}` : s.diff}
                           </span>
                         </td>
-                        <td className="py-3 text-right pr-2 font-black text-sm text-zinc-950 w-16 sm:w-20">
+                        <td className="py-3 text-right pr-2 font-black text-sm text-white w-16 sm:w-20">
                           {s.totalPoints}
                         </td>
                       </tr>
