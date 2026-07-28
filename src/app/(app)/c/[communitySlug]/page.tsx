@@ -114,10 +114,10 @@ export default async function CommunityDashboardPage({
     .eq('community_id', community.id)
     .eq('status', 'COMPLETED');
 
-  // 8. Fetch pending claim requests for this community
+  // 8. Fetch pending claim requests for this community (Admin Only)
   const isHostOrAdmin = callerMember.role === 'ADMIN' || callerMember.role === 'HOST';
   let pendingClaims: any[] = [];
-  if (isHostOrAdmin) {
+  if (isAdmin) {
     const { data: claimsData } = await supabase
       .from('guest_claim_requests')
       .select(`

@@ -88,8 +88,8 @@ export default async function CommunityLayout({
           </Link>
         </div>
 
-        {/* Edit Banner Button for Admin & Host */}
-        {isHostOrAdmin && (
+        {/* Edit Banner Button for Admin Only */}
+        {member.role === 'ADMIN' && (
           <BannerImageEditor
             communityId={community.id}
             communitySlug={communitySlug}

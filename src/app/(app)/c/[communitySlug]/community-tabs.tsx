@@ -24,6 +24,7 @@ import {
 import AddGuestForm from './add-guest-form';
 import { getDisplayName } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
+import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 
 interface CommunityTabsProps {
   communityId: string;
@@ -84,11 +85,11 @@ export default function CommunityTabs({
     }
   };
 
-  // Admin/Host approves or rejects a claim request
+  // Admin approves or rejects a claim request
   const handleResolve = async (requestId: string, action: 'APPROVE' | 'REJECT') => {
     setResolvingId(requestId);
     try {
-      const result = await resolveClaimAction(requestId, action, communitySlug);
+      const result = await resolveClaimAction(requestId, action, communitySlug, communityId);
       if (result?.success) {
         window.location.reload();
       }
@@ -96,6 +97,44 @@ export default function CommunityTabs({
       console.error('Failed to resolve claim request', err);
     } finally {
       setResolvingId(null);
+    }
+  };
+
+  // Admin assigns role to member (ADMIN / HOST / MEMBER)
+  const handleUpdateRole = async (targetProfileId: string, newRole: 'ADMIN' | 'HOST' | 'MEMBER') => {
+    try {
+      const result = await updateMemberRoleAction({
+        communityId,
+        targetProfileId,
+        newRole,
+        communitySlug,
+      });
+      if (result.ok) {
+        window.location.reload();
+      } else {
+        alert(result.message || 'Failed to update role');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error updating role');
+    }
+  };
+
+  // Admin removes member from community
+  const handleRemoveMember = async (targetProfileId: string, memberName: string) => {
+    if (!confirm(`Are you sure you want to remove "${memberName}" from this community?`)) return;
+    try {
+      const result = await removeMemberAction({
+        communityId,
+        targetProfileId,
+        communitySlug,
+      });
+      if (result.ok) {
+        window.location.reload();
+      } else {
+        alert(result.message || 'Failed to remove member');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error removing member');
     }
   };
 
@@ -434,46 +473,68 @@ export default function CommunityTabs({
                 <div className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
                   <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
                     <Shield className="h-4.5 w-4.5 text-orange-500" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">ADMINS & HOSTS</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">ADMINS & HOSTS ({adminsAndHosts.length})</h3>
                   </div>
                   
                   {adminsAndHosts.length === 0 ? (
                     <p className="text-xs text-zinc-400 text-center py-4">No admins or hosts registered.</p>
                   ) : (
-                    <div className="grid grid-cols-4 gap-4 justify-items-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 justify-items-center">
                       {adminsAndHosts.map((m: any) => {
                         const p = m.profile;
                         if (!p) return null;
                         const pName = getDisplayName(p);
                         return (
-                          <Link
-                            key={p.id}
-                            href={`/c/${communitySlug}/players/${p.id}`}
-                            className="flex flex-col items-center group w-full text-center"
-                          >
-                            <div className="relative">
-                              {p.avatar_url ? (
-                                <img
-                                  src={p.avatar_url}
-                                  alt={pName}
-                                  className="h-12 w-12 rounded-full object-cover border border-zinc-100 bg-zinc-50"
-                                />
-                              ) : (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 font-extrabold text-sm uppercase">
-                                  {pName.slice(0, 2)}
+                          <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
+                            <Link
+                              href={`/c/${communitySlug}/players/${p.id}`}
+                              className="flex flex-col items-center w-full"
+                            >
+                              <div className="relative">
+                                {p.avatar_url ? (
+                                  <img
+                                    src={p.avatar_url}
+                                    alt={pName}
+                                    className="h-12 w-12 rounded-full object-cover border border-zinc-100 bg-zinc-50"
+                                  />
+                                ) : (
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 font-extrabold text-sm uppercase">
+                                    {pName.slice(0, 2)}
+                                  </div>
+                                )}
+                                <div className="absolute -bottom-1 -right-1 bg-orange-500 rounded-full p-0.5 text-white shadow-sm border border-white">
+                                  <Shield className="h-2.5 w-2.5" />
                                 </div>
-                              )}
-                              <div className="absolute -bottom-1 -right-1 bg-orange-500 rounded-full p-0.5 text-white shadow-sm border border-white">
-                                <Shield className="h-2.5 w-2.5" />
                               </div>
-                            </div>
-                            <span className="text-[10px] font-black text-[#111827] mt-1.5 truncate w-full group-hover:underline">
-                              {pName.split(' ')[0]}
-                            </span>
-                            <span className="text-[8px] font-extrabold uppercase tracking-wider mt-0.5 text-orange-500">
-                              {m.role}
-                            </span>
-                          </Link>
+                              <span className="text-[10px] font-black text-[#111827] mt-1.5 truncate w-full group-hover:underline">
+                                {pName.split(' ')[0]}
+                              </span>
+                              <span className="text-[8px] font-extrabold uppercase tracking-wider mt-0.5 text-orange-500">
+                                {m.role}
+                              </span>
+                            </Link>
+                            {isAdmin && (
+                              <div className="flex items-center justify-center gap-1 mt-1.5 z-10">
+                                <select
+                                  value={m.role}
+                                  onChange={(e) => handleUpdateRole(p.id, e.target.value as any)}
+                                  className="text-[9px] font-extrabold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
+                                >
+                                  <option value="ADMIN">ADMIN</option>
+                                  <option value="HOST">HOST</option>
+                                  <option value="MEMBER">MEMBER</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMember(p.id, pName)}
+                                  className="text-[9px] font-black uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
+                                  title="Remove member"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
@@ -490,7 +551,7 @@ export default function CommunityTabs({
                   {generalMembers.length === 0 ? (
                     <p className="text-xs text-zinc-400 text-center py-4">No regular members registered.</p>
                   ) : (
-                    <div className="grid grid-cols-4 gap-4 justify-items-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 justify-items-center">
                       {generalMembers.map((m: any) => {
                         const p = m.profile;
                         if (!p) return null;
@@ -531,6 +592,27 @@ export default function CommunityTabs({
                                 </button>
                               )
                             ) : null}
+                            {isAdmin && (
+                              <div className="flex items-center justify-center gap-1 mt-1.5 z-10">
+                                <select
+                                  value={m.role}
+                                  onChange={(e) => handleUpdateRole(p.id, e.target.value as any)}
+                                  className="text-[9px] font-extrabold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
+                                >
+                                  <option value="ADMIN">ADMIN</option>
+                                  <option value="HOST">HOST</option>
+                                  <option value="MEMBER">MEMBER</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMember(p.id, pName)}
+                                  className="text-[9px] font-black uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
+                                  title="Remove member"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -542,8 +624,8 @@ export default function CommunityTabs({
 
               {/* Admin Side Panel: Pending Claims & Add Guest */}
               <div className="space-y-6">
-                {/* PENDING CLAIM REQUESTS (Admin/Host Only) */}
-                {isHostOrAdmin && pendingClaims.length > 0 && (
+                {/* PENDING CLAIM REQUESTS (Admin Only) */}
+                {isAdmin && pendingClaims.length > 0 && (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
                     <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
                       <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
@@ -596,8 +678,8 @@ export default function CommunityTabs({
                   </div>
                 )}
 
-                {/* ADD GUEST FORM */}
-                {isAdmin ? (
+                {/* ADD GUEST FORM (Host & Admin) */}
+                {isHostOrAdmin ? (
                   <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm space-y-4">
                     <div>
                       <h3 className="font-bold text-[#111827]">Add Guest Player</h3>
@@ -610,7 +692,7 @@ export default function CommunityTabs({
                 ) : (
                   <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-6 text-center">
                     <p className="text-xs text-zinc-400">
-                      Only community administrators can register guest players or adjust player permissions.
+                      Only community hosts or administrators can register guest players or manage sessions.
                     </p>
                   </div>
                 )}

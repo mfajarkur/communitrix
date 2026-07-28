@@ -162,7 +162,7 @@ export async function uploadCommunityLogoAction(formData: FormData) {
     return { error: 'Profile not found' };
   }
 
-  // 3. Verify user is ADMIN or HOST of this community
+  // 3. Verify user is ADMIN of this community
   const { data: member } = await supabase
     .from('community_members')
     .select('role')
@@ -171,8 +171,8 @@ export async function uploadCommunityLogoAction(formData: FormData) {
     .eq('is_active', true)
     .maybeSingle();
 
-  if (!member || (member.role !== 'ADMIN' && member.role !== 'HOST')) {
-    return { error: 'Only community admins or hosts can change the logo' };
+  if (!member || member.role !== 'ADMIN') {
+    return { error: 'Only community administrators can change the logo or badge.' };
   }
 
   // 4. Upload logo to Supabase Storage using admin client

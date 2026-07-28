@@ -126,9 +126,9 @@ begin
     raise exception 'NOT_FOUND' using message = 'Pending claim request not found', errcode = 'P0002';
   end if;
 
-  -- Check caller is admin/host of community
-  if not public.is_community_host(v_request.community_id) and not public.is_platform_admin() then
-    raise exception 'UNAUTHORIZED' using message = 'Only hosts and admins can resolve claim requests', errcode = '42501';
+  -- Check caller is admin of community
+  if not public.is_community_admin(v_request.community_id) and not public.is_platform_admin() then
+    raise exception 'UNAUTHORIZED' using message = 'Only community administrators can resolve claim requests', errcode = '42501';
   end if;
 
   if p_action = 'APPROVE' then
