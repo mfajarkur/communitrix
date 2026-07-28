@@ -507,14 +507,26 @@ export default function WizardForm({
 
     const attendees: Attendee[] = registeredPlayers.map((p, idx) => {
       const matchesPlayed = matches.filter(
-        (m) => m.isCompleted && (m.teamA.includes(p.id) || m.teamB.includes(p.id))
+        (m) => m.teamA.includes(p.id) || m.teamB.includes(p.id)
       ).length;
+
+      let sitOutCount = 0;
+      let lastSitOutRound: number | null = null;
+      roundSitOuts.forEach((players, rNum) => {
+        if (players.includes(p.id)) {
+          sitOutCount++;
+          if (lastSitOutRound === null || rNum > lastSitOutRound) {
+            lastSitOutRound = rNum;
+          }
+        }
+      });
+
       return {
         id: p.id,
         seedElo: 1000 - idx,
         matchesPlayed,
-        sitOutCount: 0,
-        lastSitOutRound: null,
+        sitOutCount,
+        lastSitOutRound,
       };
     });
 
