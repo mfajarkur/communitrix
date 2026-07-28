@@ -843,7 +843,7 @@ export default function WizardForm({
 
       // Force exact dimensions to prevent clipping on mobile viewports
       const targetWidth = 640;
-      const targetHeight = node.scrollHeight;
+      const targetHeight = node.offsetHeight;
 
       const blob = await toBlob(node, {
         cacheBust: true,
