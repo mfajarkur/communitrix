@@ -831,14 +831,17 @@ export default function WizardForm({
   const handleDownloadImage = async () => {
     setIsDownloading(true);
     try {
-      const { toPng } = await import('html-to-image');
+      const { toBlob } = await import('html-to-image');
       const node = document.getElementById('podium-download-area');
       if (!node) {
         setIsDownloading(false);
         return;
       }
 
-      const dataUrl = await toPng(node, {
+      // Wait a short tick to ensure elements are fully settled
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const blob = await toBlob(node, {
         cacheBust: true,
         backgroundColor: '#09090b',
         style: {
@@ -846,12 +849,23 @@ export default function WizardForm({
         },
       });
 
+      if (!blob) {
+        throw new Error('Generated image blob is null');
+      }
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `communitrix-${config.activityName.toLowerCase().replace(/\s+/g, '-')}-results.png`;
-      link.href = dataUrl;
+      link.href = url;
+      
+      // Append to body is required for some mobile and desktop browsers to trigger click
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to download image', err);
+      alert('Failed to export standings as image. Please take a screenshot or try again.');
     } finally {
       setIsDownloading(false);
     }
