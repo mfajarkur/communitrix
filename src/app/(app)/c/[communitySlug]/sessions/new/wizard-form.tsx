@@ -841,11 +841,20 @@ export default function WizardForm({
       // Wait a short tick to ensure elements are fully settled
       await new Promise((resolve) => setTimeout(resolve, 100));
 
+      // Force exact dimensions to prevent clipping on mobile viewports
+      const targetWidth = 640;
+      const targetHeight = node.scrollHeight;
+
       const blob = await toBlob(node, {
         cacheBust: true,
         backgroundColor: '#09090b',
+        width: targetWidth,
+        height: targetHeight,
         style: {
           borderRadius: '0px',
+          width: `${targetWidth}px`,
+          height: `${targetHeight}px`,
+          transform: 'none',
         },
       });
 
