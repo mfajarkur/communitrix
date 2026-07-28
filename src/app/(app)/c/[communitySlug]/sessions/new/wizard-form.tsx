@@ -1005,11 +1005,11 @@ export default function WizardForm({
             <h3 className="text-xs font-black uppercase tracking-wider text-zinc-550 pl-2">
               Complete Standings
             </h3>
-            <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg overflow-hidden">
-              <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-orange-600/40">
-                <table className="w-full text-left text-xs font-sans text-zinc-950">
+            <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-600 to-amber-600 shadow-lg overflow-hidden">
+              <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-orange-100/30">
+                <table className="w-full text-left text-xs font-sans text-white">
                   <thead>
-                    <tr className="border-b border-zinc-950/15 text-zinc-950/70 font-black uppercase text-[10px] tracking-wider">
+                    <tr className="border-b border-white/10 text-orange-100/90 font-black uppercase text-[10px] tracking-wider">
                       <th className="pb-3 pl-2 w-12 sm:w-16">Rank</th>
                       <th className="pb-3 w-auto">Player</th>
                       <th className="pb-3 text-center w-16 sm:w-20">Matches</th>
@@ -1018,54 +1018,54 @@ export default function WizardForm({
                       <th className="pb-3 text-right pr-2 w-16 sm:w-20">Points</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-950/10">
+                  <tbody className="divide-y divide-white/10">
                     {standings.map((s) => (
-                      <tr key={s.playerId} className="hover:bg-zinc-950/5 transition-colors">
-                        <td className="py-3 pl-2 font-black text-sm text-zinc-950 w-12 sm:w-16">
+                      <tr key={s.playerId} className="hover:bg-white/5 transition-colors">
+                        <td className="py-3 pl-2 font-black text-sm text-white w-12 sm:w-16">
                           {s.rank === 1 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-950 text-orange-400 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-orange-600 font-black text-xs shadow-sm">
                               1
                             </span>
                           ) : s.rank === 2 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-zinc-100 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200/90 text-zinc-900 font-black text-xs shadow-sm">
                               2
                             </span>
                           ) : s.rank === 3 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-900 text-amber-100 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-900/90 text-amber-100 font-black text-xs shadow-sm">
                               3
                             </span>
                           ) : (
-                            <span className="text-zinc-900 font-bold">#{s.rank}</span>
+                            <span className="text-orange-100/80 font-bold">#{s.rank}</span>
                           )}
                         </td>
                         <td className="py-3 w-auto">
                           <div className="flex items-center gap-2.5">
-                            <div className="h-8 w-8 rounded-full bg-zinc-950/10 border border-zinc-950/15 flex items-center justify-center text-xs font-bold text-zinc-900 uppercase shrink-0">
+                            <div className="h-8 w-8 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
                               {s.name.slice(0, 2)}
                             </div>
                             <div>
-                              <p className="font-black text-zinc-950 truncate max-w-[120px] sm:max-w-none">{s.name}</p>
+                              <p className="font-extrabold text-white truncate max-w-[120px] sm:max-w-none">{s.name}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 text-center font-bold text-zinc-950 w-16 sm:w-20">
+                        <td className="py-3 text-center font-bold text-white w-16 sm:w-20">
                           {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
                         </td>
-                        <td className="py-3 text-center font-mono font-bold text-zinc-800 w-20 sm:w-24">
+                        <td className="py-3 text-center font-mono font-bold text-orange-100/90 w-20 sm:w-24">
                           {s.wins}-{s.losses}-{s.ties}
                         </td>
                         <td className="py-3 text-center font-mono font-bold w-16 sm:w-20">
                           <span className={`px-2 py-0.5 rounded-md text-xs ${
                             s.diff > 0
-                              ? 'bg-emerald-950/10 text-emerald-900 font-extrabold border border-emerald-950/15'
+                              ? 'bg-emerald-500/20 text-emerald-300 font-extrabold border border-emerald-500/30'
                               : s.diff < 0
-                              ? 'bg-rose-950/10 text-rose-900 font-extrabold border border-rose-950/15'
-                              : 'text-zinc-700'
+                              ? 'bg-rose-500/20 text-rose-300 font-extrabold border border-rose-500/30'
+                              : 'text-orange-100/60'
                           }`}>
                             {s.diff > 0 ? `+${s.diff}` : s.diff}
                           </span>
                         </td>
-                        <td className="py-3 text-right pr-2 font-black text-sm text-zinc-950 w-16 sm:w-20">
+                        <td className="py-3 text-right pr-2 font-black text-sm text-white w-16 sm:w-20">
                           {s.totalPoints}
                         </td>
                       </tr>
