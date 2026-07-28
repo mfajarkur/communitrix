@@ -177,6 +177,9 @@ export default function WizardForm({
   // ------------------------------------------
   const [registeredPlayers, setRegisteredPlayers] = useState<PlayerRegistration[]>([]);
   const [manualInputName, setManualInputName] = useState('');
+  const [teamNameInput, setTeamNameInput] = useState('');
+  const [player1NameInput, setPlayer1NameInput] = useState('');
+  const [player2NameInput, setPlayer2NameInput] = useState('');
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [guestErrorMessage, setGuestErrorMessage] = useState<string | null>(null);
 
@@ -402,14 +405,72 @@ export default function WizardForm({
     }
   };
 
+  // Step 3: Add Manual Team
+  const handleAddTeam = async () => {
+    const rawP1 = formatTitleCase(player1NameInput);
+    const rawP2 = formatTitleCase(player2NameInput);
+    const rawT = formatTitleCase(teamNameInput);
+    if (!rawP1 || !rawP2) return;
+
+    let fullName = rawT ? `${rawT} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2}`;
+
+    // Check duplicate name and append numeric suffix
+    const existingNames = registeredPlayers.map((p) => p.name.trim().toLowerCase());
+    if (existingNames.includes(fullName.toLowerCase())) {
+      let count = 2;
+      let checkName = rawT ? `${rawT} ${count} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2} ${count}`;
+      while (existingNames.includes(checkName.toLowerCase())) {
+        count++;
+        checkName = rawT ? `${rawT} ${count} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2} ${count}`;
+      }
+      fullName = checkName;
+    }
+
+    if (!isGuestDemoMode) {
+      setIsAddingGuest(true);
+      const result = await addGuestPlayerAction({ communityId, fullName });
+      setIsAddingGuest(false);
+      if (result.ok && result.data) {
+        setRegisteredPlayers((prev) => [
+          ...prev,
+          { id: result.data.id, name: fullName, isGuest: true, avatarUrl: null },
+        ]);
+        setTeamNameInput('');
+        setPlayer1NameInput('');
+        setPlayer2NameInput('');
+      } else {
+        const tempId = `team-${Date.now()}`;
+        setRegisteredPlayers((prev) => [
+          ...prev,
+          { id: tempId, name: fullName, isGuest: true, avatarUrl: null },
+        ]);
+        setTeamNameInput('');
+        setPlayer1NameInput('');
+        setPlayer2NameInput('');
+      }
+    } else {
+      const tempId = `team-${Date.now()}`;
+      setRegisteredPlayers((prev) => [
+        ...prev,
+        { id: tempId, name: fullName, isGuest: true, avatarUrl: null },
+      ]);
+      setTeamNameInput('');
+      setPlayer1NameInput('');
+      setPlayer2NameInput('');
+    }
+  };
+
   const handleRemovePlayer = (id: string) => {
     setRegisteredPlayers((prev) => prev.filter((p) => p.id !== id));
   };
 
   // Step 3 -> 4: Generate Matches based on official Ruleset (Americano / Mexicano)
   const handleGenerateMatches = () => {
-    if (registeredPlayers.length < 4) {
-      setErrorMessage('Minimum 4 players required to generate matches.');
+    const isTeamMode = config.gameType.includes('TEAM_');
+    const minRequired = isTeamMode ? 2 : 4;
+
+    if (registeredPlayers.length < minRequired) {
+      setErrorMessage(`Minimum ${minRequired} ${isTeamMode ? 'teams' : 'players'} required to generate matches.`);
       return;
     }
     setErrorMessage(null);
@@ -428,6 +489,7 @@ export default function WizardForm({
     let matchCounter = 1;
 
     const isMexicano = config.gameType.includes('MEXICANO');
+    const playersPerMatch = isTeamMode ? 2 : 4;
     // For Americano: pre-compute 3-4 rounds upfront.
     // For Mexicano: generate Round 1 upfront (Round 2+ generated sequentially after scores per Rule 2.2).
     const totalRoundsToGenerate = isMexicano ? 1 : Math.min(4, Math.max(1, registeredPlayers.length - 1));
@@ -437,7 +499,7 @@ export default function WizardForm({
         const roundOutput = isMexicano
           ? generateMexicanoRound({
               roundNumber: r,
-              playersPerMatch: 4,
+              playersPerMatch,
               courtCount: config.courtCount,
               attendees,
               history,
@@ -446,7 +508,7 @@ export default function WizardForm({
             })
           : generateAmericanoRound({
               roundNumber: r,
-              playersPerMatch: 4,
+              playersPerMatch,
               courtCount: config.courtCount,
               attendees,
               history,
@@ -458,8 +520,8 @@ export default function WizardForm({
             id: `match-${matchCounter}`,
             roundNumber: r,
             courtNumber: c.courtNumber,
-            teamA: [c.teamA[0], c.teamA[1] || c.teamA[0]] as [string, string],
-            teamB: [c.teamB[0], c.teamB[1] || c.teamB[0]] as [string, string],
+            teamA: [c.teamA[0], c.teamA[1] || ''] as [string, string],
+            teamB: [c.teamB[0], c.teamB[1] || ''] as [string, string],
             scoreA: null,
             scoreB: null,
             isCompleted: false,
@@ -530,10 +592,13 @@ export default function WizardForm({
       };
     });
 
+    const isTeamMode = config.gameType.includes('TEAM_');
+    const playersPerMatch = isTeamMode ? 2 : 4;
+
     const history: PastPairing[] = matches.map((m) => ({
       roundNumber: m.roundNumber || 1,
-      teamA: m.teamA,
-      teamB: m.teamB,
+      teamA: m.teamA.filter(Boolean),
+      teamB: m.teamB.filter(Boolean),
     }));
 
     const activeStandings = standings.map((s) => ({
@@ -552,7 +617,7 @@ export default function WizardForm({
       const roundOutput = isMexicano
         ? generateMexicanoRound({
             roundNumber: nextRoundNumber,
-            playersPerMatch: 4,
+            playersPerMatch,
             courtCount: config.courtCount,
             attendees,
             history,
@@ -561,7 +626,7 @@ export default function WizardForm({
           })
         : generateAmericanoRound({
             roundNumber: nextRoundNumber,
-            playersPerMatch: 4,
+            playersPerMatch,
             courtCount: config.courtCount,
             attendees,
             history,
@@ -573,8 +638,8 @@ export default function WizardForm({
         id: `match-${matchCounter++}`,
         roundNumber: nextRoundNumber,
         courtNumber: c.courtNumber,
-        teamA: [c.teamA[0], c.teamA[1] || c.teamA[0]] as [string, string],
-        teamB: [c.teamB[0], c.teamB[1] || c.teamB[0]] as [string, string],
+        teamA: [c.teamA[0], c.teamA[1] || ''] as [string, string],
+        teamB: [c.teamB[0], c.teamB[1] || ''] as [string, string],
         scoreA: null,
         scoreB: null,
         isCompleted: false,
@@ -1552,51 +1617,106 @@ export default function WizardForm({
           {/* Registration Form Card */}
           <div className="p-5 sm:p-6 rounded-2xl border border-zinc-200 bg-white space-y-5 shadow-sm">
             {/* Input Field & Add Button */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
-                Add Player Name
-              </label>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (manualInputName.trim()) {
-                    handleAddManualPlayer(isGuestDemoMode);
-                  }
-                }}
-                className="flex flex-col sm:flex-row gap-2.5"
-              >
-                <input
-                  type="text"
-                  value={manualInputName}
-                  onChange={(e) => setManualInputName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (manualInputName.trim()) {
-                        handleAddManualPlayer(isGuestDemoMode);
-                      }
+            {config.gameType.includes('TEAM_') ? (
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                  Register New Team
+                </label>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (player1NameInput.trim() && player2NameInput.trim()) {
+                      handleAddTeam();
                     }
                   }}
-                  placeholder="Type player name and press Enter..."
-                  className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all bg-zinc-50 focus:bg-white"
-                />
-                <button
-                  type="submit"
-                  disabled={!manualInputName.trim() || isAddingGuest}
-                  className="px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
+                  className="space-y-3"
                 >
-                  {isAddingGuest ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <UserPlus className="h-4 w-4" />
-                  )}
-                  <span>+ Add Player</span>
-                </button>
-              </form>
-            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <input
+                      type="text"
+                      value={teamNameInput}
+                      onChange={(e) => setTeamNameInput(e.target.value)}
+                      placeholder="Team Name (Optional)"
+                      className="px-4 py-3 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all bg-zinc-50 focus:bg-white"
+                    />
+                    <input
+                      type="text"
+                      value={player1NameInput}
+                      onChange={(e) => setPlayer1NameInput(e.target.value)}
+                      placeholder="Player 1 Name (Required)"
+                      className="px-4 py-3 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all bg-zinc-50 focus:bg-white"
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={player2NameInput}
+                      onChange={(e) => setPlayer2NameInput(e.target.value)}
+                      placeholder="Player 2 Name (Required)"
+                      className="px-4 py-3 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all bg-zinc-50 focus:bg-white"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!player1NameInput.trim() || !player2NameInput.trim() || isAddingGuest}
+                    className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    {isAddingGuest ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="h-4 w-4" />
+                    )}
+                    <span>+ Add Team</span>
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                  Add Player Name
+                </label>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (manualInputName.trim()) {
+                      handleAddManualPlayer(isGuestDemoMode);
+                    }
+                  }}
+                  className="flex flex-col sm:flex-row gap-2.5"
+                >
+                  <input
+                    type="text"
+                    value={manualInputName}
+                    onChange={(e) => setManualInputName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (manualInputName.trim()) {
+                          handleAddManualPlayer(isGuestDemoMode);
+                        }
+                      }
+                    }}
+                    placeholder="Type player name and press Enter..."
+                    className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-all bg-zinc-50 focus:bg-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!manualInputName.trim() || isAddingGuest}
+                    className="px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    {isAddingGuest ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="h-4 w-4" />
+                    )}
+                    <span>+ Add Player</span>
+                  </button>
+                </form>
+              </div>
+            )}
 
             {/* Action Button: Add Yourself (Community Mode Only) */}
-            {!isGuestDemoMode && (
+            {!config.gameType.includes('TEAM_') && !isGuestDemoMode && (
               <div className="pt-1">
                 <button
                   type="button"
@@ -1612,9 +1732,11 @@ export default function WizardForm({
             {/* Player List Counter Header */}
             <div className="pt-4 border-t border-zinc-100 text-center space-y-1">
               <h3 className="text-lg sm:text-xl font-black uppercase tracking-wide text-[#111827]">
-                Player Roster ({registeredPlayers.length})
+                {config.gameType.includes('TEAM_') ? 'Team Roster' : 'Player Roster'} ({registeredPlayers.length})
               </h3>
-              <p className="text-xs text-zinc-400 italic font-light">*Minimum 4 players required</p>
+              <p className="text-xs text-zinc-400 italic font-light">
+                {config.gameType.includes('TEAM_') ? '*Minimum 2 teams required' : '*Minimum 4 players required'}
+              </p>
             </div>
 
             {/* Selected Registered Players Badges */}
@@ -1643,12 +1765,14 @@ export default function WizardForm({
               </div>
             ) : (
               <div className="p-4 rounded-xl border border-dashed border-zinc-200 text-center text-xs text-zinc-400 font-light">
-                No players added yet. Add at least 4 players to start the session.
+                {config.gameType.includes('TEAM_')
+                  ? 'No teams added yet. Add at least 2 teams to start the session.'
+                  : 'No players added yet. Add at least 4 players to start the session.'}
               </div>
             )}
 
             {/* Quick Community Member Selection Checklist (Community Mode Only) */}
-            {!isGuestDemoMode && availableCommunityPlayers.length > 0 && (
+            {!config.gameType.includes('TEAM_') && !isGuestDemoMode && availableCommunityPlayers.length > 0 && (
               <div className="space-y-2 pt-4 border-t border-zinc-100">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
                   Or Select From Community Members ({availableCommunityPlayers.length})
@@ -1790,8 +1914,12 @@ export default function WizardForm({
               }
 
               return currentRoundMatches.map((m, idx) => {
-                const teamANamesJoined = m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
-                const teamBNamesJoined = m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
+                const teamANamesJoined = config.gameType.includes('TEAM_')
+                  ? (playerMap.get(m.teamA[0])?.name || 'Team')
+                  : m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
+                const teamBNamesJoined = config.gameType.includes('TEAM_')
+                  ? (playerMap.get(m.teamB[0])?.name || 'Team')
+                  : m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
 
                 return (
                   <div
@@ -1810,7 +1938,7 @@ export default function WizardForm({
                     <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-3 text-center">
                       {/* Team A (stacked vertically, no Team A label) */}
                       <div className="sm:col-span-2 space-y-0.5 text-center sm:text-right">
-                        {m.teamA.map((id, pIdx) => (
+                        {m.teamA.filter(Boolean).map((id, pIdx) => (
                           <p key={`${id}-${pIdx}`} className="text-xs font-bold text-zinc-900 truncate">
                             {playerMap.get(id)?.name || 'Player'}
                           </p>
@@ -1860,7 +1988,7 @@ export default function WizardForm({
 
                       {/* Team B (stacked vertically, no Team B label) */}
                       <div className="sm:col-span-2 space-y-0.5 text-center sm:text-left">
-                        {m.teamB.map((id, pIdx) => (
+                        {m.teamB.filter(Boolean).map((id, pIdx) => (
                           <p key={`${id}-${pIdx}`} className="text-xs font-bold text-zinc-900 truncate">
                             {playerMap.get(id)?.name || 'Player'}
                           </p>
