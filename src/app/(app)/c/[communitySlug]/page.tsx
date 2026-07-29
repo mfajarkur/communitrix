@@ -92,6 +92,40 @@ export default async function CommunityDashboardPage({
 
   const activeRankings = rankings || [];
 
+  // Combine rankings with active members so ALL community members appear in leaderboard
+  const rankingsMap = new Map(
+    activeRankings.map((r) => [r.profile?.id, r])
+  );
+
+  const fullLeaderboard = activeMembers
+    .filter((m) => m.profile)
+    .map((m) => {
+      const existing = rankingsMap.get(m.profile.id);
+      if (existing) return existing;
+      return {
+        id: `default-${m.profile.id}`,
+        elo_rating: 1000,
+        elo_peak: 1000,
+        total_matches: 0,
+        total_wins: 0,
+        total_losses: 0,
+        total_draws: 0,
+        points_for: 0,
+        points_against: 0,
+        is_provisional: true,
+        skill_rating_official: 1.0,
+        profile: m.profile,
+      };
+    })
+    .sort((a, b) => {
+      if (b.elo_rating !== a.elo_rating) {
+        return Number(b.elo_rating) - Number(a.elo_rating);
+      }
+      const nameA = a.profile?.display_name || a.profile?.full_name || '';
+      const nameB = b.profile?.display_name || b.profile?.full_name || '';
+      return nameA.localeCompare(nameB);
+    });
+
   // Fetch total CP per player for this community
   const { data: cpData } = await supabase
     .from('community_points')
@@ -180,7 +214,7 @@ export default async function CommunityDashboardPage({
         totalMatchesCount={totalMatchesCount || 0}
         sessions={activeSessions}
         members={activeMembers}
-        rankings={activeRankings}
+        rankings={fullLeaderboard}
         cpMap={cpMap}
         pendingClaims={pendingClaims}
         myClaimedGuestIds={myClaimedGuestIds}
