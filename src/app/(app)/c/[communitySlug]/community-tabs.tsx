@@ -39,6 +39,7 @@ interface CommunityTabsProps {
   sessions: any[];
   members: any[];
   rankings: any[];
+  cpMap?: Record<string, number>;
   pendingClaims?: any[];
   myClaimedGuestIds?: string[];
 }
@@ -56,6 +57,7 @@ export default function CommunityTabs({
   sessions,
   members,
   rankings,
+  cpMap = {},
   pendingClaims = [],
   myClaimedGuestIds = [],
 }: CommunityTabsProps) {
@@ -365,8 +367,10 @@ export default function CommunityTabs({
                     <thead>
                       <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                         <th className="p-3 w-12 text-center">Rank</th>
-                        <th className="p-3">Player</th>
-                        <th className="p-3 text-right">Rating</th>
+                        <th className="p-3">Name</th>
+                        <th className="p-3 text-center">Elo Rating</th>
+                        <th className="p-3 text-center">CP</th>
+                        <th className="p-3 text-center">Skill Rating</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100">
@@ -378,27 +382,29 @@ export default function CommunityTabs({
                             : 0;
 
                         const pDiff = r.points_for - r.points_against;
+                        const playerCp = Math.round(cpMap[r.profile.id] || 0);
+                        const skillRating = Number(r.skill_rating_official || 1.0).toFixed(2);
 
                         return (
                           <tr
                             key={r.id}
                             className="group hover:bg-zinc-50/40 transition-all text-xs text-[#111827]"
                           >
-                            <td className="p-3 text-center align-middle">
+                            <td className="p-3 text-center align-middle font-extrabold">
                               {rank === 1 ? (
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-[10px] font-black border border-orange-500/20 animate-pulse">
+                                <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-xs font-black border border-orange-500/20 shadow-2xs">
                                   🏆
                                 </span>
                               ) : rank === 2 ? (
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-[10px] font-black border border-zinc-200">
+                                <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-xs font-black border border-zinc-200 shadow-2xs">
                                   🥈
                                 </span>
                               ) : rank === 3 ? (
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-[10px] font-black border border-orange-500/10">
+                                <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-xs font-black border border-orange-500/10 shadow-2xs">
                                   🥉
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold text-zinc-400">{rank}</span>
+                                <span className="text-[11px] font-bold text-zinc-400">#{rank}</span>
                               )}
                             </td>
 
@@ -411,15 +417,15 @@ export default function CommunityTabs({
                                   <img
                                     src={r.profile.avatar_url}
                                     alt={getDisplayName(r.profile)}
-                                    className="h-7.5 w-7.5 shrink-0 rounded-lg object-cover border border-zinc-100"
+                                    className="h-8 w-8 shrink-0 rounded-full object-cover border border-zinc-100"
                                   />
                                 ) : (
-                                  <div className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-zinc-100 font-extrabold text-[10px] text-zinc-600 uppercase">
+                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 font-extrabold text-xs uppercase">
                                     {getDisplayName(r.profile).slice(0, 2)}
                                   </div>
                                 )}
                                 <div className="min-w-0">
-                                  <p className="text-xs font-bold text-[#111827] truncate flex items-center gap-1.5">
+                                  <p className="text-xs font-extrabold text-[#111827] truncate flex items-center gap-1.5">
                                     {getDisplayName(r.profile)}
                                     {r.profile.is_guest && (
                                       <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
@@ -440,15 +446,23 @@ export default function CommunityTabs({
                               </Link>
                             </td>
 
-                            <td className="p-3 text-right align-middle">
-                              <div className="text-right">
-                                <span className="text-xs font-extrabold text-orange-500">
-                                  {Number(r.elo_rating).toFixed(0)}
-                                </span>
-                                <span className="block text-[9px] text-zinc-400 font-bold">
-                                  Peak: {Number(r.elo_peak).toFixed(0)}
-                                </span>
-                              </div>
+                            <td className="p-3 text-center align-middle font-mono font-black text-xs text-orange-600">
+                              {Number(r.elo_rating).toFixed(0)}
+                              <span className="block text-[9px] text-zinc-400 font-bold">
+                                Peak: {Number(r.elo_peak).toFixed(0)}
+                              </span>
+                            </td>
+
+                            <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
+                                {playerCp} CP
+                              </span>
+                            </td>
+
+                            <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200 font-black text-[11px] shadow-2xs">
+                                ⭐ {skillRating}
+                              </span>
                             </td>
                           </tr>
                         );

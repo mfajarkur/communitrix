@@ -76,6 +76,7 @@ export default async function CommunityDashboardPage({
       points_for,
       points_against,
       is_provisional,
+      skill_rating_official,
       profile:profiles (
         id,
         full_name,
@@ -90,6 +91,17 @@ export default async function CommunityDashboardPage({
     .order('elo_rating', { ascending: false });
 
   const activeRankings = rankings || [];
+
+  // Fetch total CP per player for this community
+  const { data: cpData } = await supabase
+    .from('community_points')
+    .select('profile_id, points_awarded')
+    .eq('community_id', community.id);
+
+  const cpMap: Record<string, number> = {};
+  (cpData || []).forEach((row) => {
+    cpMap[row.profile_id] = (cpMap[row.profile_id] || 0) + Number(row.points_awarded || 0);
+  });
 
   // 5. Fetch sessions history
   const { data: sessions } = await supabase
@@ -169,6 +181,7 @@ export default async function CommunityDashboardPage({
         sessions={activeSessions}
         members={activeMembers}
         rankings={activeRankings}
+        cpMap={cpMap}
         pendingClaims={pendingClaims}
         myClaimedGuestIds={myClaimedGuestIds}
       />
