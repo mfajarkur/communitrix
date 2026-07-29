@@ -28,8 +28,13 @@ This document defines the official scoring, matchmaking, sit-out, and leaderboar
 ### 1.2 Mexicano (Individual)
 - **Rotation**: Partners & opponents are re-formed every round based on **live cumulative rankings**.
 - **Sequential Only**: Round $N+1$ is generated *only after* Round $N$ finishes and rankings update.
-- **Court Grouping**: Ranks 1–4 $\rightarrow$ Court 1, Ranks 5–8 $\rightarrow$ Court 2, etc.
-- **Team Pairing**: Top Court $\rightarrow$ **Rank 1 + Rank 4** vs **Rank 2 + Rank 3** (default).
+- **Proximity-Based Court Grouping**:
+  - The engine prioritizes players with fewer real matches played (*bye priority*).
+  - To prevent large rank gaps (e.g. Rank #1 playing with Rank #8), courts are formed by **clustering players closest to each other in overall standings rank (Proximity Clustering)**.
+- **Temporal Rank Team Pairing**:
+  - Within each court of 4 proximity-clustered players, players are ordered 1 to 4 relative to each other (*temporal rank*).
+  - Matchup: **Temporal Rank 1 + Rank 4** vs **Temporal Rank 2 + Rank 3** (default).
+  - If repeat partner avoidance is active and Rank 1 & 4 paired in the previous round, switches to **1 + 3 vs 2 + 4**.
 - **Round 1 Initial Seeding**: Seeded by initial Elo rating or deterministic random shuffle.
 
 ### 1.3 Team Americano (Fixed Pairs)
@@ -47,7 +52,7 @@ This document defines the official scoring, matchmaking, sit-out, and leaderboar
 When total players/teams exceed court capacity ($4 \times \text{Courts}$ for Individual, $\text{Courts}$ for Team modes), excess entities sit out ("Bye") for that round.
 
 ### 2.1 Sit-Out Priority Order (Who Plays vs Who Sits Out)
-1. **Fewer Real Matches Played**: Players/teams with fewer real matches played get **highest priority to play**.
+1. **Fewer Real Matches Played**: Players/teams with fewer real matches played get **highest priority to play** (cannot be forced to sit out).
 2. **Longest Bye Interval**: Player/team with the longest time since their last bye round gets priority to play.
 3. **Lower Cumulative Points**: Players/teams with lower points get priority to play (opportunity to catch up).
 4. **Deterministic Random Seed**: Fixed seed tie-breaker.
@@ -72,10 +77,29 @@ Standings are calculated using the following deterministic tie-breaker hierarchy
 
 ---
 
-## 4. Codebase Engine Alignment
+## 4. Role-Based Access Control (RBAC) Hierarchy
+
+The community management system enforces a strict 3-tier permission model:
+
+| Permission / Action | MEMBER | HOST | ADMIN |
+|---|:---:|:---:|:---:|
+| **View Community & Leaderboards** | ✅ | ✅ | ✅ |
+| **Share Community Code & Link** | ✅ | ✅ | ✅ |
+| **Create Game Sessions (`/sessions/new`)** | ❌ | ✅ | ✅ |
+| **Add Guest Players to Sessions/Community** | ❌ | ✅ | ✅ |
+| **Approve Community Join Requests** | ❌ | ✅ | ✅ |
+| **Change Community Badge/Logo/Banner** | ❌ | ❌ | ✅ |
+| **Assign Member Roles (Admin/Host/Member)** | ❌ | ❌ | ✅ |
+| **Remove Members from Community** | ❌ | ❌ | ✅ |
+| **Approve Profile Claim Requests** | ❌ | ❌ | ✅ |
+
+---
+
+## 5. Codebase Engine Alignment
 
 TheCommunitrix matchmaking engine under `src/lib/matchmaking/` implements these rules:
 - `src/lib/matchmaking/americano.ts`: Combinatorial schedule generator for Americano.
-- `src/lib/matchmaking/mexicano.ts`: Dynamic rank-based generator using $1+4 \text{ vs } 2+3$ pairing.
+- `src/lib/matchmaking/mexicano.ts`: Dynamic proximity-clustered rank generator with temporal $1+4 \text{ vs } 2+3$ pairing.
 - `src/lib/matchmaking/sitout.ts`: Implements priority sit-out selection based on matches played & last bye round.
 - `src/lib/matchmaking/standings.ts`: Computes cumulative scores, differentials, and rankings.
+- `src/server/actions/member.actions.ts`: Enforces RBAC guards (`requireCommunityAdmin`, `requireCommunityHost`) for guest additions, role assignments, and member removals.

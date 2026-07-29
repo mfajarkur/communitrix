@@ -59,6 +59,22 @@ Record these as non-goals so the agent does not build them: cross-community glob
 2. **Player courtside:** open session on phone → see my court + partner → enter final score → confirm → see rating delta.
 3. **Spectator/member:** open leaderboard → see live standings update without refresh.
 
+### 2.4 Role-Based Access Control (RBAC) Specification
+1. **MEMBER** (Lowest Level):
+   - View community pages, feed, leaderboards, and player profiles.
+   - Share community join code and community profile links.
+2. **HOST** (Middle Level):
+   - All Member capabilities.
+   - Create game sessions (`/c/[slug]/sessions/new`).
+   - Add guest players to sessions and community.
+   - Approve community join requests.
+3. **ADMIN** (Highest Level):
+   - All Host capabilities.
+   - Edit community badge/logo/banner and profile settings.
+   - Assign member roles/levels (`ADMIN`, `HOST`, `MEMBER`).
+   - Remove members from community (`is_active = false`).
+   - Approve/reject guest profile claim requests (`guest_claim_requests`).
+
 ---
 
 ## 3. Domain glossary

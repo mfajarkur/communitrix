@@ -132,23 +132,23 @@ This creates a **direct conflict** with standard Mexicano pairing logic (which f
 
 ### Stage 1 — Select who plays this round (priority based on matches behind)
 ```
-1. Compute matchesPlayed[player] = number of rounds with status ACTUAL, for each active player.
-2. Sort all active players ASCENDING by matchesPlayed
-   (player with fewest matches played = highest priority to play).
-3. Tie-breaker if matchesPlayed is equal: sort by whoever has gone the LONGEST
-   since their last actual match (roundsSinceLastActualMatch, descending) — to keep
-   rotation fair, not just about count but also recency.
-4. Take the top (available_courts × 4) players from this ordering → they PLAY this round.
-5. The rest → BYE this round (and receive a dummy score per Section 5).
+1. Compute matchesPlayed[player] for each active player.
+2. Players with fewest matches played (min matchesPlayed) or who sat out in the previous round
+   are assigned to Tier 0 (Protected / Must Play).
+3. Sit-out candidates are selected from Tier 1 (players with more matches played),
+   sorted by sit-out recency and count.
 ```
 
-### Stage 2 — Ranking-based pairing (ONLY among players who passed Stage 1)
+### Stage 2 — Proximity-Based Court Clustering & Temporal Mexicano Pairing
 ```
-1. From the group selected in Stage 1, re-sort by cumulative total score
-   (including dummy scores, per Section 7).
-2. Form groups of 4 players according to this standing order.
-3. Within each group of 4, form pairs according to standard Mexicano rules
-   (top rank + bottom rank vs. the two middle ranks, etc. — per existing app logic).
+1. Sort all active attendees by cumulative standings rank (0 to M-1).
+2. Evaluate valid sit-out combinations that minimize the Proximity Spread Cost across courts:
+   ProximityCost = Sum( (max_rank_index_in_court - min_rank_index_in_court)^2 )
+   This prevents large rank gaps (e.g., Rank #1 paired on court with Rank #8).
+3. Within each proximity-clustered court of 4 players:
+   - Order the 4 court players by their relative rank (temporal ranks 1, 2, 3, 4).
+   - Matchup: Temporal Rank (1 + 4) vs (2 + 3).
+   - If repeat partner avoidance applies, swap to (1 + 3) vs (2 + 4).
 ```
 
 ### ⚠️ Conflict to be aware of
