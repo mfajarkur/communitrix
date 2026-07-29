@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { startSessionAction } from '@/server/actions/session.actions';
+import { startSessionAction, finalizeSessionAction } from '@/server/actions/session.actions';
+import { persistRoundAction, submitMatchScoreAction } from '@/server/actions/round.actions';
+import { createClient } from '@/lib/supabase/client';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
 import {
   Trophy,
@@ -892,7 +894,10 @@ export default function WizardForm({
     if (!isGuestDemoMode) {
       setIsSubmitting(true);
       try {
-        await startSessionAction({
+        const supabase = createClient();
+
+        // 1. Create session in DB
+        const startResult = await startSessionAction({
           communityId,
           name: config.activityName,
           format: config.gameType.includes('MEXICANO') ? 'MEXICANO' : 'AMERICANO',
@@ -901,9 +906,81 @@ export default function WizardForm({
           pointsMode: 'FIRST_TO_TARGET',
           maxScoreTarget: configN,
           courtCount: config.courtCount,
-          roundsPlanned: matches.length,
+          roundsPlanned: matches.length > 0 ? Math.max(...matches.map((m) => m.round)) : 1,
           attendeeIds: registeredPlayers.map((p) => p.id),
         });
+
+        if (startResult.ok && startResult.data?.sessionId) {
+          const dbSessionId = startResult.data.sessionId;
+
+          // 2. Group completed matches by round
+          const roundsMap = new Map<number, typeof matches>();
+          matches.forEach((m) => {
+            const list = roundsMap.get(m.round) || [];
+            list.push(m);
+            roundsMap.set(m.round, list);
+          });
+
+          // Sort rounds sequentially 1..N
+          const roundNumbers = Array.from(roundsMap.keys()).sort((a, b) => a - b);
+
+          for (const roundNum of roundNumbers) {
+            const roundMatches = roundsMap.get(roundNum) || [];
+
+            // Find sit-outs for this round if any
+            const playingIds = new Set<string>();
+            roundMatches.forEach((m) => {
+              if (m.player1Id) playingIds.add(m.player1Id);
+              if (m.player2Id) playingIds.add(m.player2Id);
+              if (m.player3Id) playingIds.add(m.player3Id);
+              if (m.player4Id) playingIds.add(m.player4Id);
+            });
+
+            const roundSitOuts = registeredPlayers
+              .map((p) => p.id)
+              .filter((id) => !playingIds.has(id));
+
+            // Persist the round in DB
+            const persistRes = await persistRoundAction({
+              sessionId: dbSessionId,
+              roundNumber: roundNum,
+              courts: roundMatches.map((m) => ({
+                courtNumber: m.court,
+                teamA: [m.player1Id, m.player2Id].filter(Boolean) as string[],
+                teamB: [m.player3Id, m.player4Id].filter(Boolean) as string[],
+              })),
+              sitOuts: roundSitOuts,
+            });
+
+            if (persistRes.ok && persistRes.data?.roundId) {
+              const dbRoundId = persistRes.data.roundId;
+
+              // Query created matches from DB to get match IDs
+              const { data: dbMatches } = await supabase
+                .from('matches')
+                .select('id, court_number')
+                .eq('round_id', dbRoundId)
+                .order('court_number');
+
+              if (dbMatches) {
+                for (const dbM of dbMatches) {
+                  const localMatch = roundMatches.find((m) => m.court === dbM.court_number);
+                  if (localMatch) {
+                    // Submit match score (triggers DB Elo update & drift checks)
+                    await submitMatchScoreAction({
+                      matchId: dbM.id,
+                      scoreA: localMatch.score1,
+                      scoreB: localMatch.score2,
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          // 3. Finalize session (awards CP points and marks session COMPLETED)
+          await finalizeSessionAction(dbSessionId);
+        }
       } catch (err: any) {
         console.error('Failed to save community session to DB:', err);
       } finally {
