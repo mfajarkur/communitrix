@@ -327,10 +327,10 @@ export default function CommunityTabs({
                           className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition-all ${
                             isActive
                               ? 'bg-orange-500 text-white hover:bg-orange-600'
-                              : 'border border-zinc-200 bg-white hover:bg-zinc-55 text-zinc-700'
+                              : 'border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
                           }`}
                         >
-                          {isActive ? 'Open Live Board' : 'View Stats Summary'}
+                          {isActive ? 'Open Live Board' : 'View Final Results'}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                       </div>
