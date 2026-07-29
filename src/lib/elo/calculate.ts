@@ -68,12 +68,18 @@ export function calculateElo(input: EloMatchInput): EloMatchResult {
   // 2. Calculate Format Damping
   const formatDamping = 1 / Math.sqrt(expectedMatches);
 
-  // 3. Calculate Team average ratings
+  // 3. Calculate Team average & Effective ratings (GAP_PENALTY_FRACTION = 0.25)
   const avgRatingA = teamA.reduce((sum, p) => sum + p.ratingBefore, 0) / teamA.length;
   const avgRatingB = teamB.reduce((sum, p) => sum + p.ratingBefore, 0) / teamB.length;
 
+  const gapA = teamA.length === 2 ? Math.abs(teamA[0].ratingBefore - teamA[1].ratingBefore) : 0;
+  const effRatingA = avgRatingA - 0.25 * gapA;
+
+  const gapB = teamB.length === 2 ? Math.abs(teamB[0].ratingBefore - teamB[1].ratingBefore) : 0;
+  const effRatingB = avgRatingB - 0.25 * gapB;
+
   // 4. Expected Score (E_A)
-  const expectedScoreA = 1 / (1 + Math.pow(10, (avgRatingB - avgRatingA) / 400));
+  const expectedScoreA = 1 / (1 + Math.pow(10, (effRatingB - effRatingA) / 400));
 
   // 5. Outcome (W_A)
   let wA = 0.5;

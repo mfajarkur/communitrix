@@ -257,5 +257,5 @@ describeOrSkip('TypeScript and PL/pgSQL ELO Logic Synchronization Tests', () => 
         await supabase.from('profiles').delete().eq('id', p.id);
       }
     }
-  });
+  }, 30000);
 });

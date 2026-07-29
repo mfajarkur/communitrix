@@ -95,11 +95,42 @@ The community management system enforces a strict 3-tier permission model:
 
 ---
 
-## 5. Codebase Engine Alignment
+## 5. Elo & Skill Rating Adjustments
 
-TheCommunitrix matchmaking engine under `src/lib/matchmaking/` implements these rules:
+### 5.1 Effective Team Rating (`GAP_PENALTY_FRACTION = 0.25`)
+To prevent lopsided team pairing expectations where a high-Elo player is paired with a lower-Elo player, expected score calculations adjust team ratings using internal gap dampening:
+$$\text{Effective Elo} = \text{Team Avg Elo} - 0.25 \times |\text{Elo}_{\text{Player 1}} - \text{Elo}_{\text{Player 2}}|$$
+
+### 5.2 Skill Rating & Review Triggers (Admin Judgment)
+- Skill Rating is an official admin judgment value ($1.00$ to $7.00$).
+- Elo drift is monitored per player: when $|\text{Elo}_{\text{current}} - \text{Elo}_{\text{last assessed}}| \ge 100$, `review_flagged` is set to `true` to notify community admins for a rating review.
+- Carry Pattern overperformance (extreme gap $> 150$) over $\ge 5$ matches triggers an admin review flag.
+
+---
+
+## 6. Community Points (CP) Engine
+
+Community Points (CP) are participation rewards computed upon session finalization (`finalize_session`):
+
+- **Session Size $N \ge 10$**:
+  - Rank 1: **100 CP**
+  - Rank 2: **75 CP**
+  - Rank 3: **50 CP**
+  - Rank 4: **20 CP**
+  - Rank $5 \dots N$: Linear decay from 20 down to floor 8 CP.
+- **Session Size $N < 10$**:
+  - Rank 1: **75 CP**
+  - Rank 2: **50 CP**
+  - Rank 3: **25 CP**
+  - Rank $4 \dots N$: Flat **10 CP**.
+- Reset Policy: Configurable per community (`never` or `seasonal`). Admin can initiate new seasons via `start_new_cp_season`.
+
+---
+
+## 7. Codebase Engine Alignment
+
+TheCommunitrix matchmaking and rating engine under `src/lib/` and `supabase/migrations/` implements these rules:
 - `src/lib/matchmaking/americano.ts`: Combinatorial schedule generator for Americano.
 - `src/lib/matchmaking/mexicano.ts`: Dynamic proximity-clustered rank generator with temporal $1+4 \text{ vs } 2+3$ pairing.
-- `src/lib/matchmaking/sitout.ts`: Implements priority sit-out selection based on matches played & last bye round.
-- `src/lib/matchmaking/standings.ts`: Computes cumulative scores, differentials, and rankings.
-- `src/server/actions/member.actions.ts`: Enforces RBAC guards (`requireCommunityAdmin`, `requireCommunityHost`) for guest additions, role assignments, and member removals.
+- `src/lib/elo/calculate.ts`: TypeScript Elo engine with Effective Team Rating.
+- `supabase/migrations/0018_elo_adjustments_and_cp.sql`: Consolidated `calculate_match_delta`, `submit_match_score`, `start_new_cp_season`, and CP awarding `finalize_session`.

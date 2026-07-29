@@ -284,3 +284,67 @@ export async function persistRoundAction(
     };
   }
 }
+
+export interface SubmitMatchScoreInput {
+  matchId: string;
+  scoreA: number;
+  scoreB: number;
+  communitySlug?: string;
+}
+
+export async function submitMatchScoreAction(
+  input: SubmitMatchScoreInput
+): Promise<ActionResult<{ success: boolean }>> {
+  try {
+    const supabase = await createClient();
+
+    // 1. Fetch match to verify community context
+    const { data: match } = await supabase
+      .from('matches')
+      .select('community_id')
+      .eq('id', input.matchId)
+      .maybeSingle();
+
+    if (!match) {
+      return {
+        ok: false,
+        code: 'NOT_FOUND',
+        message: 'Match not found.',
+      };
+    }
+
+    // 2. Authorization check (Host or Admin)
+    await requireCommunityHost(match.community_id);
+
+    // 3. Invoke submit_match_score RPC
+    const { error: rpcErr } = await supabase.rpc('submit_match_score', {
+      p_match_id: input.matchId,
+      p_score_a: input.scoreA,
+      p_score_b: input.scoreB,
+    });
+
+    if (rpcErr) {
+      return {
+        ok: false,
+        code: 'UNKNOWN',
+        message: rpcErr.message || 'Failed to submit match score.',
+      };
+    }
+
+    if (input.communitySlug) {
+      revalidatePath(`/c/${input.communitySlug}`);
+    }
+
+    return {
+      ok: true,
+      data: { success: true },
+    };
+  } catch (error: any) {
+    if (error.message?.includes('redirect')) throw error;
+    return {
+      ok: false,
+      code: 'UNKNOWN',
+      message: error.message || 'An unexpected error occurred.',
+    };
+  }
+}

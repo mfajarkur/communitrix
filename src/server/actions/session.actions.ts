@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { requireCommunityHost } from '../guards';
+import { requireCommunityHost, requireCommunityAdmin } from '../guards';
 import { ActionResult } from '../result';
 
 export interface StartSessionInput {
@@ -138,6 +138,48 @@ export async function finalizeSessionAction(
     return {
       ok: true,
       data: { success: true },
+    };
+  } catch (error: any) {
+    if (error.message?.includes('redirect')) throw error;
+    return {
+      ok: false,
+      code: 'FORBIDDEN',
+      message: error.message || 'Permission denied.',
+    };
+  }
+}
+
+export async function startNewCpSeasonAction(
+  communityId: string,
+  communitySlug?: string
+): Promise<ActionResult<{ seasonId: string }>> {
+  try {
+    const supabase = await createClient();
+
+    // 1. Enforce Admin guard
+    await requireCommunityAdmin(communityId);
+
+    // 2. Invoke start_new_cp_season RPC
+    const { data: seasonId, error: rpcErr } = await supabase.rpc('start_new_cp_season', {
+      p_community_id: communityId,
+    });
+
+    if (rpcErr) {
+      return {
+        ok: false,
+        code: 'UNKNOWN',
+        message: rpcErr.message || 'Failed to start new CP season.',
+      };
+    }
+
+    if (communitySlug) {
+      const { revalidatePath } = require('next/cache');
+      revalidatePath(`/c/${communitySlug}`);
+    }
+
+    return {
+      ok: true,
+      data: { seasonId },
     };
   } catch (error: any) {
     if (error.message?.includes('redirect')) throw error;
