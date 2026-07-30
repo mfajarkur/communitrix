@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireCommunityAdmin, requireCommunityHost } from '@/server/guards';
 import { type ActionResult } from '@/server/result';
 import { revalidatePath } from 'next/cache';
+import { toTitleCase } from '@/lib/utils/profile';
 
 export async function addGuestPlayerAction(input: {
   communityId: string;
@@ -28,7 +29,7 @@ export async function addGuestPlayerAction(input: {
     const { data: guestProfile, error } = await supabase
       .rpc('add_guest_player', {
         p_community_id: input.communityId,
-        p_full_name: input.fullName.trim(),
+        p_full_name: toTitleCase(input.fullName.trim()),
       });
 
     if (error) {
