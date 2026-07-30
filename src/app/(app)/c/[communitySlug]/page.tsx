@@ -41,7 +41,7 @@ export default async function CommunityDashboardPage({
   const isAdmin = callerMember.role === 'ADMIN';
 
   // 3. Fetch active members list
-  const { data: members } = await supabase
+  const { data: members } = await adminClient
     .from('community_members')
     .select(`
       role,
@@ -63,7 +63,8 @@ export default async function CommunityDashboardPage({
   const activeMembers = members || [];
 
   // 4. Fetch all player rankings for this community (PADEL and TENNIS)
-  const { data: allRankings } = await supabase
+  const adminClient = createAdminClient();
+  const { data: allRankings } = await adminClient
     .from('player_rankings')
     .select(`
       id,
