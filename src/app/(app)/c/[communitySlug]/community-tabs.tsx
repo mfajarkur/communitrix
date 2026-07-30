@@ -88,7 +88,14 @@ export default function CommunityTabs({
 
   // Admin Home Info Edit state
   const [isEditHomeOpen, setIsEditHomeOpen] = useState(false);
-  const [editDescription, setEditDescription] = useState(community?.description || '');
+  const communityDescription =
+    community?.description ||
+    community?.settings?.description ||
+    'Official community hub for sports matches, ELO rankings, and tournament sessions.';
+
+  const [editDescription, setEditDescription] = useState(
+    community?.description || community?.settings?.description || ''
+  );
   const [editEstablishedDate, setEditEstablishedDate] = useState(community?.established_date || '');
   const [editSport, setEditSport] = useState(defaultSport);
   const [isSavingHome, setIsSavingHome] = useState(false);
@@ -240,7 +247,7 @@ export default function CommunityTabs({
                       {communityName}
                     </h2>
                     <p className="text-xs text-zinc-500 font-medium leading-relaxed max-w-2xl">
-                      {community?.description || 'Official community hub for sports matches, ELO rankings, and tournament sessions.'}
+                      {communityDescription}
                     </p>
                   </div>
 

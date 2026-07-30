@@ -222,17 +222,44 @@ export async function updateCommunityInfoAction(input: {
 
     const updates: Record<string, any> = {};
     if (input.name !== undefined) updates.name = input.name.trim();
-    if (input.description !== undefined) updates.description = input.description.trim();
     if (input.defaultSport !== undefined) updates.default_sport = input.defaultSport.trim();
     if (input.bannerUrl !== undefined) updates.banner_url = input.bannerUrl.trim();
 
+    if (input.description !== undefined) {
+      updates.description = input.description.trim();
+    }
+
     const adminClient = createAdminClient();
-    const { data, error } = await adminClient
+    let { data, error } = await adminClient
       .from('communities')
       .update(updates)
       .eq('id', input.communityId)
       .select()
       .single();
+
+    if (error && (error.message?.includes('description') || error.code === 'PGRST204')) {
+      // Fallback: If description column does not exist on remote database yet, store description inside settings JSONB!
+      delete updates.description;
+
+      const { data: currentComm } = await adminClient
+        .from('communities')
+        .select('settings')
+        .eq('id', input.communityId)
+        .maybeSingle();
+
+      const existingSettings = currentComm?.settings && typeof currentComm.settings === 'object' ? currentComm.settings : {};
+      updates.settings = { ...existingSettings, description: input.description?.trim() };
+
+      const fallbackRes = await adminClient
+        .from('communities')
+        .update(updates)
+        .eq('id', input.communityId)
+        .select()
+        .single();
+
+      data = fallbackRes.data;
+      error = fallbackRes.error;
+    }
 
     if (error) {
       return { ok: false, code: 'UNKNOWN', message: error.message };
