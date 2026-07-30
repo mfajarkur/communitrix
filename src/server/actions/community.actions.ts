@@ -219,7 +219,6 @@ export async function updateCommunityInfoAction(input: {
 }): Promise<ActionResult<any>> {
   try {
     await requireCommunityAdmin(input.communityId);
-    const supabase = await createClient();
 
     const updates: Record<string, any> = {};
     if (input.name !== undefined) updates.name = input.name.trim();
@@ -227,7 +226,8 @@ export async function updateCommunityInfoAction(input: {
     if (input.defaultSport !== undefined) updates.default_sport = input.defaultSport.trim();
     if (input.bannerUrl !== undefined) updates.banner_url = input.bannerUrl.trim();
 
-    const { data, error } = await supabase
+    const adminClient = createAdminClient();
+    const { data, error } = await adminClient
       .from('communities')
       .update(updates)
       .eq('id', input.communityId)
