@@ -386,44 +386,44 @@ export default function CommunityTabs({
                 ];
 
                 return (
-                  <div className="p-5 rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-900 border border-zinc-800 text-white shadow-xl space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black text-base shadow-md">
-                          ⭐
+                  <div className="p-5 rounded-3xl bg-zinc-50 border border-zinc-100 shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200/80 pb-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                            WALL OF FAME
+                          </span>
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-600 border border-orange-200/80">
+                            {activeSportName}
+                          </span>
                         </div>
-                        <div>
-                          <h3 className="text-base font-black tracking-tight text-white flex items-center gap-2">
-                            <span>Community STAR</span>
-                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                              {activeSportName}
-                            </span>
-                          </h3>
-                          <p className="text-[11px] text-zinc-400 font-medium">
-                            Pemain berprestasi teratas dalam berbagai kategori performa
-                          </p>
-                        </div>
+                        <h3 className="text-xl font-black tracking-tight text-zinc-900 mt-1">
+                          Wall of Fame {activeSportName}
+                        </h3>
+                        <p className="text-xs text-zinc-500 font-medium leading-relaxed">
+                          Pemain berprestasi teratas dalam berbagai kategori performa komunitas.
+                        </p>
                       </div>
 
                       {/* Sport Selector if both Padel and Tennis have records */}
                       {hasPadel && hasTennis && (
-                        <div className="inline-flex p-1 bg-zinc-800/80 rounded-xl border border-zinc-700/80 self-start sm:self-auto">
+                        <div className="inline-flex p-1 bg-zinc-200/60 rounded-xl border border-zinc-200 self-start sm:self-auto shrink-0">
                           <button
                             onClick={() => setStarSportTab('PADEL')}
-                            className={`px-3 py-1 rounded-lg text-[11px] font-black tracking-wider uppercase transition-all cursor-pointer ${
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
                               activeSportName === 'PADEL'
                                 ? 'bg-orange-500 text-white shadow-xs'
-                                : 'text-zinc-400 hover:text-white'
+                                : 'text-zinc-600 hover:text-zinc-900'
                             }`}
                           >
                             🎾 Padel
                           </button>
                           <button
                             onClick={() => setStarSportTab('TENNIS')}
-                            className={`px-3 py-1 rounded-lg text-[11px] font-black tracking-wider uppercase transition-all cursor-pointer ${
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
                               activeSportName === 'TENNIS'
                                 ? 'bg-orange-500 text-white shadow-xs'
-                                : 'text-zinc-400 hover:text-white'
+                                : 'text-zinc-600 hover:text-zinc-900'
                             }`}
                           >
                             🎾 Tennis
@@ -432,8 +432,8 @@ export default function CommunityTabs({
                       )}
                     </div>
 
-                    {/* 6 STAR Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {/* 6 STAR Cards Grid - Sketch Layout */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                       {starItems.map((item) => {
                         const profile = item.player?.profile;
                         if (!profile) return null;
@@ -441,31 +441,33 @@ export default function CommunityTabs({
                         return (
                           <div
                             key={item.key}
-                            className="p-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 hover:border-orange-500/50 transition-all flex items-center gap-3 shadow-xs group"
+                            className="overflow-hidden rounded-2xl border border-orange-200/80 bg-gradient-to-r from-orange-500/15 via-orange-500/5 to-white flex items-stretch shadow-xs hover:shadow-md hover:border-orange-400 transition-all group"
                           >
-                            <div className="relative shrink-0">
+                            {/* Left Side: Square Photo */}
+                            <div className="w-20 sm:w-24 shrink-0 relative bg-zinc-200 border-r border-orange-200/60 flex items-center justify-center overflow-hidden">
                               {profile.avatar_url ? (
                                 <img
                                   src={profile.avatar_url}
                                   alt={getDisplayName(profile)}
-                                  className="h-10 w-10 rounded-full object-cover border-2 border-orange-500/60 shadow-sm"
+                                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               ) : (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-600 text-white font-black text-xs uppercase shadow-sm">
+                                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-orange-500 to-amber-600 text-white font-black text-lg uppercase">
                                   {getDisplayName(profile).slice(0, 2)}
                                 </div>
                               )}
                             </div>
 
-                            <div className="min-w-0 flex-1 space-y-0.5">
-                              <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-orange-400 bg-orange-950/70 px-1.5 py-0.2 rounded border border-orange-800/60">
+                            {/* Right Side: Details with Orange Gradient Shading */}
+                            <div className="p-3 flex-1 flex flex-col justify-center space-y-1 min-w-0">
+                              <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md border border-orange-200/80 w-fit">
                                 {item.badge}
                               </span>
-                              <h4 className="text-xs font-black text-white truncate group-hover:text-orange-400 transition-colors">
+                              <h4 className="text-xs font-black text-zinc-900 truncate group-hover:text-orange-600 transition-colors">
                                 {getDisplayName(profile)}
                               </h4>
-                              <p className="text-[11px] font-extrabold text-amber-400">
-                                {item.stat} <span className="text-[9px] text-zinc-400 font-normal">({item.subStat})</span>
+                              <p className="text-[11px] font-extrabold text-orange-600">
+                                {item.stat} <span className="text-[9px] text-zinc-500 font-medium">({item.subStat})</span>
                               </p>
                             </div>
                           </div>
