@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { requireProfile } from '@/server/guards';
 import { notFound } from 'next/navigation';
 import CommunityTabs from './community-tabs';
@@ -13,6 +14,7 @@ export default async function CommunityDashboardPage({
   const { communitySlug } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   // 1. Fetch community details
   const { data: community } = await supabase
@@ -63,7 +65,6 @@ export default async function CommunityDashboardPage({
   const activeMembers = members || [];
 
   // 4. Fetch all player rankings for this community (PADEL and TENNIS)
-  const adminClient = createAdminClient();
   const { data: allRankings } = await adminClient
     .from('player_rankings')
     .select(`
