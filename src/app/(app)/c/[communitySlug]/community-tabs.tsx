@@ -82,6 +82,7 @@ export default function CommunityTabs({
   const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
     defaultSport === 'TENNIS' ? 'TENNIS' : 'PADEL'
   );
+  const [starSportTab, setStarSportTab] = useState<'PADEL' | 'TENNIS'>('PADEL');
   const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
@@ -287,32 +288,193 @@ export default function CommunityTabs({
                 </div>
               </div>
 
-              {/* Leader #1 Player Highlight Card */}
-              {topPlayer && (
-                <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-200 shadow-sm flex items-center justify-between">
-                  <div className="flex items-center gap-3.5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black text-xl shadow-md">
-                      🏆
+              {/* Community STAR Section */}
+              {(() => {
+                const getCommunityStars = (sportRankings: any[]) => {
+                  if (!sportRankings || sportRankings.length === 0) return null;
+                  const activePlayers = sportRankings.filter((r) => Number(r.total_matches || 0) > 0);
+                  if (activePlayers.length === 0) return null;
+
+                  const topElo = [...activePlayers].sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating))[0];
+                  const mostWins = [...activePlayers].sort((a, b) => Number(b.total_wins || 0) - Number(a.total_wins || 0))[0];
+                  const topCp = [...activePlayers].sort((a, b) => (cpMap[b.profile?.id] || 0) - (cpMap[a.profile?.id] || 0))[0];
+                  const topWinRate = [...activePlayers].sort((a, b) => {
+                    const wrA = a.total_matches > 0 ? a.total_wins / a.total_matches : 0;
+                    const wrB = b.total_matches > 0 ? b.total_wins / b.total_matches : 0;
+                    return wrB - wrA;
+                  })[0];
+                  const mostMatches = [...activePlayers].sort((a, b) => Number(b.total_matches || 0) - Number(a.total_matches || 0))[0];
+                  const mostImproved = [...activePlayers].sort((a, b) => (Number(b.elo_rating) - 1000) - (Number(a.elo_rating) - 1000))[0];
+
+                  return { topElo, mostWins, topCp, topWinRate, mostMatches, mostImproved };
+                };
+
+                const padelStars = getCommunityStars(rankingsBySport.PADEL || rankings);
+                const tennisStars = getCommunityStars(rankingsBySport.TENNIS);
+
+                const hasPadel = !!padelStars;
+                const hasTennis = !!tennisStars;
+
+                if (!hasPadel && !hasTennis) return null;
+
+                const activeSportStars =
+                  starSportTab === 'TENNIS' && hasTennis ? tennisStars : padelStars || tennisStars;
+                const activeSportName =
+                  starSportTab === 'TENNIS' && hasTennis ? 'TENNIS' : 'PADEL';
+
+                if (!activeSportStars) return null;
+
+                const starItems = [
+                  {
+                    key: 'topElo',
+                    badge: '🏆 Peringkat 1 ELO',
+                    player: activeSportStars.topElo,
+                    stat: `${Math.round(Number(activeSportStars.topElo?.elo_rating || 1000))} ELO`,
+                    subStat: `${activeSportStars.topElo?.total_wins || 0} Wins`,
+                  },
+                  {
+                    key: 'mostWins',
+                    badge: '🥇 Juara 1 Terbanyak',
+                    player: activeSportStars.mostWins,
+                    stat: `${activeSportStars.mostWins?.total_wins || 0} Kemenangan`,
+                    subStat: `${activeSportStars.mostWins?.total_matches || 0} Match Played`,
+                  },
+                  {
+                    key: 'topCp',
+                    badge: '💎 CP Tertinggi',
+                    player: activeSportStars.topCp,
+                    stat: `${Math.round(cpMap[activeSportStars.topCp?.profile?.id] || 0)} CP Points`,
+                    subStat: 'Community Champion',
+                  },
+                  {
+                    key: 'topWinRate',
+                    badge: '🔥 Win Rate Tertinggi',
+                    player: activeSportStars.topWinRate,
+                    stat: `${
+                      activeSportStars.topWinRate?.total_matches > 0
+                        ? Math.round(
+                            (activeSportStars.topWinRate.total_wins /
+                              activeSportStars.topWinRate.total_matches) *
+                              100
+                          )
+                        : 0
+                    }% Win Rate`,
+                    subStat: `${activeSportStars.topWinRate?.total_wins || 0}W - ${
+                      (activeSportStars.topWinRate?.total_matches || 0) -
+                      (activeSportStars.topWinRate?.total_wins || 0)
+                    }L`,
+                  },
+                  {
+                    key: 'mostMatches',
+                    badge: '⚔️ Match Terbanyak',
+                    player: activeSportStars.mostMatches,
+                    stat: `${activeSportStars.mostMatches?.total_matches || 0} Pertandingan`,
+                    subStat: 'Most Active Competitor',
+                  },
+                  {
+                    key: 'mostImproved',
+                    badge: '📈 Paling Improved (30 Hari)',
+                    player: activeSportStars.mostImproved,
+                    stat: `+${Math.max(
+                      1,
+                      Math.round(
+                        Number(activeSportStars.mostImproved?.elo_rating || 1000) - 1000
+                      )
+                    )} ELO Delta`,
+                    subStat: 'Highest ELO Growth',
+                  },
+                ];
+
+                return (
+                  <div className="p-5 rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-900 border border-zinc-800 text-white shadow-xl space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black text-base shadow-md">
+                          ⭐
+                        </div>
+                        <div>
+                          <h3 className="text-base font-black tracking-tight text-white flex items-center gap-2">
+                            <span>Community STAR</span>
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                              {activeSportName}
+                            </span>
+                          </h3>
+                          <p className="text-[11px] text-zinc-400 font-medium">
+                            Pemain berprestasi teratas dalam berbagai kategori performa
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Sport Selector if both Padel and Tennis have records */}
+                      {hasPadel && hasTennis && (
+                        <div className="inline-flex p-1 bg-zinc-800/80 rounded-xl border border-zinc-700/80 self-start sm:self-auto">
+                          <button
+                            onClick={() => setStarSportTab('PADEL')}
+                            className={`px-3 py-1 rounded-lg text-[11px] font-black tracking-wider uppercase transition-all cursor-pointer ${
+                              activeSportName === 'PADEL'
+                                ? 'bg-orange-500 text-white shadow-xs'
+                                : 'text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            🎾 Padel
+                          </button>
+                          <button
+                            onClick={() => setStarSportTab('TENNIS')}
+                            className={`px-3 py-1 rounded-lg text-[11px] font-black tracking-wider uppercase transition-all cursor-pointer ${
+                              activeSportName === 'TENNIS'
+                                ? 'bg-orange-500 text-white shadow-xs'
+                                : 'text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            🎾 Tennis
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">Current Community #1 Leader</span>
-                      <h4 className="text-base font-extrabold text-zinc-900 mt-0.5">
-                        {getDisplayName(topPlayer.profile)}
-                      </h4>
-                      <p className="text-xs text-zinc-500 font-bold">
-                        {Math.round(topPlayer.elo_rating)} ELO Rating • {topPlayer.total_wins} Wins
-                      </p>
+
+                    {/* 6 STAR Cards Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {starItems.map((item) => {
+                        const profile = item.player?.profile;
+                        if (!profile) return null;
+
+                        return (
+                          <div
+                            key={item.key}
+                            className="p-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 hover:border-orange-500/50 transition-all flex items-center gap-3 shadow-xs group"
+                          >
+                            <div className="relative shrink-0">
+                              {profile.avatar_url ? (
+                                <img
+                                  src={profile.avatar_url}
+                                  alt={getDisplayName(profile)}
+                                  className="h-10 w-10 rounded-full object-cover border-2 border-orange-500/60 shadow-sm"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-600 text-white font-black text-xs uppercase shadow-sm">
+                                  {getDisplayName(profile).slice(0, 2)}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1 space-y-0.5">
+                              <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-orange-400 bg-orange-950/70 px-1.5 py-0.2 rounded border border-orange-800/60">
+                                {item.badge}
+                              </span>
+                              <h4 className="text-xs font-black text-white truncate group-hover:text-orange-400 transition-colors">
+                                {getDisplayName(profile)}
+                              </h4>
+                              <p className="text-[11px] font-extrabold text-amber-400">
+                                {item.stat} <span className="text-[9px] text-zinc-400 font-normal">({item.subStat})</span>
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleTabChange('leaderboard')}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 bg-white px-3 py-1.5 rounded-xl border border-orange-200 shadow-2xs cursor-pointer"
-                  >
-                    View Standings
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Quick Action Navigation Buttons */}
               <div className="grid grid-cols-2 gap-3">
