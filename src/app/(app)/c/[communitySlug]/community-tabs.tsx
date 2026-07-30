@@ -229,7 +229,7 @@ export default function CommunityTabs({
           {/* TAB 1: HOME KOMUNITAS */}
           {activeTab === 'home' && (
             <div className="space-y-6">
-              {/* Community Description & About Overview */}
+              {/* Community Description & Overview Card */}
               <div className="p-5 rounded-3xl bg-zinc-50 border border-zinc-100 shadow-xs space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -247,7 +247,7 @@ export default function CommunityTabs({
                   {isAdmin && (
                     <button
                       onClick={() => setIsEditHomeOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                       <span>Edit Info</span>
@@ -255,58 +255,23 @@ export default function CommunityTabs({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-2 border-t border-zinc-200/60">
+                <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 font-semibold pt-3 border-t border-zinc-200/70">
                   <div className="flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5 text-orange-500" />
                     <span>Est. {new Date(community?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Users className="h-3.5 w-3.5 text-orange-500" />
-                    <span>{memberCount} Active Members</span>
+                    <span>{memberCount} Members</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-orange-500" />
+                    <span>{sessions.length} Sessions</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Flame className="h-3.5 w-3.5 text-orange-500" />
-                    <span>{totalMatchesCount} Completed Matches</span>
+                    <span>{totalMatchesCount} Matches Scored</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Engaging Community Overview Stat Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Total Members</span>
-                    <Users className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <h3 className="text-2xl font-black text-zinc-900 mt-3">{memberCount}</h3>
-                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Community Players</p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Game Sessions</span>
-                    <Calendar className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <h3 className="text-2xl font-black text-zinc-900 mt-3">{sessions.length}</h3>
-                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">{activeSessionsCount} Live Active</p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Total Matches</span>
-                    <Flame className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <h3 className="text-2xl font-black text-zinc-900 mt-3">{totalMatchesCount}</h3>
-                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Scored contests</p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Default Sport</span>
-                    <Activity className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <h3 className="text-xl font-black text-zinc-900 mt-3 uppercase">{defaultSport}</h3>
-                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Rating Scoped</p>
                 </div>
               </div>
 
