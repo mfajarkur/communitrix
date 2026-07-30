@@ -66,8 +66,8 @@ export default async function CommunityLayout({
 
   return (
     <div className="space-y-6 bg-white">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl h-44 bg-zinc-950 flex flex-col justify-end p-5 text-white shadow-sm border border-zinc-100">
+      {/* Top Header Banner Card */}
+      <div className="relative overflow-hidden rounded-3xl h-44 sm:h-52 bg-zinc-950 flex flex-col justify-end p-5 text-white shadow-md border border-zinc-100">
         {/* Banner image */}
         <img
           src={bannerImage}
@@ -102,7 +102,7 @@ export default async function CommunityLayout({
             <h1 className="text-2xl font-black leading-tight text-white tracking-tight drop-shadow-sm font-sans">
               {community.name}
             </h1>
-            <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-black tracking-wider uppercase border border-white/20 shadow-sm ${
+            <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase border border-white/20 shadow-sm ${
               member.role === 'ADMIN'
                 ? 'bg-orange-500 text-white'
                 : member.role === 'HOST'
@@ -118,9 +118,9 @@ export default async function CommunityLayout({
             <p>
               Default Sport: <span className="font-extrabold uppercase">{community.default_sport}</span>
             </p>
-            {community.join_code && (
+            {community.code && (
               <p className="bg-white/15 px-2 py-0.5 rounded font-mono text-[9px] tracking-wider uppercase border border-white/10 shadow-sm">
-                Code: {community.join_code}
+                CODE: {community.code}
               </p>
             )}
           </div>

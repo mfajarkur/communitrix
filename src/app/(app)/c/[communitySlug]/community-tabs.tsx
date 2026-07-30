@@ -31,6 +31,7 @@ import {
   Clock,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
+import BannerImageEditor from './banner-image-editor';
 import { getDisplayName } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
@@ -228,83 +229,44 @@ export default function CommunityTabs({
           {/* TAB 1: HOME KOMUNITAS */}
           {activeTab === 'home' && (
             <div className="space-y-6">
-              {/* Community Banner / Header Card */}
-              <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-950 to-orange-950 border border-zinc-800 text-white shadow-xl">
-                {/* Background Banner Image or Gradient */}
-                <div className="h-32 sm:h-44 w-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 relative overflow-hidden">
-                  {community?.banner_url ? (
-                    <img src={community.banner_url} alt="Cover" className="w-full h-full object-cover opacity-80" />
-                  ) : (
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-400 via-orange-600 to-zinc-950 opacity-90" />
-                  )}
-                  <div className="absolute top-3 right-3 flex items-center gap-2">
-                    {community?.code && (
-                      <button
-                        onClick={handleCopyCode}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-[11px] font-mono font-bold border border-white/20 hover:bg-black/70 transition-all cursor-pointer"
-                        title="Click to copy community code"
-                      >
-                        <Copy className="h-3 w-3" />
-                        <span>{copiedCode ? 'Copied!' : community.code}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Community Details Content */}
-                <div className="p-5 sm:p-6 space-y-4 relative -mt-12 sm:-mt-16">
-                  <div className="flex items-end justify-between">
-                    <div className="relative">
-                      {community?.logo_url ? (
-                        <img
-                          src={community.logo_url}
-                          alt={communityName}
-                          className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover border-4 border-zinc-950 shadow-2xl bg-zinc-900"
-                        />
-                      ) : (
-                        <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 border-4 border-zinc-950 shadow-2xl flex items-center justify-center text-white font-black text-2xl uppercase">
-                          {communityName.slice(0, 2)}
-                        </div>
-                      )}
-                      <span className="absolute -bottom-1 -right-1 bg-orange-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-zinc-950">
-                        {defaultSport}
-                      </span>
-                    </div>
-
-                    {isAdmin && (
-                      <button
-                        onClick={() => setIsEditHomeOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" />
-                        <span>Edit Info</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+              {/* Community Description & About Overview */}
+              <div className="p-5 rounded-3xl bg-zinc-50 border border-zinc-100 shadow-xs space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                      About Community
+                    </span>
+                    <h2 className="text-xl font-black text-zinc-900 tracking-tight mt-1">
                       {communityName}
-                    </h1>
-                    <p className="text-xs text-zinc-400 font-medium mt-1 leading-relaxed">
+                    </h2>
+                    <p className="text-xs text-zinc-500 font-medium leading-relaxed max-w-2xl">
                       {community?.description || 'Official community hub for sports matches, ELO rankings, and tournament sessions.'}
                     </p>
                   </div>
 
-                  {/* Quick Meta Stats */}
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1 border-t border-zinc-800/80">
-                    <div className="flex items-center gap-1.5">
-                      <Building2 className="h-4 w-4 text-orange-500" />
-                      <span>Est. {new Date(community?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Users className="h-4 w-4 text-orange-500" />
-                      <span>{memberCount} Active Members</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Flame className="h-4 w-4 text-orange-500" />
-                      <span>{totalMatchesCount} Completed Matches</span>
-                    </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setIsEditHomeOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                      <span>Edit Info</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-2 border-t border-zinc-200/60">
+                  <div className="flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-orange-500" />
+                    <span>Est. {new Date(community?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-orange-500" />
+                    <span>{memberCount} Active Members</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Flame className="h-3.5 w-3.5 text-orange-500" />
+                    <span>{totalMatchesCount} Completed Matches</span>
                   </div>
                 </div>
               </div>
