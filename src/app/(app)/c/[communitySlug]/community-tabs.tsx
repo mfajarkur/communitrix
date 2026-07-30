@@ -903,8 +903,9 @@ export default function CommunityTabs({
                   </div>
                 )}
               </div>
-            );
-          })()}
+            </div>
+          );
+        })()}
 
           {/* TAB 5: WIKI & RULEBOOK */}
           {activeTab === 'wiki' && (() => {
