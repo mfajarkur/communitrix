@@ -814,7 +814,7 @@ export default function CommunityTabs({
 
                           const pDiff = r.points_for - r.points_against;
                           const playerCp = Math.round(cpMap[r.profile.id] || 0);
-                          const skillRating = Number(r.skill_rating_official || 1.0).toFixed(2);
+                          const skillRating = Number(1.0 + Math.max(0, (Number(r.elo_rating) - 800) / 250)).toFixed(2);
 
                           return (
                             <tr

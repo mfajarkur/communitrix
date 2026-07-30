@@ -80,7 +80,6 @@ export default async function CommunityDashboardPage({
       points_for,
       points_against,
       is_provisional,
-      skill_rating_official,
       profile:profiles (
         id,
         full_name,
