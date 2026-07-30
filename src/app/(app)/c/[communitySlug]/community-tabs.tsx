@@ -507,16 +507,38 @@ export default function CommunityTabs({
           return (
             <div className="grid gap-6 grid-cols-1">
               <div className="space-y-6">
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={memberSearchQuery}
-                    onChange={(e) => setMemberSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-100/90 focus:bg-white text-xs font-semibold rounded-full text-zinc-900 placeholder-zinc-400 border border-transparent focus:border-orange-500 focus:outline-none transition-all shadow-2xs"
-                  />
+                {/* Search Bar with Search Button */}
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                    <input
+                      id="member-search-input"
+                      type="text"
+                      placeholder="Search members by name..."
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-9 py-2.5 bg-zinc-100/90 focus:bg-white text-xs font-semibold rounded-full text-zinc-900 placeholder-zinc-400 border border-transparent focus:border-orange-500 focus:outline-none transition-all shadow-2xs"
+                    />
+                    {memberSearchQuery && (
+                      <button
+                        onClick={() => setMemberSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-0.5 rounded-full"
+                        title="Clear search"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      document.getElementById('member-search-input')?.focus();
+                    }}
+                    className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-full transition-all flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    <span>Search</span>
+                  </button>
                 </div>
 
                 {/* ADMINS SECTION */}
@@ -639,9 +661,20 @@ export default function CommunityTabs({
 
                 {/* MEMBERS SECTION */}
                 <div className="space-y-3.5 pt-2">
-                  <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">
-                    Members · {generalMembers.length}
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">
+                      Members · {generalMembers.length}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        document.getElementById('member-search-input')?.focus();
+                      }}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-zinc-600 hover:text-orange-600 bg-zinc-100 hover:bg-orange-50 px-2.5 py-1 rounded-full border border-zinc-200 hover:border-orange-200 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <Search className="h-3 w-3" />
+                      <span>Search</span>
+                    </button>
+                  </div>
 
                   {filteredMembers.length === 0 ? (
                     <p className="text-xs text-zinc-400 py-2">No members found.</p>
