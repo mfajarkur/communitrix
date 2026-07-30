@@ -20,6 +20,7 @@ import {
   CheckCircle,
   X,
   Loader2,
+  Search,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import { getDisplayName } from '@/lib/utils/profile';
@@ -66,6 +67,7 @@ export default function CommunityTabs({
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
   // User submits claim request (pending admin approval)
   const handleClaimSubmit = async () => {
@@ -475,26 +477,47 @@ export default function CommunityTabs({
           </div>
         )}
 
-        {/* MEMBERS TAB */}
+        {/* MEMBERS TAB - RECLUB AESTHETIC */}
         {activeTab === 'members' && (() => {
           const adminsAndHosts = members.filter(m => m.role === 'ADMIN' || m.role === 'HOST');
           const generalMembers = members.filter(m => m.role === 'MEMBER');
 
+          const filteredAdmins = adminsAndHosts.filter(m => {
+            if (!memberSearchQuery.trim()) return true;
+            const pName = getDisplayName(m.profile).toLowerCase();
+            return pName.includes(memberSearchQuery.toLowerCase());
+          });
+
+          const filteredMembers = generalMembers.filter(m => {
+            if (!memberSearchQuery.trim()) return true;
+            const pName = getDisplayName(m.profile).toLowerCase();
+            return pName.includes(memberSearchQuery.toLowerCase());
+          });
+
           return (
             <div className="grid gap-6 grid-cols-1">
               <div className="space-y-6">
-                {/* ADMIN & HOST SECTION */}
-                <div className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-                    <Shield className="h-4.5 w-4.5 text-orange-500" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">ADMINS & HOSTS ({adminsAndHosts.length})</h3>
-                  </div>
-                  
-                  {adminsAndHosts.length === 0 ? (
-                    <p className="text-xs text-zinc-400 text-center py-4">No admins or hosts registered.</p>
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={memberSearchQuery}
+                    onChange={(e) => setMemberSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-100/90 focus:bg-white text-xs font-semibold rounded-full text-zinc-900 placeholder-zinc-400 border border-transparent focus:border-orange-500 focus:outline-none transition-all shadow-2xs"
+                  />
+                </div>
+
+                {/* ADMINS SECTION */}
+                <div className="space-y-3.5">
+                  <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Admins</h3>
+
+                  {filteredAdmins.length === 0 ? (
+                    <p className="text-xs text-zinc-400 text-center py-4">No admins found.</p>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 justify-items-center">
-                      {adminsAndHosts.map((m: any) => {
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
+                      {filteredAdmins.map((m: any) => {
                         const p = m.profile;
                         if (!p) return null;
                         const pName = getDisplayName(p);
@@ -509,22 +532,20 @@ export default function CommunityTabs({
                                   <img
                                     src={p.avatar_url}
                                     alt={pName}
-                                    className="h-12 w-12 rounded-full object-cover border border-zinc-100 bg-zinc-50"
+                                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
                                   />
                                 ) : (
-                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 font-extrabold text-sm uppercase">
+                                  <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black text-base uppercase shadow-xs">
                                     {pName.slice(0, 2)}
                                   </div>
                                 )}
-                                <div className="absolute -bottom-1 -right-1 bg-orange-500 rounded-full p-0.5 text-white shadow-sm border border-white">
-                                  <Shield className="h-2.5 w-2.5" />
+                                {/* Reclub Shield Badge on top-right */}
+                                <div className="absolute top-0 right-0 bg-blue-600 rounded-full p-1 text-white shadow-sm border-2 border-white">
+                                  <Shield className="h-3 w-3 fill-current" />
                                 </div>
                               </div>
-                              <span className="text-[10px] font-black text-[#111827] mt-1.5 truncate w-full group-hover:underline">
-                                {pName.split(' ')[0]}
-                              </span>
-                              <span className="text-[8px] font-extrabold uppercase tracking-wider mt-0.5 text-orange-500">
-                                {m.role}
+                              <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
+                                {pName}
                               </span>
                             </Link>
                             {isAdmin && (
@@ -532,7 +553,7 @@ export default function CommunityTabs({
                                 <select
                                   value={m.role}
                                   onChange={(e) => handleUpdateRole(p.id, e.target.value as any)}
-                                  className="text-[9px] font-extrabold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
+                                  className="text-[8px] font-bold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
                                 >
                                   <option value="ADMIN">ADMIN</option>
                                   <option value="HOST">HOST</option>
@@ -541,7 +562,7 @@ export default function CommunityTabs({
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveMember(p.id, pName)}
-                                  className="text-[9px] font-black uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
+                                  className="text-[8px] font-bold uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
                                   title="Remove member"
                                 >
                                   ✕
@@ -556,17 +577,16 @@ export default function CommunityTabs({
                 </div>
 
                 {/* MEMBERS SECTION */}
-                <div className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-                    <Users className="h-4.5 w-4.5 text-orange-500" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">MEMBERS ({generalMembers.length})</h3>
-                  </div>
+                <div className="space-y-3.5 pt-2">
+                  <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">
+                    Members · {generalMembers.length}
+                  </h3>
 
-                  {generalMembers.length === 0 ? (
-                    <p className="text-xs text-zinc-400 text-center py-4">No regular members registered.</p>
+                  {filteredMembers.length === 0 ? (
+                    <p className="text-xs text-zinc-400 text-center py-4">No members found.</p>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 justify-items-center">
-                      {generalMembers.map((m: any) => {
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
+                      {filteredMembers.map((m: any) => {
                         const p = m.profile;
                         if (!p) return null;
                         const pName = getDisplayName(p);
@@ -576,30 +596,32 @@ export default function CommunityTabs({
                               href={`/c/${communitySlug}/players/${p.id}`}
                               className="flex flex-col items-center w-full"
                             >
-                              {p.avatar_url ? (
-                                <img
-                                  src={p.avatar_url}
-                                  alt={pName}
-                                  className="h-12 w-12 rounded-full object-cover border border-zinc-100 bg-zinc-55"
-                                />
-                              ) : (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 font-bold text-sm uppercase">
-                                  {pName.slice(0, 2)}
-                                </div>
-                              )}
-                              <span className="text-[10px] font-black text-[#111827] mt-1.5 truncate w-full group-hover:underline">
-                                {pName.split(' ')[0]}
+                              <div className="relative">
+                                {p.avatar_url ? (
+                                  <img
+                                    src={p.avatar_url}
+                                    alt={pName}
+                                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
+                                  />
+                                ) : (
+                                  <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 font-extrabold text-base uppercase shadow-xs">
+                                    {pName.slice(0, 2)}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
+                                {pName}
                               </span>
                             </Link>
                             {p.is_guest ? (
                               myClaimedGuestIds.includes(p.id) ? (
-                                <span className="text-[7px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded mt-0.5">
+                                <span className="text-[8px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full mt-1">
                                   Pending
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => setGuestToClaim({ id: p.id, name: pName })}
-                                  className="text-[7px] font-extrabold uppercase bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white px-1.5 py-0.5 rounded transition-all mt-0.5 cursor-pointer border border-orange-500/20"
+                                  className="text-[8px] font-black uppercase bg-orange-500 text-white hover:bg-orange-600 px-2 py-0.5 rounded-full transition-all mt-1 cursor-pointer shadow-2xs"
                                   title="Request to claim this guest profile"
                                 >
                                   Claim
@@ -611,7 +633,7 @@ export default function CommunityTabs({
                                 <select
                                   value={m.role}
                                   onChange={(e) => handleUpdateRole(p.id, e.target.value as any)}
-                                  className="text-[9px] font-extrabold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
+                                  className="text-[8px] font-bold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
                                 >
                                   <option value="ADMIN">ADMIN</option>
                                   <option value="HOST">HOST</option>
@@ -620,7 +642,7 @@ export default function CommunityTabs({
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveMember(p.id, pName)}
-                                  className="text-[9px] font-black uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
+                                  className="text-[8px] font-bold uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
                                   title="Remove member"
                                 >
                                   ✕
