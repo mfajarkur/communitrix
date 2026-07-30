@@ -1198,12 +1198,10 @@ export default function CommunityTabs({
                 <select
                   value={editSport}
                   onChange={(e) => setEditSport(e.target.value)}
-                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none"
+                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none font-bold"
                 >
                   <option value="PADEL">PADEL</option>
                   <option value="TENNIS">TENNIS</option>
-                  <option value="BADMINTON">BADMINTON</option>
-                  <option value="PICKLEBALL">PICKLEBALL</option>
                 </select>
               </div>
             </div>

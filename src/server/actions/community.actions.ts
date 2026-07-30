@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { requireProfile } from '@/server/guards';
+import { requireProfile, requireCommunityAdmin } from '@/server/guards';
 import { type ActionResult } from '@/server/result';
 import { revalidatePath } from 'next/cache';
 
