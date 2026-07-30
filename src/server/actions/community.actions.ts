@@ -208,3 +208,43 @@ export async function uploadCommunityLogoAction(formData: FormData) {
 
   return { success: true, url: logoUrl };
 }
+
+export async function updateCommunityInfoAction(input: {
+  communityId: string;
+  communitySlug: string;
+  name?: string;
+  description?: string;
+  defaultSport?: string;
+  bannerUrl?: string;
+}): Promise<ActionResult<any>> {
+  try {
+    await requireCommunityAdmin(input.communityId);
+    const supabase = await createClient();
+
+    const updates: Record<string, any> = {};
+    if (input.name !== undefined) updates.name = input.name.trim();
+    if (input.description !== undefined) updates.description = input.description.trim();
+    if (input.defaultSport !== undefined) updates.default_sport = input.defaultSport.trim();
+    if (input.bannerUrl !== undefined) updates.banner_url = input.bannerUrl.trim();
+
+    const { data, error } = await supabase
+      .from('communities')
+      .update(updates)
+      .eq('id', input.communityId)
+      .select()
+      .single();
+
+    if (error) {
+      return { ok: false, code: 'UNKNOWN', message: error.message };
+    }
+
+    if (input.communitySlug) {
+      revalidatePath(`/c/${input.communitySlug}`);
+    }
+    revalidatePath('/', 'layout');
+
+    return { ok: true, data };
+  } catch (error: any) {
+    return { ok: false, code: 'FORBIDDEN', message: error.message || 'Permission denied' };
+  }
+}

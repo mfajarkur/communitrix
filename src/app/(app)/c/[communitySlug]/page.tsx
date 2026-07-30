@@ -203,6 +203,7 @@ export default async function CommunityDashboardPage({
     <div className="space-y-6">
       {/* Tabs Switcher and Content */}
       <CommunityTabs
+        community={community}
         communityId={community.id}
         communitySlug={communitySlug}
         communityName={community.name}
@@ -218,6 +219,7 @@ export default async function CommunityDashboardPage({
         cpMap={cpMap}
         pendingClaims={pendingClaims}
         myClaimedGuestIds={myClaimedGuestIds}
+        callerProfile={profile}
       />
     </div>
   );

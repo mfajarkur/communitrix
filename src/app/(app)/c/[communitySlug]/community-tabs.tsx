@@ -3,32 +3,40 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
+  Home,
   Calendar,
   Users,
   Trophy,
-  HelpCircle,
-  Activity,
-  UserCheck,
-  ChevronRight,
-  Shield,
-  User,
-  Star,
   BookOpen,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
+  Plus,
+  Search,
+  Shield,
+  Star,
+  Activity,
   CheckCircle,
   X,
   Loader2,
-  Search,
-  Plus,
+  ChevronRight,
+  Share2,
+  Copy,
+  Edit3,
+  UserCheck,
+  Flame,
+  Award,
+  Sparkles,
+  Building2,
+  CalendarDays,
+  User,
+  LogOut,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import { getDisplayName } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
+import { updateCommunityInfoAction } from '@/server/actions/community.actions';
 
 interface CommunityTabsProps {
+  community?: any;
   communityId: string;
   communitySlug: string;
   communityName: string;
@@ -44,9 +52,11 @@ interface CommunityTabsProps {
   cpMap?: Record<string, number>;
   pendingClaims?: any[];
   myClaimedGuestIds?: string[];
+  callerProfile?: any;
 }
 
 export default function CommunityTabs({
+  community,
   communityId,
   communitySlug,
   communityName,
@@ -62,8 +72,9 @@ export default function CommunityTabs({
   cpMap = {},
   pendingClaims = [],
   myClaimedGuestIds = [],
+  callerProfile,
 }: CommunityTabsProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'leaderboard' | 'members' | 'info'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'members' | 'leaderboard' | 'wiki'>('home');
   const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
@@ -71,6 +82,64 @@ export default function CommunityTabs({
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
+
+  // Admin Home Info Edit state
+  const [isEditHomeOpen, setIsEditHomeOpen] = useState(false);
+  const [editDescription, setEditDescription] = useState(community?.description || '');
+  const [editEstablishedDate, setEditEstablishedDate] = useState(community?.established_date || '');
+  const [editSport, setEditSport] = useState(defaultSport);
+  const [isSavingHome, setIsSavingHome] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab && ['home', 'sessions', 'members', 'leaderboard', 'wiki', 'dashboard'].includes(tab)) {
+        if (tab === 'dashboard') setActiveTab('home');
+        else setActiveTab(tab as any);
+      }
+    }
+  }, []);
+
+  const handleTabChange = (tab: 'home' | 'sessions' | 'members' | 'leaderboard' | 'wiki') => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
+  const handleCopyCode = () => {
+    if (community?.code && typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(community.code);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
+
+  const handleSaveHomeInfo = async () => {
+    setIsSavingHome(true);
+    try {
+      const res = await updateCommunityInfoAction({
+        communityId,
+        communitySlug,
+        description: editDescription,
+        defaultSport: editSport,
+      });
+      if (res.ok) {
+        setIsEditHomeOpen(false);
+        window.location.reload();
+      } else {
+        alert(res.message || 'Failed to save community info');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error saving community info');
+    } finally {
+      setIsSavingHome(false);
+    }
+  };
 
   // User submits claim request (pending admin approval)
   const handleClaimSubmit = async () => {
@@ -145,471 +214,367 @@ export default function CommunityTabs({
     }
   };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get('tab');
-      if (tab && ['dashboard', 'leaderboard', 'members', 'info'].includes(tab)) {
-        setActiveTab(tab as any);
-      }
-    }
-  }, []);
-
-  const handleTabChange = (tab: 'dashboard' | 'leaderboard' | 'members' | 'info') => {
-    setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', tab);
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  };
+  const topPlayer = rankings && rankings.length > 0 ? rankings[0] : null;
 
   return (
     <>
-      <div className="space-y-6 bg-white">
-      {/* Dynamic Tab Switcher - Segmented pills layout */}
-      <div className="flex gap-2 p-1.5 bg-zinc-50 border border-zinc-200/70 rounded-2xl overflow-x-auto whitespace-nowrap scroll-smooth shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shadow-sm">
-        <button
-          onClick={() => handleTabChange('dashboard')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'dashboard'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-zinc-550 hover:text-zinc-800'
-          }`}
-        >
-          <Activity className="h-3.5 w-3.5" />
-          Dashboard
-        </button>
-        <button
-          onClick={() => handleTabChange('leaderboard')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'leaderboard'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-zinc-550 hover:text-zinc-800'
-          }`}
-        >
-          <Trophy className="h-3.5 w-3.5" />
-          Leaderboard
-        </button>
-        <button
-          onClick={() => handleTabChange('members')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'members'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-zinc-550 hover:text-zinc-800'
-          }`}
-        >
-          <Users className="h-3.5 w-3.5" />
-          Members
-        </button>
-        <button
-          onClick={() => handleTabChange('info')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shrink-0 ${
-            activeTab === 'info'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-zinc-550 hover:text-zinc-800'
-          }`}
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-          Glossary
-        </button>
-      </div>
+      <div className="space-y-6 bg-white min-h-[500px]">
 
-      {/* Tab Contents */}
-      <div className="min-h-[400px]">
-        {/* DASHBOARD TAB */}
-        {activeTab === 'dashboard' && (
-          <div className="space-y-8">
-            {/* Overview Stat Cards */}
-            <div className="grid gap-3 grid-cols-1">
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
-                  <UserCheck className="h-5 w-5" />
+        {/* TAB CONTENTS */}
+        <div className="min-h-[400px]">
+
+          {/* TAB 1: HOME KOMUNITAS */}
+          {activeTab === 'home' && (
+            <div className="space-y-6">
+              {/* Community Banner / Header Card */}
+              <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-950 to-orange-950 border border-zinc-800 text-white shadow-xl">
+                {/* Background Banner Image or Gradient */}
+                <div className="h-32 sm:h-44 w-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 relative overflow-hidden">
+                  {community?.banner_url ? (
+                    <img src={community.banner_url} alt="Cover" className="w-full h-full object-cover opacity-80" />
+                  ) : (
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-400 via-orange-600 to-zinc-950 opacity-90" />
+                  )}
+                  <div className="absolute top-3 right-3 flex items-center gap-2">
+                    {community?.code && (
+                      <button
+                        onClick={handleCopyCode}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md text-white text-[11px] font-mono font-bold border border-white/20 hover:bg-black/70 transition-all cursor-pointer"
+                        title="Click to copy community code"
+                      >
+                        <Copy className="h-3 w-3" />
+                        <span>{copiedCode ? 'Copied!' : community.code}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-zinc-450 font-medium">Total Players</p>
-                  <h4 className="text-xl font-extrabold text-[#111827] mt-0.5">{memberCount}</h4>
+
+                {/* Community Details Content */}
+                <div className="p-5 sm:p-6 space-y-4 relative -mt-12 sm:-mt-16">
+                  <div className="flex items-end justify-between">
+                    <div className="relative">
+                      {community?.logo_url ? (
+                        <img
+                          src={community.logo_url}
+                          alt={communityName}
+                          className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover border-4 border-zinc-950 shadow-2xl bg-zinc-900"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 border-4 border-zinc-950 shadow-2xl flex items-center justify-center text-white font-black text-2xl uppercase">
+                          {communityName.slice(0, 2)}
+                        </div>
+                      )}
+                      <span className="absolute -bottom-1 -right-1 bg-orange-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-zinc-950">
+                        {defaultSport}
+                      </span>
+                    </div>
+
+                    {isAdmin && (
+                      <button
+                        onClick={() => setIsEditHomeOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        <span>Edit Info</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+                      {communityName}
+                    </h1>
+                    <p className="text-xs text-zinc-400 font-medium mt-1 leading-relaxed">
+                      {community?.description || 'Official community hub for sports matches, ELO rankings, and tournament sessions.'}
+                    </p>
+                  </div>
+
+                  {/* Quick Meta Stats */}
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 font-medium pt-1 border-t border-zinc-800/80">
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4 text-orange-500" />
+                      <span>Est. {new Date(community?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="h-4 w-4 text-orange-500" />
+                      <span>{memberCount} Active Members</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      <span>{totalMatchesCount} Completed Matches</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
-                  <Calendar className="h-5 w-5" />
+              {/* Engaging Community Overview Stat Cards Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Total Members</span>
+                    <Users className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <h3 className="text-2xl font-black text-zinc-900 mt-3">{memberCount}</h3>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Community Players</p>
                 </div>
-                <div>
-                  <p className="text-xs text-zinc-450 font-medium">Active Sessions</p>
-                  <h4 className="text-xl font-extrabold text-[#111827] mt-0.5">{activeSessionsCount}</h4>
+
+                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Game Sessions</span>
+                    <Calendar className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <h3 className="text-2xl font-black text-zinc-900 mt-3">{sessions.length}</h3>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">{activeSessionsCount} Live Active</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Total Matches</span>
+                    <Flame className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <h3 className="text-2xl font-black text-zinc-900 mt-3">{totalMatchesCount}</h3>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Scored contests</p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Default Sport</span>
+                    <Activity className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <h3 className="text-xl font-black text-zinc-900 mt-3 uppercase">{defaultSport}</h3>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Rating Scoped</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-650">
-                  <Activity className="h-5 w-5" />
+              {/* Leader #1 Player Highlight Card */}
+              {topPlayer && (
+                <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-200 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black text-xl shadow-md">
+                      🏆
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">Current Community #1 Leader</span>
+                      <h4 className="text-base font-extrabold text-zinc-900 mt-0.5">
+                        {getDisplayName(topPlayer.profile)}
+                      </h4>
+                      <p className="text-xs text-zinc-500 font-bold">
+                        {Math.round(topPlayer.elo_rating)} ELO Rating • {topPlayer.total_wins} Wins
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleTabChange('leaderboard')}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 bg-white px-3 py-1.5 rounded-xl border border-orange-200 shadow-2xs cursor-pointer"
+                  >
+                    View Standings
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs text-zinc-455 font-medium">Matches Played</p>
-                  <h4 className="text-xl font-extrabold text-[#111827] mt-0.5">{totalMatchesCount}</h4>
-                </div>
+              )}
+
+              {/* Quick Action Navigation Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleTabChange('sessions')}
+                  className="p-4 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-left transition-all shadow-md cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between">
+                    <Calendar className="h-6 w-6 text-white/90" />
+                    <ChevronRight className="h-4 w-4 text-white/80 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <h4 className="text-sm font-extrabold mt-3">Game Sessions</h4>
+                  <p className="text-[11px] text-white/80 font-medium">Create or view sessions</p>
+                </button>
+
+                <button
+                  onClick={() => handleTabChange('members')}
+                  className="p-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white text-left transition-all shadow-md cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between">
+                    <Users className="h-6 w-6 text-orange-400" />
+                    <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <h4 className="text-sm font-extrabold mt-3">Community Members</h4>
+                  <p className="text-[11px] text-zinc-400 font-medium">View admins & players</p>
+                </button>
               </div>
             </div>
+          )}
 
-            {/* Sessions History section */}
-            <div className="space-y-4">
+          {/* TAB 2: GAME SESSIONS */}
+          {activeTab === 'sessions' && (
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                  <Calendar className="h-4.5 w-4.5 text-orange-500" />
-                  Matchmaking Sessions History
-                </h3>
-                {isAdmin && (
+                <div>
+                  <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+                    Game Sessions
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Match sessions, live scoring boards, and historical tournament records.
+                  </p>
+                </div>
+
+                {isHostOrAdmin && (
                   <Link
                     href={`/c/${communitySlug}/sessions/new`}
-                    className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 text-xs font-bold text-white hover:bg-orange-600 transition-all shadow-sm cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
                   >
-                    <Activity className="h-3.5 w-3.5" />
-                    Start Session
+                    <Plus className="h-4 w-4" />
+                    New Session
                   </Link>
                 )}
               </div>
 
               {sessions.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50 text-zinc-400 space-y-3">
-                  <Calendar className="h-10 w-10 mx-auto opacity-50 text-orange-500" />
-                  <p className="text-sm font-semibold">No sessions created yet.</p>
-                  {isAdmin && (
+                <div className="text-center py-16 text-zinc-400 space-y-3 bg-zinc-50 rounded-2xl border border-zinc-100">
+                  <Calendar className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
+                  <p className="text-sm font-semibold">No game sessions created yet.</p>
+                  {isHostOrAdmin && (
                     <Link
                       href={`/c/${communitySlug}/sessions/new`}
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-4 text-xs font-bold text-white hover:bg-orange-600 transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold"
                     >
-                      Start First Session
+                      <Plus className="h-4 w-4" />
+                      Create First Session
                     </Link>
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {sessions.map((s) => {
+                <div className="grid gap-3 grid-cols-1">
+                  {sessions.map((s: any) => {
                     const isActive = s.status === 'ACTIVE';
                     return (
                       <div
                         key={s.id}
-                        className={`p-5 rounded-2xl border bg-zinc-50 flex flex-col justify-between gap-4 transition-all shadow-sm hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)] ${
+                        className={`p-4 rounded-2xl border transition-all space-y-3 ${
                           isActive
-                            ? 'border-orange-500/30 bg-orange-500/[0.01]'
-                            : 'border-zinc-100'
+                            ? 'border-orange-200 bg-orange-50/30 shadow-sm'
+                            : 'border-zinc-100 bg-zinc-50'
                         }`}
                       >
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                                isActive
-                                  ? 'bg-orange-500/10 text-orange-600'
-                                  : 'bg-zinc-100 text-zinc-500'
-                              }`}
-                            >
-                              {isActive ? (
-                                <>
-                                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
-                                  Active Live
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                  isActive
+                                    ? 'bg-orange-500/10 text-orange-600'
+                                    : 'bg-zinc-100 text-zinc-500'
+                                }`}
+                              >
+                                {isActive ? (
+                                  <>
+                                    <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                    Active Live
                                   </>
-                              ) : (
-                                'Completed'
-                              )}
-                            </span>
-                            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                              {s.sport} • {s.format}
-                            </span>
+                                ) : (
+                                  'Completed'
+                                )}
+                              </span>
+                              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                                {s.sport} • {s.format}
+                              </span>
+                            </div>
+                            <h4 className="text-base font-extrabold text-[#111827]">
+                              {s.session_name}
+                            </h4>
+                            <p className="text-xs text-zinc-500">
+                              Created: {new Date(s.created_at).toLocaleDateString()} • {s.court_count} Courts
+                            </p>
                           </div>
-                          <h4 className="text-base font-extrabold text-[#111827]">
-                            {s.session_name}
-                          </h4>
-                          <p className="text-xs text-zinc-500">
-                            Created: {new Date(s.created_at).toLocaleDateString()} • {s.court_count} Courts
-                          </p>
-                        </div>
 
-                        <Link
-                          href={`/c/${communitySlug}/sessions/${s.id}`}
-                          className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition-all ${
-                            isActive
-                              ? 'bg-orange-500 text-white hover:bg-orange-600'
-                              : 'border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
-                          }`}
-                        >
-                          {isActive ? 'Open Live Board' : 'View Final Results'}
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </Link>
+                          <Link
+                            href={`/c/${communitySlug}/sessions/${s.id}`}
+                            className={`inline-flex h-9 px-4 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all ${
+                              isActive
+                                ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-xs'
+                                : 'border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
+                            }`}
+                          >
+                            {isActive ? 'Open Live Board' : 'View Final Results'}
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* LEADERBOARD TAB */}
-        {activeTab === 'leaderboard' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
-                {defaultSport} ELO Standings
-              </h2>
-              <p className="text-xs text-zinc-500 mt-1">
-                Official leaderboard standings computed using the mathematical ELO formulas.
-              </p>
-            </div>
+          {/* TAB 3: MEMBERS */}
+          {activeTab === 'members' && (() => {
+            const adminsList = members.filter((m) => m.role === 'ADMIN');
+            const hostsList = members.filter((m) => m.role === 'HOST');
+            const generalMembers = members.filter((m) => m.role === 'MEMBER');
 
-            <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
-              {rankings.length === 0 ? (
-                <div className="text-center py-16 text-zinc-400 space-y-2">
-                  <Trophy className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
-                  <p className="text-sm font-semibold">No standings computed yet for {defaultSport}.</p>
-                  <p className="text-xs">Start a session and enter scores to compute ELO ratings.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                        <th className="p-3 w-12 text-center">Rank</th>
-                        <th className="p-3">Name</th>
-                        <th className="p-3 text-center">Elo Rating</th>
-                        <th className="p-3 text-center">CP</th>
-                        <th className="p-3 text-center">Skill Rating</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {rankings.map((r: any, idx) => {
-                        const rank = idx + 1;
-                        const winRate =
-                          r.total_matches > 0
-                            ? Math.round((r.total_wins / r.total_matches) * 100)
-                            : 0;
+            const filteredAdmins = adminsList.filter((m) => {
+              if (!memberSearchQuery.trim()) return true;
+              const pName = getDisplayName(m.profile).toLowerCase();
+              return pName.includes(memberSearchQuery.toLowerCase());
+            });
 
-                        const pDiff = r.points_for - r.points_against;
-                        const playerCp = Math.round(cpMap[r.profile.id] || 0);
-                        const skillRating = Number(r.skill_rating_official || 1.0).toFixed(2);
+            const filteredHosts = hostsList.filter((m) => {
+              if (!memberSearchQuery.trim()) return true;
+              const pName = getDisplayName(m.profile).toLowerCase();
+              return pName.includes(memberSearchQuery.toLowerCase());
+            });
 
-                        return (
-                          <tr
-                            key={r.id}
-                            className="group hover:bg-zinc-50/40 transition-all text-xs text-[#111827]"
-                          >
-                            <td className="p-3 text-center align-middle font-extrabold">
-                              {rank === 1 ? (
-                                <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-xs font-black border border-orange-500/20 shadow-2xs">
-                                  🏆
-                                </span>
-                              ) : rank === 2 ? (
-                                <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-xs font-black border border-zinc-200 shadow-2xs">
-                                  🥈
-                                </span>
-                              ) : rank === 3 ? (
-                                <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-xs font-black border border-orange-500/10 shadow-2xs">
-                                  🥉
-                                </span>
-                              ) : (
-                                <span className="text-[11px] font-bold text-zinc-400">#{rank}</span>
-                              )}
-                            </td>
+            const filteredMembers = generalMembers.filter((m) => {
+              if (!memberSearchQuery.trim()) return true;
+              const pName = getDisplayName(m.profile).toLowerCase();
+              return pName.includes(memberSearchQuery.toLowerCase());
+            });
 
-                            <td className="p-3 align-middle">
-                              <Link
-                                href={`/c/${communitySlug}/players/${r.profile.id}`}
-                                className="flex items-center gap-2.5 hover:underline"
-                              >
-                                {r.profile.avatar_url ? (
-                                  <img
-                                    src={r.profile.avatar_url}
-                                    alt={getDisplayName(r.profile)}
-                                    className="h-8 w-8 shrink-0 rounded-full object-cover border border-zinc-100"
-                                  />
-                                ) : (
-                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 font-extrabold text-xs uppercase">
-                                    {getDisplayName(r.profile).slice(0, 2)}
-                                  </div>
-                                )}
-                                <div className="min-w-0">
-                                  <p className="text-xs font-extrabold text-[#111827] truncate flex items-center gap-1.5">
-                                    {getDisplayName(r.profile)}
-                                    {r.profile.is_guest && (
-                                      <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
-                                        Guest
-                                      </span>
-                                    )}
-                                    {r.is_provisional && (
-                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 text-[8px] font-bold uppercase border border-orange-500/20">
-                                        <Star className="h-2 w-2 fill-current" />
-                                        Prov
-                                      </span>
-                                    )}
-                                  </p>
-                                  <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
-                                    {r.total_wins}W–{r.total_losses}L ({winRate}% WR) • {pDiff > 0 ? `+${pDiff}` : pDiff} Diff
-                                  </p>
-                                </div>
-                              </Link>
-                            </td>
-
-                            <td className="p-3 text-center align-middle font-mono font-black text-xs text-orange-600">
-                              {Number(r.elo_rating).toFixed(0)}
-                              <span className="block text-[9px] text-zinc-400 font-bold">
-                                Peak: {Number(r.elo_peak).toFixed(0)}
-                              </span>
-                            </td>
-
-                            <td className="p-3 text-center align-middle font-mono font-bold text-xs">
-                              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
-                                {playerCp} CP
-                              </span>
-                            </td>
-
-                            <td className="p-3 text-center align-middle font-mono font-bold text-xs">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200 font-black text-[11px] shadow-2xs">
-                                ⭐ {skillRating}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* MEMBERS TAB - CLEAN RECLUB AESTHETIC */}
-        {activeTab === 'members' && (() => {
-          const adminsList = members.filter(m => m.role === 'ADMIN');
-          const hostsList = members.filter(m => m.role === 'HOST');
-          const generalMembers = members.filter(m => m.role === 'MEMBER');
-
-          const filteredAdmins = adminsList.filter(m => {
-            if (!memberSearchQuery.trim()) return true;
-            const pName = getDisplayName(m.profile).toLowerCase();
-            return pName.includes(memberSearchQuery.toLowerCase());
-          });
-
-          const filteredHosts = hostsList.filter(m => {
-            if (!memberSearchQuery.trim()) return true;
-            const pName = getDisplayName(m.profile).toLowerCase();
-            return pName.includes(memberSearchQuery.toLowerCase());
-          });
-
-          const filteredMembers = generalMembers.filter(m => {
-            if (!memberSearchQuery.trim()) return true;
-            const pName = getDisplayName(m.profile).toLowerCase();
-            return pName.includes(memberSearchQuery.toLowerCase());
-          });
-
-          return (
-            <div className="grid gap-6 grid-cols-1">
-              <div className="space-y-6">
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-                  <input
-                    id="member-search-input"
-                    type="text"
-                    placeholder="Search..."
-                    value={memberSearchQuery}
-                    onChange={(e) => setMemberSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-9 py-2.5 bg-zinc-100/90 focus:bg-white text-xs font-semibold rounded-full text-zinc-900 placeholder-zinc-400 border border-transparent focus:border-orange-500 focus:outline-none transition-all shadow-2xs"
-                  />
-                  {memberSearchQuery && (
-                    <button
-                      onClick={() => setMemberSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-0.5 rounded-full"
-                      title="Clear search"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* ADMINS SECTION */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Admins</h3>
-                    {isAdmin && (
+            return (
+              <div className="grid gap-6 grid-cols-1">
+                <div className="space-y-6">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                    <input
+                      id="member-search-input"
+                      type="text"
+                      placeholder="Search..."
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-9 py-2.5 bg-zinc-100/90 focus:bg-white text-xs font-semibold rounded-full text-zinc-900 placeholder-zinc-400 border border-transparent focus:border-orange-500 focus:outline-none transition-all shadow-2xs"
+                    />
+                    {memberSearchQuery && (
                       <button
-                        onClick={() => {
-                          setRoleSearchQuery('');
-                          setTargetRoleToAdd('ADMIN');
-                        }}
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-full border border-orange-200 transition-all cursor-pointer shadow-2xs"
+                        onClick={() => setMemberSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-0.5 rounded-full"
+                        title="Clear search"
                       >
-                        <Plus className="h-3 w-3" /> Add Admin
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </div>
 
-                  {filteredAdmins.length === 0 ? (
-                    <p className="text-xs text-zinc-400 py-2">No admins found.</p>
-                  ) : (
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
-                      {filteredAdmins.map((m: any) => {
-                        const p = m.profile;
-                        if (!p) return null;
-                        const pName = getDisplayName(p);
-                        return (
-                          <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
-                            <Link
-                              href={`/c/${communitySlug}/players/${p.id}`}
-                              className="flex flex-col items-center w-full"
-                            >
-                              <div className="relative">
-                                {p.avatar_url ? (
-                                  <img
-                                    src={p.avatar_url}
-                                    alt={pName}
-                                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
-                                  />
-                                ) : (
-                                  <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black text-base uppercase shadow-xs">
-                                    {pName.slice(0, 2)}
-                                  </div>
-                                )}
-                                <div className="absolute top-0 right-0 bg-blue-600 rounded-full p-1 text-white shadow-sm border-2 border-white">
-                                  <Shield className="h-3 w-3 fill-current" />
-                                </div>
-                              </div>
-                              <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
-                                {pName}
-                              </span>
-                            </Link>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* HOSTS SECTION */}
-                {(hostsList.length > 0 || isAdmin) && (
-                  <div className="space-y-3.5 pt-2">
+                  {/* ADMINS SECTION */}
+                  <div className="space-y-3.5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Hosts</h3>
+                      <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Admins</h3>
                       {isAdmin && (
                         <button
                           onClick={() => {
                             setRoleSearchQuery('');
-                            setTargetRoleToAdd('HOST');
+                            setTargetRoleToAdd('ADMIN');
                           }}
                           className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-full border border-orange-200 transition-all cursor-pointer shadow-2xs"
                         >
-                          <Plus className="h-3 w-3" /> Add Host
+                          <Plus className="h-3 w-3" /> Add Admin
                         </button>
                       )}
                     </div>
 
-                    {filteredHosts.length === 0 ? (
-                      <p className="text-xs text-zinc-400 py-2">No hosts assigned yet.</p>
+                    {filteredAdmins.length === 0 ? (
+                      <p className="text-xs text-zinc-400 py-2">No admins found.</p>
                     ) : (
                       <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
-                        {filteredHosts.map((m: any) => {
+                        {filteredAdmins.map((m: any) => {
                           const p = m.profile;
                           if (!p) return null;
                           const pName = getDisplayName(p);
@@ -627,12 +592,12 @@ export default function CommunityTabs({
                                       className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
                                     />
                                   ) : (
-                                    <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black text-base uppercase shadow-xs">
+                                    <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black text-base uppercase shadow-xs">
                                       {pName.slice(0, 2)}
                                     </div>
                                   )}
-                                  <div className="absolute top-0 right-0 bg-amber-500 rounded-full p-1 text-white shadow-sm border-2 border-white">
-                                    <UserCheck className="h-3 w-3" />
+                                  <div className="absolute top-0 right-0 bg-blue-600 rounded-full p-1 text-white shadow-sm border-2 border-white">
+                                    <Shield className="h-3 w-3 fill-current" />
                                   </div>
                                 </div>
                                 <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
@@ -645,344 +610,551 @@ export default function CommunityTabs({
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* MEMBERS SECTION */}
-                <div className="space-y-3.5 pt-2">
-                  <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">
-                    Members · {generalMembers.length}
-                  </h3>
+                  {/* HOSTS SECTION */}
+                  {(hostsList.length > 0 || isAdmin) && (
+                    <div className="space-y-3.5 pt-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Hosts</h3>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setRoleSearchQuery('');
+                              setTargetRoleToAdd('HOST');
+                            }}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-full border border-orange-200 transition-all cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="h-3 w-3" /> Add Host
+                          </button>
+                        )}
+                      </div>
 
-                  {filteredMembers.length === 0 ? (
-                    <p className="text-xs text-zinc-400 py-2">No members found.</p>
-                  ) : (
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
-                      {filteredMembers.map((m: any) => {
-                        const p = m.profile;
-                        if (!p) return null;
-                        const pName = getDisplayName(p);
-                        return (
-                          <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
-                            <Link
-                              href={`/c/${communitySlug}/players/${p.id}`}
-                              className="flex flex-col items-center w-full"
-                            >
-                              <div className="relative">
-                                {p.avatar_url ? (
-                                  <img
-                                    src={p.avatar_url}
-                                    alt={pName}
-                                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
-                                  />
-                                ) : (
-                                  <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 font-extrabold text-base uppercase shadow-xs">
-                                    {pName.slice(0, 2)}
-                                  </div>
-                                )}
-                              </div>
-                              <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
-                                {pName}
-                              </span>
-                            </Link>
-                            {p.is_guest ? (
-                              myClaimedGuestIds.includes(p.id) ? (
-                                <span className="text-[8px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full mt-1">
-                                  Pending
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={() => setGuestToClaim({ id: p.id, name: pName })}
-                                  className="text-[8px] font-black uppercase bg-orange-500 text-white hover:bg-orange-600 px-2 py-0.5 rounded-full transition-all mt-1 cursor-pointer shadow-2xs"
-                                  title="Request to claim this guest profile"
+                      {filteredHosts.length === 0 ? (
+                        <p className="text-xs text-zinc-400 py-2">No hosts assigned yet.</p>
+                      ) : (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
+                          {filteredHosts.map((m: any) => {
+                            const p = m.profile;
+                            if (!p) return null;
+                            const pName = getDisplayName(p);
+                            return (
+                              <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
+                                <Link
+                                  href={`/c/${communitySlug}/players/${p.id}`}
+                                  className="flex flex-col items-center w-full"
                                 >
-                                  Claim
-                                </button>
-                              )
-                            ) : null}
-                          </div>
-                        );
-                      })}
+                                  <div className="relative">
+                                    {p.avatar_url ? (
+                                      <img
+                                        src={p.avatar_url}
+                                        alt={pName}
+                                        className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
+                                      />
+                                    ) : (
+                                      <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black text-base uppercase shadow-xs">
+                                        {pName.slice(0, 2)}
+                                      </div>
+                                    )}
+                                    <div className="absolute top-0 right-0 bg-amber-500 rounded-full p-1 text-white shadow-sm border-2 border-white">
+                                      <UserCheck className="h-3 w-3" />
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
+                                    {pName}
+                                  </span>
+                                </Link>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  {/* MEMBERS SECTION */}
+                  <div className="space-y-3.5 pt-2">
+                    <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">
+                      Members · {generalMembers.length}
+                    </h3>
+
+                    {filteredMembers.length === 0 ? (
+                      <p className="text-xs text-zinc-400 py-2">No members found.</p>
+                    ) : (
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
+                        {filteredMembers.map((m: any) => {
+                          const p = m.profile;
+                          if (!p) return null;
+                          const pName = getDisplayName(p);
+                          return (
+                            <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
+                              <Link
+                                href={`/c/${communitySlug}/players/${p.id}`}
+                                className="flex flex-col items-center w-full"
+                              >
+                                <div className="relative">
+                                  {p.avatar_url ? (
+                                    <img
+                                      src={p.avatar_url}
+                                      alt={pName}
+                                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
+                                    />
+                                  ) : (
+                                    <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 font-extrabold text-base uppercase shadow-xs">
+                                      {pName.slice(0, 2)}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
+                                  {pName}
+                                </span>
+                              </Link>
+                              {p.is_guest ? (
+                                myClaimedGuestIds.includes(p.id) ? (
+                                  <span className="text-[8px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full mt-1">
+                                    Pending
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => setGuestToClaim({ id: p.id, name: pName })}
+                                    className="text-[8px] font-black uppercase bg-orange-500 text-white hover:bg-orange-600 px-2 py-0.5 rounded-full transition-all mt-1 cursor-pointer shadow-2xs"
+                                    title="Request to claim this guest profile"
+                                  >
+                                    Claim
+                                  </button>
+                                )
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
 
+                {/* Admin Side Panel: Pending Claims & Add Guest */}
+                <div className="space-y-6">
+                  {isAdmin && pendingClaims.length > 0 && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
+                      <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
+                        <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
+                          <CheckCircle className="h-4 w-4 text-amber-600" />
+                          Pending Claims ({pendingClaims.length})
+                        </h3>
+                      </div>
+
+                      <div className="space-y-3">
+                        {pendingClaims.map((req) => {
+                          const guestName = getDisplayName(req.guest_profile);
+                          const reqName = getDisplayName(req.requester_profile);
+                          const username = req.requester_profile?.username ? `@${req.requester_profile.username}` : '';
+                          const isProcessingThis = resolvingId === req.id;
+
+                          return (
+                            <div
+                              key={req.id}
+                              className="p-3.5 rounded-xl bg-white border border-amber-200/80 space-y-3 shadow-xs"
+                            >
+                              <div className="text-xs text-gray-800 space-y-1 font-sans">
+                                <p className="font-bold">
+                                  {reqName} <span className="text-gray-400 font-normal">{username}</span>
+                                </p>
+                                <p className="text-gray-500 font-light text-[11px]">
+                                  Requests to claim guest: <span className="font-extrabold text-orange-600">{guestName}</span>
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleResolve(req.id, 'APPROVE')}
+                                  disabled={isProcessingThis}
+                                  className="flex-1 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  {isProcessingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Approve'}
+                                </button>
+                                <button
+                                  onClick={() => handleResolve(req.id, 'REJECT')}
+                                  disabled={isProcessingThis}
+                                  className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {isHostOrAdmin ? (
+                    <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm space-y-4">
+                      <div>
+                        <h3 className="font-bold text-[#111827]">Add Guest Player</h3>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Register quick guest profiles for sessions without account verification emails.
+                        </p>
+                      </div>
+                      <AddGuestForm communityId={communityId} />
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* TAB 4: LEADERBOARD GLOBAL */}
+          {activeTab === 'leaderboard' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+                  {defaultSport} ELO Standings
+                </h2>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Official leaderboard standings computed using mathematical ELO formulas.
+                </p>
               </div>
 
-              {/* Admin Side Panel: Pending Claims & Add Guest */}
-              <div className="space-y-6">
-                {/* PENDING CLAIM REQUESTS (Admin Only) */}
-                {isAdmin && pendingClaims.length > 0 && (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
-                    <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
-                      <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
-                        <CheckCircle className="h-4 w-4 text-amber-600" />
-                        Pending Claims ({pendingClaims.length})
-                      </h3>
-                    </div>
-
-                    <div className="space-y-3">
-                      {pendingClaims.map((req) => {
-                        const guestName = getDisplayName(req.guest_profile);
-                        const reqName = getDisplayName(req.requester_profile);
-                        const username = req.requester_profile?.username ? `@${req.requester_profile.username}` : '';
-                        const isProcessingThis = resolvingId === req.id;
-
-                        return (
-                          <div
-                            key={req.id}
-                            className="p-3.5 rounded-xl bg-white border border-amber-200/80 space-y-3 shadow-xs"
-                          >
-                            <div className="text-xs text-gray-800 space-y-1 font-sans">
-                              <p className="font-bold">
-                                {reqName} <span className="text-gray-400 font-normal">{username}</span>
-                              </p>
-                              <p className="text-gray-500 font-light text-[11px]">
-                                Requests to claim guest: <span className="font-extrabold text-orange-600">{guestName}</span>
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleResolve(req.id, 'APPROVE')}
-                                disabled={isProcessingThis}
-                                className="flex-1 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                              >
-                                {isProcessingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Approve'}
-                              </button>
-                              <button
-                                onClick={() => handleResolve(req.id, 'REJECT')}
-                                disabled={isProcessingThis}
-                                className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* ADD GUEST FORM (Host & Admin) */}
-                {isHostOrAdmin ? (
-                  <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm space-y-4">
-                    <div>
-                      <h3 className="font-bold text-[#111827]">Add Guest Player</h3>
-                      <p className="text-xs text-zinc-500 mt-1">
-                        Register quick guest profiles for sessions without account verification emails.
-                      </p>
-                    </div>
-                    <AddGuestForm communityId={communityId} />
+              <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
+                {rankings.length === 0 ? (
+                  <div className="text-center py-16 text-zinc-400 space-y-2">
+                    <Trophy className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
+                    <p className="text-sm font-semibold">No standings computed yet for {defaultSport}.</p>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-zinc-100 bg-zinc-50/50 p-6 text-center">
-                    <p className="text-xs text-zinc-400">
-                      Only community hosts or administrators can register guest players or manage sessions.
-                    </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                          <th className="p-3 w-12 text-center">Rank</th>
+                          <th className="p-3">Name</th>
+                          <th className="p-3 text-center">Elo Rating</th>
+                          <th className="p-3 text-center">CP</th>
+                          <th className="p-3 text-center">Skill Rating</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100">
+                        {rankings.map((r: any, idx) => {
+                          const rank = idx + 1;
+                          const winRate =
+                            r.total_matches > 0
+                              ? Math.round((r.total_wins / r.total_matches) * 100)
+                              : 0;
+
+                          const pDiff = r.points_for - r.points_against;
+                          const playerCp = Math.round(cpMap[r.profile.id] || 0);
+                          const skillRating = Number(r.skill_rating_official || 1.0).toFixed(2);
+
+                          return (
+                            <tr
+                              key={r.id}
+                              className="group hover:bg-zinc-50/40 transition-all text-xs text-[#111827]"
+                            >
+                              <td className="p-3 text-center align-middle font-extrabold">
+                                {rank === 1 ? (
+                                  <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-xs font-black border border-orange-500/20 shadow-2xs">
+                                    🏆
+                                  </span>
+                                ) : rank === 2 ? (
+                                  <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-xs font-black border border-zinc-200 shadow-2xs">
+                                    🥈
+                                  </span>
+                                ) : rank === 3 ? (
+                                  <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-xs font-black border border-orange-500/10 shadow-2xs">
+                                    🥉
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-bold text-zinc-400">#{rank}</span>
+                                )}
+                              </td>
+
+                              <td className="p-3 align-middle">
+                                <Link
+                                  href={`/c/${communitySlug}/players/${r.profile.id}`}
+                                  className="flex items-center gap-2.5 hover:underline"
+                                >
+                                  {r.profile.avatar_url ? (
+                                    <img
+                                      src={r.profile.avatar_url}
+                                      alt={getDisplayName(r.profile)}
+                                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-zinc-100"
+                                    />
+                                  ) : (
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 font-extrabold text-xs uppercase">
+                                      {getDisplayName(r.profile).slice(0, 2)}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-extrabold text-[#111827] truncate flex items-center gap-1.5">
+                                      {getDisplayName(r.profile)}
+                                      {r.profile.is_guest && (
+                                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
+                                          Guest
+                                        </span>
+                                      )}
+                                      {r.is_provisional && (
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 text-[8px] font-bold uppercase border border-orange-500/20">
+                                          <Star className="h-2 w-2 fill-current" />
+                                          Prov
+                                        </span>
+                                      )}
+                                    </p>
+                                    <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
+                                      {r.total_wins}W–{r.total_losses}L ({winRate}% WR) • {pDiff > 0 ? `+${pDiff}` : pDiff} Diff
+                                    </p>
+                                  </div>
+                                </Link>
+                              </td>
+
+                              <td className="p-3 text-center align-middle font-mono font-black text-xs text-orange-600">
+                                {Number(r.elo_rating).toFixed(0)}
+                                <span className="block text-[9px] text-zinc-400 font-bold">
+                                  Peak: {Number(r.elo_peak).toFixed(0)}
+                                </span>
+                              </td>
+
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                                <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
+                                  {playerCp} CP
+                                </span>
+                              </td>
+
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200 font-black text-[11px] shadow-2xs">
+                                  ⭐ {skillRating}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
             </div>
-          );
-        })()}
+          )}
 
-        {/* INFO & GLOSSARY TAB */}
-        {activeTab === 'info' && (
-          <div className="grid gap-6 grid-cols-1">
-            {/* Left Nav for Glossary */}
+          {/* TAB 5: WIKI & GLOSSARY */}
+          {activeTab === 'wiki' && (
             <div className="space-y-6">
-              {/* ELO RATING SYSTEM SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
-                <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
-                  <Trophy className="h-5 w-5" />
-                  Sistem ELO Rating
-                </h3>
-                <p className="text-sm text-zinc-650 leading-relaxed">
-                  <strong>ELO Rating</strong> adalah metode matematis untuk mengukur tingkat keahlian relatif pemain dalam permainan 1-lawan-1 atau ganda. Dibandingkan dengan sistem skor kumulatif, nilai ELO naik atau turun berdasarkan **ekspektasi kemenangan** (Expectation).
+              <div>
+                <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+                  Communitrix Wiki & Rulebook
+                </h2>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Official guide to ELO calculation formulas, Americano/Mexicano formats, and Sit-out priority.
                 </p>
-
-                <div className="space-y-4 pt-2">
-                  <div className="border-l-4 border-orange-500 pl-4 space-y-1.5">
-                    <h4 className="font-bold text-sm text-[#111827]">1. Nilai Ekspektasi (Probability of Winning)</h4>
-                    <p className="text-xs text-zinc-500 leading-relaxed">
-                      Sistem menghitung probabilitas kemenangan tim Anda ($E_A$) berdasarkan perbandingan ELO tim Anda melawan ELO tim lawan. Jika Anda mengalahkan lawan dengan ELO yang jauh lebih tinggi, rating Anda akan naik pesat. Sebaliknya, kalah dari lawan dengan ELO lebih rendah akan mengurangi poin Anda secara signifikan.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-orange-500 pl-4 space-y-1.5">
-                    <h4 className="font-bold text-sm text-[#111827]">2. Margin Kemenangan (Margin of Victory)</h4>
-                    <p className="text-xs text-zinc-500 leading-relaxed">
-                      Kalkulator ELO kami menggunakan pengali **Margin of Victory (MoV)**. Kemenangan mutlak (misalnya skor 21-5) akan memberikan pengali bonus ELO yang lebih besar dibandingkan kemenangan tipis (misalnya 21-19). MoV dihitung menggunakan formula logaritma alami agar sebaran poin tetap proporsional dan tidak mengalami inflasi.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-orange-500 pl-4 space-y-1.5">
-                    <h4 className="font-bold text-sm text-[#111827]">3. Skala K-Factor & Pemain Provisional</h4>
-                    <p className="text-xs text-zinc-500 leading-relaxed">
-                      <strong>K-Factor</strong> menentukan seberapa sensitif rating Anda terhadap hasil pertandingan terakhir:
-                      <br />• <strong>Pemain Baru (Provisional)</strong>: Pemain dengan jumlah tanding di bawah 10 mendapat $K = 48$. Ini mempercepat sistem menemukan kisaran rating aslinya.
-                      <br />• <strong>Pemain Mapat (Settled)</strong>: Setelah melewati 10 pertandingan, K-Factor turun menjadi $K = 24$ agar rating tetap stabil.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-orange-500 pl-4 space-y-1.5">
-                    <h4 className="font-bold text-sm text-[#111827]">4. Keseimbangan Nol (Zero-Sum Invariant)</h4>
-                    <p className="text-xs text-zinc-500 leading-relaxed">
-                      Semua perhitungan dilakukan dengan prinsip seimbang. Jumlah total ELO yang didapatkan oleh tim pemenang sama persis dengan total ELO yang dikurangi dari tim yang kalah (jumlah net = 0). Di akhir laga ganda, rata-rata K-Factor and delta didistribusikan secara adil kepada setiap rekan setim. Batas rating terendah adalah **100.00** guna mencegah rating jatuh negatif.
-                    </p>
-                  </div>
-                </div>
               </div>
 
-              {/* AMERICANO FORMAT SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
-                <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Format Turnamen: Americano
-                </h3>
-                <p className="text-sm text-zinc-650 leading-relaxed">
-                  Dalam format <strong>Americano</strong>, tujuannya adalah agar setiap pemain merasakan bermain berpasangan (rekan satu tim) dengan semua orang lainnya, sekaligus bermain berhadapan (sebagai lawan) secara merata.
-                </p>
+              <div className="grid gap-6 grid-cols-1">
+                {/* ELO RATING SYSTEM SECTION */}
+                <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
+                  <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
+                    <Trophy className="h-5 w-5" />
+                    1. Sistem Perhitungan ELO Rating
+                  </h3>
+                  <p className="text-sm text-zinc-650 leading-relaxed">
+                    <strong>ELO Rating</strong> mengukur tingkat keahlian relatif pemain. Perubahan poin dihitung dari **ekspektasi kemenangan** (Expectation). Kemenangan melawan tim kuat memberikan poin ELO lebih tinggi.
+                  </p>
 
-                <div className="space-y-4 pt-2">
-                  <div className="border-l-4 border-zinc-200 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827]">Skema Rotasi Berputar</h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Sistem menggunakan tabel rotasi matematis untuk jumlah pemain genap ($N = 4, 8$) demi rotasi sempurna. Untuk jumlah pemain lainnya, algoritma melakukan simulasi pencarian lokal 10.000 iterasi untuk menyusun jadwal terbaik dengan penalti partner tumpuk seminimal mungkin.
-                    </p>
-                  </div>
+                  <div className="space-y-4 pt-2">
+                    <div className="border-l-4 border-orange-500 pl-4 space-y-1.5">
+                      <h4 className="font-bold text-sm text-[#111827]">Effective Team Rating</h4>
+                      <p className="text-xs text-zinc-500 leading-relaxed">
+                        Jika terdapat perbedaan ELO besar antarpasangan tim, sistem menerapkan penalti gap ($0.25 \times \Delta$) untuk menyeimbangkan nilai ekspektasi tim.
+                      </p>
+                    </div>
 
-                  <div className="border-l-4 border-zinc-200 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827]">Sistem Sit-Out yang Adil</h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Jika jumlah pemain tidak kelipatan 4, beberapa pemain harus beristirahat (*sit-out*) bergantian di tiap ronde. Algoritma menjamin:
-                      <br />• Tidak ada pemain yang beristirahat 2 kali sebelum semua orang mendapat giliran istirahat 1 kali.
-                      <br />• Proteksi ketat mencegah satu orang istirahat berturut-turut (*consecutive sit-out*).
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* MEXICANO FORMAT SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
-                <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Format Turnamen: Mexicano
-                </h3>
-                <p className="text-sm text-zinc-655 leading-relaxed">
-                  Dalam format <strong>Mexicano</strong>, jadwal dipasangkan secara dinamis berdasarkan klasemen sesi berjalan (*standing-based pairings*). Tujuannya agar tercipta laga seru antar pemain dengan tingkat kekuatan yang setara di lapangan yang sama.
-                </p>
-
-                <div className="space-y-4 pt-2">
-                  <div className="border-l-4 border-zinc-200 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827]">Pengelompokan Lapangan (Court Grouping)</h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Ronde pertama dipasangkan acak. Untuk ronde selanjutnya, pemain diurutkan berdasarkan poin klasemen sesi berjalan:
-                      <br />• <strong>Lapangan 1</strong>: Diisi oleh peringkat 1 sampai 4.
-                      <br />• <strong>Lapangan 2</strong>: Diisi oleh peringkat 5 sampai 8, dan seterusnya.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-zinc-200 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827]">Skema Pairing Dalam Lapangan</h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Di dalam tiap lapangan, peringkat dipasangkan dengan skema **$1+4$ vs $2+3$** (peringkat 1 berpasangan dengan peringkat 4 melawan peringkat 2 dan 3) untuk menciptakan kekuatan tim yang paling seimbang.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-zinc-200 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827]">Pencegahan Partner Berulang</h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Algoritma menyimpan memori riwayat tanding. Jika di lapangan tersebut peringkat $1+4$ sudah pernah berpasangan sebelumnya, sistem otomatis melakukan pergeseran peringkat (*shifting*) agar Anda tidak bosan berpasangan dengan orang yang sama.
-                    </p>
+                    <div className="border-l-4 border-orange-500 pl-4 space-y-1.5">
+                      <h4 className="font-bold text-sm text-[#111827]">K-Factor & Provisional</h4>
+                      <p className="text-xs text-zinc-500 leading-relaxed">
+                        • Pemain baru ($&lt; 10$ match): $K = 48$ (Provisional).
+                        <br />• Pemain mapan ($\ge 10$ match): $K = 24$ (Settled).
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* MEMBER ROLES SECTION */}
-              <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
-                <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Peran & Hak Akses Anggota (ADMIN, HOST, MEMBER)
-                </h3>
-                <p className="text-sm text-zinc-650 leading-relaxed">
-                  Dalam Communitrix, setiap komunitas memiliki pembagian hak akses teratur demi kelancaran pengelolaan dan pencegahan penyalahgunaan data:
-                </p>
+                {/* AMERICANO & MEXICANO FORMAT SECTION */}
+                <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
+                  <h3 className="text-lg font-black text-orange-500 flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    2. Format Turnamen: Americano vs Mexicano
+                  </h3>
 
-                <div className="space-y-4 pt-2">
-                  <div className="border-l-4 border-orange-500 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827] flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-orange-500" />
-                      1. ADMIN (Tingkat Tertinggi)
-                    </h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Admin memiliki kontrol penuh atas seluruh komunitas. Hanya Admin yang dapat **menambah/mengundang member baru**, **mengeluarkan/kick member**, **mengubah tingkat peran keanggotaan**, serta melakukan tindakan administratif sensitif seperti **amend (koreksi skor)** dan **void (membatalkan laga)** yang mempengaruhi recalculation ELO global.
-                    </p>
-                  </div>
+                  <div className="space-y-4 pt-2">
+                    <div className="border-l-4 border-zinc-300 pl-4 space-y-1">
+                      <h4 className="font-bold text-sm text-[#111827]">Americano</h4>
+                      <p className="text-xs text-zinc-550 leading-relaxed">
+                        Rotasi pasangan seragam agar setiap pemain merasakan berpasangan dengan semua pemain lain secara merata.
+                      </p>
+                    </div>
 
-                  <div className="border-l-4 border-orange-500/50 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827] flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-orange-400" />
-                      2. HOST (Penyelenggara Lapangan)
-                    </h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Host adalah asisten pengelola yang bertanggung jawab di lapangan. Host dapat **membuat sesi tanding baru**, **mendaftarkan profil tamu (guest)** di tempat, **mengatur antrean main**, dan **menginput/submit skor pertandingan aktif**. Namun, Host **tidak memiliki hak** untuk mengedit, membatalkan (void/amend) skor yang sudah final, ataupun mengeluarkan/kick member dari komunitas.
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-zinc-200 pl-4 space-y-1">
-                    <h4 className="font-bold text-sm text-[#111827] flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-zinc-300" />
-                      3. MEMBER (Pemain Biasa)
-                    </h4>
-                    <p className="text-xs text-zinc-550 leading-relaxed">
-                      Member adalah pemain terdaftar dalam komunitas. Member memiliki hak baca penuh (Read-Only) untuk **melihat statistik umum**, **leaderboard ELO**, **profil pemain (termasuk grafik tren ELO)**, serta **pantauan Live Board** pertandingan yang sedang berjalan secara real-time dari HP mereka.
-                    </p>
+                    <div className="border-l-4 border-zinc-300 pl-4 space-y-1">
+                      <h4 className="font-bold text-sm text-[#111827]">Mexicano</h4>
+                      <p className="text-xs text-zinc-550 leading-relaxed">
+                        Penjadwalan berbasis peringkat klasemen berjalan ($1+4 \text{ vs } 2+3$) agar laga berlangsung seimbang antar pemain berkemampuan setara.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Glossary Sidebar */}
-            <div className="space-y-6">
-              <div className="p-5 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm space-y-4">
-                <h4 className="font-bold text-[#111827] flex items-center gap-1.5 text-xs uppercase tracking-wider">
-                  <BookOpen className="h-4.5 w-4.5 text-orange-500" />
-                  Glosarium Singkat
-                </h4>
-                <div className="space-y-3.5 text-xs">
-                  <div>
-                    <span className="font-extrabold text-[#111827]">ELO Rating</span>
-                    <p className="text-zinc-500 mt-0.5">Rating kepiawaian relatif pemain. Angka default 1000.00.</p>
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-[#111827]">K-Factor</span>
-                    <p className="text-zinc-500 mt-0.5">Sensitivitas perubahan ELO per pertandingan (24 atau 48).</p>
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-[#111827]">Provisional</span>
-                    <p className="text-zinc-500 mt-0.5">Status pemain dengan kurang dari 10 pertandingan.</p>
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-[#111827]">Zero-Sum</span>
-                    <p className="text-zinc-500 mt-0.5">Sistem perolehan nilai seimbang; poin plus sama dengan poin minus.</p>
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-[#111827]">MoV</span>
-                    <p className="text-zinc-500 mt-0.5">Margin of Victory; bobot tambahan ELO untuk skor kemenangan telak.</p>
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-[#111827]">Sit-Out</span>
-                    <p className="text-zinc-500 mt-0.5">Istirahat giliran tanding demi keadilan pembagian waktu bermain.</p>
-                  </div>
-                </div>
+        </div>
+      </div>
+
+      {/* FIXED BOTTOM NAVIGATION BAR */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-t border-zinc-800/80 backdrop-blur-xl shadow-2xl px-2 py-2 select-none">
+        <div className="max-w-md sm:max-w-xl mx-auto flex items-center justify-around">
+
+          {/* TAB 1: HOME */}
+          <button
+            onClick={() => handleTabChange('home')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
+              activeTab === 'home'
+                ? 'text-orange-500 font-extrabold'
+                : 'text-zinc-400 hover:text-zinc-200 font-medium'
+            }`}
+          >
+            {activeTab === 'home' && (
+              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
+            )}
+            <Home className={`h-5 w-5 ${activeTab === 'home' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
+            <span className="text-[10px] mt-1 tracking-tight">Home</span>
+          </button>
+
+          {/* TAB 2: SESSIONS */}
+          <button
+            onClick={() => handleTabChange('sessions')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
+              activeTab === 'sessions'
+                ? 'text-orange-500 font-extrabold'
+                : 'text-zinc-400 hover:text-zinc-200 font-medium'
+            }`}
+          >
+            {activeTab === 'sessions' && (
+              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
+            )}
+            <Calendar className={`h-5 w-5 ${activeTab === 'sessions' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
+            <span className="text-[10px] mt-1 tracking-tight">Sessions</span>
+          </button>
+
+          {/* TAB 3: MEMBERS */}
+          <button
+            onClick={() => handleTabChange('members')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
+              activeTab === 'members'
+                ? 'text-orange-500 font-extrabold'
+                : 'text-zinc-400 hover:text-zinc-200 font-medium'
+            }`}
+          >
+            {activeTab === 'members' && (
+              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
+            )}
+            <Users className={`h-5 w-5 ${activeTab === 'members' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
+            <span className="text-[10px] mt-1 tracking-tight">Members</span>
+          </button>
+
+          {/* TAB 4: LEADERBOARD */}
+          <button
+            onClick={() => handleTabChange('leaderboard')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
+              activeTab === 'leaderboard'
+                ? 'text-orange-500 font-extrabold'
+                : 'text-zinc-400 hover:text-zinc-200 font-medium'
+            }`}
+          >
+            {activeTab === 'leaderboard' && (
+              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
+            )}
+            <Trophy className={`h-5 w-5 ${activeTab === 'leaderboard' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
+            <span className="text-[10px] mt-1 tracking-tight">Rank</span>
+          </button>
+
+          {/* TAB 5: WIKI */}
+          <button
+            onClick={() => handleTabChange('wiki')}
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
+              activeTab === 'wiki'
+                ? 'text-orange-500 font-extrabold'
+                : 'text-zinc-400 hover:text-zinc-200 font-medium'
+            }`}
+          >
+            {activeTab === 'wiki' && (
+              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
+            )}
+            <BookOpen className={`h-5 w-5 ${activeTab === 'wiki' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
+            <span className="text-[10px] mt-1 tracking-tight">Wiki</span>
+          </button>
+
+        </div>
+      </nav>
+
+      {/* EDIT COMMUNITY INFO MODAL (Admin Only) */}
+      {isEditHomeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-zinc-100 text-[#111827]">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <h3 className="font-extrabold text-base text-zinc-900 flex items-center gap-2">
+                <Edit3 className="h-5 w-5 text-orange-500" />
+                Edit Community Info
+              </h3>
+              <button
+                onClick={() => setIsEditHomeOpen(false)}
+                className="text-zinc-400 hover:text-zinc-600 p-1 rounded-full hover:bg-zinc-100 transition-all cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-zinc-700 block mb-1">Community Description</label>
+                <textarea
+                  rows={3}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Describe your community..."
+                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none"
+                />
               </div>
+
+              <div>
+                <label className="font-bold text-zinc-700 block mb-1">Default Sport</label>
+                <select
+                  value={editSport}
+                  onChange={(e) => setEditSport(e.target.value)}
+                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none"
+                >
+                  <option value="PADEL">PADEL</option>
+                  <option value="TENNIS">TENNIS</option>
+                  <option value="BADMINTON">BADMINTON</option>
+                  <option value="PICKLEBALL">PICKLEBALL</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setIsEditHomeOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveHomeInfo}
+                disabled={isSavingHome}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white shadow-md flex items-center justify-center gap-1.5"
+              >
+                {isSavingHome ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
+              </button>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
 
       {/* Claim Guest Modal */}
       {guestToClaim && (
@@ -1042,6 +1214,7 @@ export default function CommunityTabs({
           </div>
         </div>
       )}
+
       {/* ADD ADMIN / ADD HOST MODAL */}
       {targetRoleToAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
