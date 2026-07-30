@@ -62,11 +62,12 @@ export default async function CommunityDashboardPage({
 
   const activeMembers = members || [];
 
-  // 4. Fetch rankings for default sport
-  const { data: rankings } = await supabase
+  // 4. Fetch all player rankings for this community (PADEL and TENNIS)
+  const { data: allRankings } = await supabase
     .from('player_rankings')
     .select(`
       id,
+      sport,
       elo_rating,
       elo_peak,
       total_matches,
@@ -87,44 +88,51 @@ export default async function CommunityDashboardPage({
       )
     `)
     .eq('community_id', community.id)
-    .eq('sport', community.default_sport)
     .order('elo_rating', { ascending: false });
 
-  const activeRankings = rankings || [];
+  const rawRankings = allRankings || [];
 
-  // Combine rankings with active members so ALL community members appear in leaderboard
-  const rankingsMap = new Map(
-    activeRankings.map((r) => [r.profile?.id, r])
-  );
+  const buildLeaderboard = (sportName: string) => {
+    const sportRankings = rawRankings.filter((r) => r.sport === sportName);
+    const map = new Map(sportRankings.map((r) => [r.profile?.id, r]));
 
-  const fullLeaderboard = activeMembers
-    .filter((m) => m.profile)
-    .map((m) => {
-      const existing = rankingsMap.get(m.profile.id);
-      if (existing) return existing;
-      return {
-        id: `default-${m.profile.id}`,
-        elo_rating: 1000,
-        elo_peak: 1000,
-        total_matches: 0,
-        total_wins: 0,
-        total_losses: 0,
-        total_draws: 0,
-        points_for: 0,
-        points_against: 0,
-        is_provisional: true,
-        skill_rating_official: 1.0,
-        profile: m.profile,
-      };
-    })
-    .sort((a, b) => {
-      if (b.elo_rating !== a.elo_rating) {
-        return Number(b.elo_rating) - Number(a.elo_rating);
-      }
-      const nameA = a.profile?.display_name || a.profile?.full_name || '';
-      const nameB = b.profile?.display_name || b.profile?.full_name || '';
-      return nameA.localeCompare(nameB);
-    });
+    return activeMembers
+      .filter((m) => m.profile)
+      .map((m) => {
+        const existing = map.get(m.profile.id);
+        if (existing) return existing;
+        return {
+          id: `default-${sportName}-${m.profile.id}`,
+          sport: sportName,
+          elo_rating: 1000,
+          elo_peak: 1000,
+          total_matches: 0,
+          total_wins: 0,
+          total_losses: 0,
+          total_draws: 0,
+          points_for: 0,
+          points_against: 0,
+          is_provisional: true,
+          skill_rating_official: 1.0,
+          profile: m.profile,
+        };
+      })
+      .sort((a, b) => {
+        if (b.elo_rating !== a.elo_rating) {
+          return Number(b.elo_rating) - Number(a.elo_rating);
+        }
+        const nameA = a.profile?.display_name || a.profile?.full_name || '';
+        const nameB = b.profile?.display_name || b.profile?.full_name || '';
+        return nameA.localeCompare(nameB);
+      });
+  };
+
+  const padelLeaderboard = buildLeaderboard('PADEL');
+  const tennisLeaderboard = buildLeaderboard('TENNIS');
+  const rankingsBySport = {
+    PADEL: padelLeaderboard,
+    TENNIS: tennisLeaderboard,
+  };
 
   // Fetch total CP per player for this community
   const { data: cpData } = await supabase
@@ -215,7 +223,8 @@ export default async function CommunityDashboardPage({
         totalMatchesCount={totalMatchesCount || 0}
         sessions={activeSessions}
         members={activeMembers}
-        rankings={fullLeaderboard}
+        rankings={padelLeaderboard}
+        rankingsBySport={rankingsBySport}
         cpMap={cpMap}
         pendingClaims={pendingClaims}
         myClaimedGuestIds={myClaimedGuestIds}

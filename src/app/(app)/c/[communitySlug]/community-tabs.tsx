@@ -51,6 +51,7 @@ interface CommunityTabsProps {
   sessions: any[];
   members: any[];
   rankings: any[];
+  rankingsBySport?: Record<string, any[]>;
   cpMap?: Record<string, number>;
   pendingClaims?: any[];
   myClaimedGuestIds?: string[];
@@ -71,12 +72,16 @@ export default function CommunityTabs({
   sessions,
   members,
   rankings,
+  rankingsBySport = {},
   cpMap = {},
   pendingClaims = [],
   myClaimedGuestIds = [],
   callerProfile,
 }: CommunityTabsProps) {
   const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'members' | 'leaderboard' | 'wiki'>('home');
+  const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
+    defaultSport === 'TENNIS' ? 'TENNIS' : 'PADEL'
+  );
   const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
@@ -740,37 +745,67 @@ export default function CommunityTabs({
           })()}
 
           {/* TAB 4: LEADERBOARD GLOBAL */}
-          {activeTab === 'leaderboard' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
-                  {defaultSport} ELO Standings
-                </h2>
-                <p className="text-xs text-zinc-500 mt-1">
-                  Official leaderboard standings computed using mathematical ELO formulas.
-                </p>
-              </div>
+          {activeTab === 'leaderboard' && (() => {
+            const currentLeaderboard =
+              rankingsBySport[selectedLeaderboardSport] || rankings || [];
 
-              <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
-                {rankings.length === 0 ? (
-                  <div className="text-center py-16 text-zinc-400 space-y-2">
-                    <Trophy className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
-                    <p className="text-sm font-semibold">No standings computed yet for {defaultSport}.</p>
+            return (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+                      {selectedLeaderboardSport} ELO Standings
+                    </h2>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Official leaderboard standings computed using mathematical ELO formulas.
+                    </p>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                          <th className="p-3 w-12 text-center">Rank</th>
-                          <th className="p-3">Name</th>
-                          <th className="p-3 text-center">Elo Rating</th>
-                          <th className="p-3 text-center">CP</th>
-                          <th className="p-3 text-center">Skill Rating</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-100">
-                        {rankings.map((r: any, idx) => {
+
+                  {/* Sport Toggle (PADEL / TENNIS) */}
+                  <div className="inline-flex p-1 bg-zinc-100 rounded-xl border border-zinc-200/80 self-start sm:self-auto">
+                    <button
+                      onClick={() => setSelectedLeaderboardSport('PADEL')}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+                        selectedLeaderboardSport === 'PADEL'
+                          ? 'bg-orange-500 text-white shadow-xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      🎾 Padel ELO
+                    </button>
+                    <button
+                      onClick={() => setSelectedLeaderboardSport('TENNIS')}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+                        selectedLeaderboardSport === 'TENNIS'
+                          ? 'bg-orange-500 text-white shadow-xs'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      🎾 Tennis ELO
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
+                  {currentLeaderboard.length === 0 ? (
+                    <div className="text-center py-16 text-zinc-400 space-y-2">
+                      <Trophy className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
+                      <p className="text-sm font-semibold">No standings computed yet for {selectedLeaderboardSport}.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                            <th className="p-3 w-12 text-center">Rank</th>
+                            <th className="p-3">Name</th>
+                            <th className="p-3 text-center">Elo Rating</th>
+                            <th className="p-3 text-center">CP</th>
+                            <th className="p-3 text-center">Skill Rating</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                          {currentLeaderboard.map((r: any, idx) => {
                           const rank = idx + 1;
                           const winRate =
                             r.total_matches > 0
@@ -868,8 +903,8 @@ export default function CommunityTabs({
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 5: WIKI & RULEBOOK */}
           {activeTab === 'wiki' && (() => {
