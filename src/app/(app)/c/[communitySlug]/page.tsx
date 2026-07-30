@@ -68,6 +68,7 @@ export default async function CommunityDashboardPage({
     .from('player_rankings')
     .select(`
       id,
+      profile_id,
       sport,
       elo_rating,
       elo_peak,
@@ -95,13 +96,18 @@ export default async function CommunityDashboardPage({
 
   const buildLeaderboard = (sportName: string) => {
     const sportRankings = rawRankings.filter((r) => r.sport === sportName);
-    const map = new Map(sportRankings.map((r) => [r.profile?.id, r]));
+    const map = new Map(sportRankings.map((r) => [r.profile_id || r.profile?.id, r]));
 
     return activeMembers
       .filter((m) => m.profile)
       .map((m) => {
         const existing = map.get(m.profile.id);
-        if (existing) return existing;
+        if (existing) {
+          return {
+            ...existing,
+            profile: existing.profile || m.profile,
+          };
+        }
         return {
           id: `default-${sportName}-${m.profile.id}`,
           sport: sportName,
