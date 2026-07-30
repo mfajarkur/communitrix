@@ -21,6 +21,7 @@ import {
   X,
   Loader2,
   Search,
+  Plus,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import { getDisplayName } from '@/lib/utils/profile';
@@ -68,6 +69,8 @@ export default function CommunityTabs({
   const [claimError, setClaimError] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
+  const [roleSearchQuery, setRoleSearchQuery] = useState('');
 
   // User submits claim request (pending admin approval)
   const handleClaimSubmit = async () => {
@@ -477,12 +480,19 @@ export default function CommunityTabs({
           </div>
         )}
 
-        {/* MEMBERS TAB - RECLUB AESTHETIC */}
+        {/* MEMBERS TAB - CLEAN RECLUB AESTHETIC */}
         {activeTab === 'members' && (() => {
-          const adminsAndHosts = members.filter(m => m.role === 'ADMIN' || m.role === 'HOST');
+          const adminsList = members.filter(m => m.role === 'ADMIN');
+          const hostsList = members.filter(m => m.role === 'HOST');
           const generalMembers = members.filter(m => m.role === 'MEMBER');
 
-          const filteredAdmins = adminsAndHosts.filter(m => {
+          const filteredAdmins = adminsList.filter(m => {
+            if (!memberSearchQuery.trim()) return true;
+            const pName = getDisplayName(m.profile).toLowerCase();
+            return pName.includes(memberSearchQuery.toLowerCase());
+          });
+
+          const filteredHosts = hostsList.filter(m => {
             if (!memberSearchQuery.trim()) return true;
             const pName = getDisplayName(m.profile).toLowerCase();
             return pName.includes(memberSearchQuery.toLowerCase());
@@ -511,10 +521,23 @@ export default function CommunityTabs({
 
                 {/* ADMINS SECTION */}
                 <div className="space-y-3.5">
-                  <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Admins</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Admins</h3>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setRoleSearchQuery('');
+                          setTargetRoleToAdd('ADMIN');
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-full border border-orange-200 transition-all cursor-pointer shadow-2xs"
+                      >
+                        <Plus className="h-3 w-3" /> Add Admin
+                      </button>
+                    )}
+                  </div>
 
                   {filteredAdmins.length === 0 ? (
-                    <p className="text-xs text-zinc-400 text-center py-4">No admins found.</p>
+                    <p className="text-xs text-zinc-400 py-2">No admins found.</p>
                   ) : (
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
                       {filteredAdmins.map((m: any) => {
@@ -539,7 +562,6 @@ export default function CommunityTabs({
                                     {pName.slice(0, 2)}
                                   </div>
                                 )}
-                                {/* Reclub Shield Badge on top-right */}
                                 <div className="absolute top-0 right-0 bg-blue-600 rounded-full p-1 text-white shadow-sm border-2 border-white">
                                   <Shield className="h-3 w-3 fill-current" />
                                 </div>
@@ -548,33 +570,72 @@ export default function CommunityTabs({
                                 {pName}
                               </span>
                             </Link>
-                            {isAdmin && (
-                              <div className="flex items-center justify-center gap-1 mt-1.5 z-10">
-                                <select
-                                  value={m.role}
-                                  onChange={(e) => handleUpdateRole(p.id, e.target.value as any)}
-                                  className="text-[8px] font-bold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
-                                >
-                                  <option value="ADMIN">ADMIN</option>
-                                  <option value="HOST">HOST</option>
-                                  <option value="MEMBER">MEMBER</option>
-                                </select>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveMember(p.id, pName)}
-                                  className="text-[8px] font-bold uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
-                                  title="Remove member"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            )}
                           </div>
                         );
                       })}
                     </div>
                   )}
                 </div>
+
+                {/* HOSTS SECTION */}
+                {(hostsList.length > 0 || isAdmin) && (
+                  <div className="space-y-3.5 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Hosts</h3>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setRoleSearchQuery('');
+                            setTargetRoleToAdd('HOST');
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-full border border-orange-200 transition-all cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="h-3 w-3" /> Add Host
+                        </button>
+                      )}
+                    </div>
+
+                    {filteredHosts.length === 0 ? (
+                      <p className="text-xs text-zinc-400 py-2">No hosts assigned yet.</p>
+                    ) : (
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
+                        {filteredHosts.map((m: any) => {
+                          const p = m.profile;
+                          if (!p) return null;
+                          const pName = getDisplayName(p);
+                          return (
+                            <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
+                              <Link
+                                href={`/c/${communitySlug}/players/${p.id}`}
+                                className="flex flex-col items-center w-full"
+                              >
+                                <div className="relative">
+                                  {p.avatar_url ? (
+                                    <img
+                                      src={p.avatar_url}
+                                      alt={pName}
+                                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
+                                    />
+                                  ) : (
+                                    <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black text-base uppercase shadow-xs">
+                                      {pName.slice(0, 2)}
+                                    </div>
+                                  )}
+                                  <div className="absolute top-0 right-0 bg-amber-500 rounded-full p-1 text-white shadow-sm border-2 border-white">
+                                    <UserCheck className="h-3 w-3" />
+                                  </div>
+                                </div>
+                                <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
+                                  {pName}
+                                </span>
+                              </Link>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* MEMBERS SECTION */}
                 <div className="space-y-3.5 pt-2">
@@ -583,7 +644,7 @@ export default function CommunityTabs({
                   </h3>
 
                   {filteredMembers.length === 0 ? (
-                    <p className="text-xs text-zinc-400 text-center py-4">No members found.</p>
+                    <p className="text-xs text-zinc-400 py-2">No members found.</p>
                   ) : (
                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
                       {filteredMembers.map((m: any) => {
@@ -628,27 +689,6 @@ export default function CommunityTabs({
                                 </button>
                               )
                             ) : null}
-                            {isAdmin && (
-                              <div className="flex items-center justify-center gap-1 mt-1.5 z-10">
-                                <select
-                                  value={m.role}
-                                  onChange={(e) => handleUpdateRole(p.id, e.target.value as any)}
-                                  className="text-[8px] font-bold uppercase bg-white border border-zinc-200 rounded px-1 py-0.5 text-zinc-700 cursor-pointer shadow-2xs"
-                                >
-                                  <option value="ADMIN">ADMIN</option>
-                                  <option value="HOST">HOST</option>
-                                  <option value="MEMBER">MEMBER</option>
-                                </select>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveMember(p.id, pName)}
-                                  className="text-[8px] font-bold uppercase bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white px-1.5 py-0.5 rounded transition-all cursor-pointer border border-rose-200"
-                                  title="Remove member"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            )}
                           </div>
                         );
                       })}
@@ -988,6 +1028,90 @@ export default function CommunityTabs({
                   'Submit Request'
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ADD ADMIN / ADD HOST MODAL */}
+      {targetRoleToAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-zinc-100 text-[#111827]">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <h3 className="font-extrabold text-base text-zinc-900 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-orange-500" />
+                Manage {targetRoleToAdd === 'ADMIN' ? 'Admins' : 'Hosts'}
+              </h3>
+              <button
+                onClick={() => setTargetRoleToAdd(null)}
+                className="text-zinc-400 hover:text-zinc-600 p-1 rounded-full hover:bg-zinc-100 transition-all cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <input
+                type="text"
+                placeholder={`Search member...`}
+                value={roleSearchQuery}
+                onChange={(e) => setRoleSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs bg-zinc-100 rounded-xl text-zinc-900 placeholder-zinc-400 border border-transparent focus:border-orange-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="max-h-64 overflow-y-auto divide-y divide-zinc-100 pr-1 space-y-1">
+              {members
+                .filter((m) => {
+                  const pName = getDisplayName(m.profile).toLowerCase();
+                  return pName.includes(roleSearchQuery.toLowerCase());
+                })
+                .map((m) => {
+                  const p = m.profile;
+                  if (!p) return null;
+                  const pName = getDisplayName(p);
+                  const isCurrentTargetRole = m.role === targetRoleToAdd;
+
+                  return (
+                    <div key={p.id} className="flex items-center justify-between py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        {p.avatar_url ? (
+                          <img src={p.avatar_url} alt={pName} className="h-9 w-9 rounded-full object-cover border border-zinc-100" />
+                        ) : (
+                          <div className="h-9 w-9 rounded-full bg-zinc-100 text-zinc-700 font-bold text-xs flex items-center justify-center">
+                            {pName.slice(0, 2)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-bold text-zinc-900">{pName}</p>
+                          <p className="text-[10px] text-zinc-400 font-medium uppercase">Current: {m.role}</p>
+                        </div>
+                      </div>
+
+                      {isCurrentTargetRole ? (
+                        <button
+                          onClick={() => {
+                            handleUpdateRole(p.id, 'MEMBER');
+                            setTargetRoleToAdd(null);
+                          }}
+                          className="text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                        >
+                          Demote
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            handleUpdateRole(p.id, targetRoleToAdd);
+                            setTargetRoleToAdd(null);
+                          }}
+                          className="text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                        >
+                          Make {targetRoleToAdd}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
