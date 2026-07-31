@@ -194,6 +194,9 @@ export default function LiveBoardWrapper({
         next.delete(matchId);
         return next;
       });
+      if (result.data?.alreadyScored) {
+        setError('Someone else already submitted a score for this match — showing their result instead.');
+      }
       router.refresh();
     } else {
       setError(result.message);

@@ -146,6 +146,9 @@ export default function ScorerForm({
             setIsSubmitting(false);
             if (result.ok) {
               localStorage.removeItem(`courtside-draft-${matchId}`);
+              if (result.data?.alreadyScored) {
+                alert('Someone else already submitted a score for this match while you were offline — your cached score was not applied.');
+              }
               router.push(`/c/${communitySlug}/sessions/${sessionId}`);
               router.refresh();
             } else {
@@ -260,6 +263,9 @@ export default function ScorerForm({
 
     if (result.ok) {
       localStorage.removeItem(`courtside-draft-${matchId}`);
+      if (!isAmendment && (result as any).data?.alreadyScored) {
+        alert('Someone else already submitted a score for this match — showing their result instead.');
+      }
       router.push(`/c/${communitySlug}/sessions/${sessionId}`);
       router.refresh();
     } else {

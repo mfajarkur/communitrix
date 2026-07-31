@@ -297,7 +297,7 @@ export interface SubmitMatchScoreInput {
 
 export async function submitMatchScoreAction(
   input: SubmitMatchScoreInput
-): Promise<ActionResult<{ success: boolean }>> {
+): Promise<ActionResult<{ success: boolean; alreadyScored?: boolean }>> {
   try {
     const supabase = await createClient();
 
@@ -319,8 +319,9 @@ export async function submitMatchScoreAction(
     // 2. Authorization check (Host or Admin)
     await requireCommunityHost(match.community_id);
 
-    // 3. Invoke submit_match_score RPC
-    const { error: rpcErr } = await supabase.rpc('submit_match_score', {
+    // 3. Invoke submit_match_score RPC — returns false instead of silently no-oping when
+    // another host already scored this match first (concurrent submission).
+    const { data: applied, error: rpcErr } = await supabase.rpc('submit_match_score', {
       p_match_id: input.matchId,
       p_score_a: input.scoreA,
       p_score_b: input.scoreB,
@@ -340,7 +341,7 @@ export async function submitMatchScoreAction(
 
     return {
       ok: true,
-      data: { success: true },
+      data: { success: true, alreadyScored: applied === false },
     };
   } catch (error: any) {
     if (error.message?.includes('redirect')) throw error;

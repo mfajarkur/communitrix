@@ -18,7 +18,7 @@ export type { SubmitMatchScoreInput };
 // instead of duplicating the logic.
 export async function submitMatchScoreAction(
   input: SubmitMatchScoreInput
-): Promise<ActionResult<{ success: boolean }>> {
+): Promise<ActionResult<{ success: boolean; alreadyScored?: boolean }>> {
   return submitMatchScoreActionImpl(input);
 }
 

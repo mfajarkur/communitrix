@@ -25,12 +25,15 @@ export async function addGuestPlayerAction(input: {
       };
     }
 
-    // 3. Call the RPC add_guest_player
+    // 3. Call the RPC add_guest_player — gender is set in the same call (security definer),
+    // instead of a separate follow-up `profiles` UPDATE that RLS silently rejected for
+    // HOST callers (that policy only allows ADMIN).
     const supabase = await createClient();
     const { data: guestProfile, error } = await supabase
       .rpc('add_guest_player', {
         p_community_id: input.communityId,
         p_full_name: toTitleCase(input.fullName.trim()),
+        p_gender: input.gender ?? null,
       });
 
     if (error) {
@@ -39,10 +42,6 @@ export async function addGuestPlayerAction(input: {
         code: 'UNKNOWN',
         message: error.message || 'An unexpected database error occurred.',
       };
-    }
-
-    if (input.gender && guestProfile?.id) {
-      await supabase.from('profiles').update({ gender: input.gender }).eq('id', guestProfile.id);
     }
 
     return { ok: true, data: guestProfile };
