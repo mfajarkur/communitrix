@@ -280,10 +280,12 @@ export default function WizardForm({
   const [isSavingResult, setIsSavingResult] = useState(false);
   const [saveResultError, setSaveResultError] = useState<string | null>(null);
 
-  // 1. Restore saved Quick Match session state on mount — skipped when resuming a DB-backed
-  // OPEN match (initialState), since that's already the source of truth for this session.
+  // 1. Restore saved Quick Match session state on mount. Skipped entirely for Personal Quick
+  // Match (saveToProfile): the database is that mode's source of truth, resumed only via an
+  // explicit "Continue This Match" link (initialState) — never silently from local browser
+  // state, or opening "Quick Match" fresh would keep re-entering whatever was last in progress.
   useEffect(() => {
-    if (typeof window === 'undefined' || !isGuestDemoMode || initialState) return;
+    if (typeof window === 'undefined' || !isGuestDemoMode || saveToProfile) return;
     const saved = localStorage.getItem(quickMatchStorageKey);
     if (saved) {
       try {
@@ -307,9 +309,9 @@ export default function WizardForm({
     }
   }, [isGuestDemoMode, quickMatchStorageKey]);
 
-  // 2. Auto-save Quick Match session state when state changes
+  // 2. Auto-save Quick Match session state when state changes (sandbox mode only — see note above)
   useEffect(() => {
-    if (typeof window === 'undefined' || !isGuestDemoMode) return;
+    if (typeof window === 'undefined' || !isGuestDemoMode || saveToProfile) return;
     // Convert Map to plain object for JSON serialization
     const sitOutsObj: Record<string, string[]> = {};
     roundSitOuts.forEach((v, k) => { sitOutsObj[String(k)] = v; });
