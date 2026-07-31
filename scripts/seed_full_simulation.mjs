@@ -19,6 +19,15 @@ function toTitleCase(str) {
     .join(' ');
 }
 
+// Fails loudly instead of letting a broken insert pass silently (the bug that shipped
+// 25 sessions with zero rounds/matches/session_players the first time this script ran).
+function assertNoError(error, label) {
+  if (error) {
+    console.error(`❌ ${label}:`, error);
+    throw new Error(`${label}: ${error.message}`);
+  }
+}
+
 const DUMMY_PLAYERS = [
   { name: "Aditya Nugroho", gender: "MALE" },
   { name: "Ahmad Fauzi", gender: "MALE" },
@@ -161,17 +170,28 @@ function calculateMatchElo(teamA, teamB, scoreA, scoreB, attendeeCount, courtCou
   return { deltaA, deltaB };
 }
 
+const NUM_SESSIONS = 25;
+const MATCHES_PER_SESSION = 50;
+const COURT_COUNT = 4;
+const ATTENDEE_COUNT = 28;
+
 async function runFullTournamentSimulation() {
   console.log("🚀 Starting Full 100-Player Tournament Simulation with Gender Attributes...");
 
+  // All real (auth-backed) profiles get ADMIN on the dummy community below — we don't know
+  // in advance which real account will actually be used to test it, so don't guess by
+  // picking just the first one (that caused the community's actual owner to have zero
+  // membership in a previous run of this script).
   const { data: profilesList } = await supabase.from('profiles').select('id').not('auth_user_id', 'is', null);
-  const adminId = profilesList && profilesList.length > 0 ? profilesList[0].id : null;
+  const realProfileIds = (profilesList || []).map((p) => p.id);
+  const adminId = realProfileIds.length > 0 ? realProfileIds[0] : null;
 
   const communitySlug = 'komunitas-dummy';
   const { data: existingComm } = await supabase.from('communities').select('id').eq('slug', communitySlug).maybeSingle();
   if (existingComm) {
     console.log(`🧹 Cleaning existing '${communitySlug}' data...`);
-    await supabase.from('communities').delete().eq('id', existingComm.id);
+    const { error: delErr } = await supabase.from('communities').delete().eq('id', existingComm.id);
+    assertNoError(delErr, 'Failed to delete existing dummy community');
   }
 
   const { data: newComm, error: commError } = await supabase
@@ -181,7 +201,7 @@ async function runFullTournamentSimulation() {
       slug: communitySlug,
       default_sport: 'PADEL',
       settings: {
-        description: 'Komunitas simulasi testing 100 anggota dengan atribut gender, 1,200+ pertandingan real, ELO rating dinamis, dan Wall of Fame.'
+        description: 'Komunitas simulasi testing 100 anggota dengan atribut gender, 1,200 pertandingan real (24 sesi selesai), ELO rating dinamis, dan 1 sesi masih ACTIVE (open) untuk uji coba Live Board.'
       },
       join_code: 'DUMMY100',
       join_code_enabled: true,
@@ -190,38 +210,21 @@ async function runFullTournamentSimulation() {
     .select()
     .single();
 
-  if (commError || !newComm) {
-    console.error("❌ Failed to create community:", commError);
-    return;
-  }
+  assertNoError(commError, 'Failed to create community');
 
-  const profileInserts = DUMMY_PLAYERS.map((item, idx) => ({
+  const profileInserts = DUMMY_PLAYERS.map((item) => ({
     full_name: toTitleCase(item.name),
     display_name: toTitleCase(item.name),
     gender: item.gender,
     created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
   }));
 
-  let { data: createdProfiles, error: profError } = await supabase
+  const { data: createdProfiles, error: profError } = await supabase
     .from('profiles')
     .insert(profileInserts)
     .select('id, full_name, gender');
 
-  if (profError && profError.message?.includes('gender')) {
-    console.log("⚠️ Remote DB profiles table missing 'gender' column, creating profiles without gender payload...");
-    const fallbackInserts = profileInserts.map(({ gender, ...rest }) => rest);
-    const fallbackRes = await supabase
-      .from('profiles')
-      .insert(fallbackInserts)
-      .select('id, full_name');
-    createdProfiles = fallbackRes.data;
-    profError = fallbackRes.error;
-  }
-
-  if (profError || !createdProfiles) {
-    console.error("❌ Failed to create profiles:", profError);
-    return;
-  }
+  assertNoError(profError, 'Failed to create profiles');
 
   const memberInserts = createdProfiles.map((p, idx) => ({
     community_id: newComm.id,
@@ -231,18 +234,23 @@ async function runFullTournamentSimulation() {
     joined_at: new Date(Date.now() - 90 * 86400000).toISOString(),
   }));
 
-  if (adminId && !createdProfiles.some(cp => cp.id === adminId)) {
-    memberInserts.push({
-      community_id: newComm.id,
-      profile_id: adminId,
-      role: 'ADMIN',
-      is_active: true,
-      joined_at: new Date().toISOString(),
-    });
+  // Give every real account ADMIN on the dummy community, not just one guessed profile.
+  for (const realId of realProfileIds) {
+    if (!createdProfiles.some((cp) => cp.id === realId)) {
+      memberInserts.push({
+        community_id: newComm.id,
+        profile_id: realId,
+        role: 'ADMIN',
+        is_active: true,
+        joined_at: new Date().toISOString(),
+      });
+    }
   }
 
-  await supabase.from('community_members').insert(memberInserts);
+  const { error: memberErr } = await supabase.from('community_members').insert(memberInserts);
+  assertNoError(memberErr, 'Failed to create community_members');
 
+  // Global per-player Elo/stat state, carried across sessions in chronological order.
   const playerStats = new Map();
   createdProfiles.forEach((p) => {
     playerStats.set(p.id, {
@@ -260,17 +268,16 @@ async function runFullTournamentSimulation() {
     });
   });
 
-  const NUM_SESSIONS = 25;
-  const MATCHES_PER_SESSION = 50;
   let totalMatchesSimulated = 0;
 
   for (let sIdx = 1; sIdx <= NUM_SESSIONS; sIdx++) {
     const isMexicano = sIdx % 2 === 0;
     const formatName = isMexicano ? 'MEXICANO' : 'AMERICANO';
     const sessionDate = new Date(Date.now() - (NUM_SESSIONS - sIdx) * 3.5 * 86400000);
-    const sessionStatus = sIdx === NUM_SESSIONS ? 'ACTIVE' : 'COMPLETED';
+    const isLastSession = sIdx === NUM_SESSIONS;
+    const sessionStatus = isLastSession ? 'ACTIVE' : 'COMPLETED';
 
-    const { data: sessionData } = await supabase
+    const { data: sessionData, error: sessErr } = await supabase
       .from('sessions')
       .insert({
         community_id: newComm.id,
@@ -278,29 +285,71 @@ async function runFullTournamentSimulation() {
         sport: 'PADEL',
         format: formatName,
         scoring_type: 'POINTS',
-        court_count: 4,
+        court_count: COURT_COUNT,
         points_mode: 'FIRST_TO_TARGET',
         max_score_target: 24,
         created_by: adminId || createdProfiles[0].id,
         status: sessionStatus,
+        started_at: sessionDate.toISOString(),
+        completed_at: isLastSession ? null : sessionDate.toISOString(),
         created_at: sessionDate.toISOString(),
       })
       .select()
       .single();
 
-    if (!sessionData) continue;
+    assertNoError(sessErr, `Session #${sIdx} insert failed`);
 
-    const attendeeCount = 28;
-    const sessionAttendees = [...createdProfiles].sort(() => Math.random() - 0.5).slice(0, attendeeCount);
+    // Attendees + their seed_elo snapshot (state BEFORE this session's matches).
+    const sessionAttendees = [...createdProfiles].sort(() => Math.random() - 0.5).slice(0, ATTENDEE_COUNT);
+    const seedEloByProfile = new Map(sessionAttendees.map((p) => [p.id, playerStats.get(p.id).elo]));
 
-    const sPlayerInserts = sessionAttendees.map((p) => ({
-      session_id: sessionData.id,
-      profile_id: p.id,
-    }));
-    await supabase.from('session_players').insert(sPlayerInserts);
+    if (isLastSession) {
+      // Leave this one genuinely open: attendees registered, zero rounds/matches, so the
+      // Live Board's "Generate Round 1" has real session_players to work with.
+      const sPlayerInserts = sessionAttendees.map((p) => ({
+        session_id: sessionData.id,
+        community_id: newComm.id,
+        profile_id: p.id,
+        seed_elo: seedEloByProfile.get(p.id),
+      }));
+      const { error: spErr } = await supabase.from('session_players').insert(sPlayerInserts);
+      assertNoError(spErr, `Session #${sIdx} (ACTIVE) session_players insert failed`);
+      console.log(`🟢 Session #${sIdx} left ACTIVE with ${sPlayerInserts.length} attendees, 0 rounds — ready for live testing.`);
+      continue;
+    }
+
+    // Build every round row up front so matches can reference a real round_id.
+    const totalRounds = Math.ceil(MATCHES_PER_SESSION / COURT_COUNT);
+    const roundInserts = [];
+    for (let rNum = 1; rNum <= totalRounds; rNum++) {
+      roundInserts.push({
+        session_id: sessionData.id,
+        community_id: newComm.id,
+        round_number: rNum,
+        status: 'COMPLETED',
+        generated_at: sessionDate.toISOString(),
+        completed_at: sessionDate.toISOString(),
+      });
+    }
+    const { data: insertedRounds, error: roundErr } = await supabase
+      .from('rounds')
+      .insert(roundInserts)
+      .select('id, round_number');
+    assertNoError(roundErr, `Session #${sIdx} rounds insert failed`);
+    const roundIdByNumber = new Map(insertedRounds.map((r) => [r.round_number, r.id]));
+
+    // Per-session aggregate (matches_played/points/W-L-D), separate from the global
+    // playerStats Elo carry-over, so session_players reflects only this session.
+    const sessionAgg = new Map(
+      sessionAttendees.map((p) => [p.id, { matchesPlayed: 0, pointsFor: 0, pointsAgainst: 0, wins: 0, losses: 0, draws: 0 }])
+    );
 
     const matchInserts = [];
+    const matchMeta = [];
+
     for (let mIdx = 1; mIdx <= MATCHES_PER_SESSION; mIdx++) {
+      const roundNumber = Math.ceil(mIdx / COURT_COUNT);
+      const courtNumber = ((mIdx - 1) % COURT_COUNT) + 1;
       const matchPlayers = [...sessionAttendees].sort(() => Math.random() - 0.5).slice(0, 4);
       const p1 = playerStats.get(matchPlayers[0].id);
       const p2 = playerStats.get(matchPlayers[1].id);
@@ -314,50 +363,120 @@ async function runFullTournamentSimulation() {
       const scoreA = winnerA ? 24 : Math.floor(Math.random() * 10) + 12;
       const scoreB = winnerA ? Math.floor(Math.random() * 10) + 12 : 24;
 
-      const { deltaA, deltaB } = calculateMatchElo(teamA, teamB, scoreA, scoreB, attendeeCount, 4);
-
+      const { deltaA, deltaB } = calculateMatchElo(teamA, teamB, scoreA, scoreB, ATTENDEE_COUNT, COURT_COUNT);
       const individualDeltaA = deltaA / 2;
+      const individualDeltaB = deltaB / 2;
+
+      const eloBefore = { a1: p1.elo, a2: p2.elo, b1: p3.elo, b2: p4.elo };
+
       teamA.forEach((p) => {
         p.elo = Math.max(100.0, Number((p.elo + individualDeltaA).toFixed(2)));
         p.peakElo = Math.max(p.peakElo, p.elo);
         p.matches += 1;
         p.pointsFor += scoreA;
         p.pointsAgainst += scoreB;
-        if (scoreA > scoreB) p.wins += 1;
-        else p.losses += 1;
+        if (scoreA > scoreB) p.wins += 1; else p.losses += 1;
+
+        const agg = sessionAgg.get(p.id);
+        agg.matchesPlayed += 1;
+        agg.pointsFor += scoreA;
+        agg.pointsAgainst += scoreB;
+        if (scoreA > scoreB) agg.wins += 1; else agg.losses += 1;
       });
 
-      const individualDeltaB = deltaB / 2;
       teamB.forEach((p) => {
         p.elo = Math.max(100.0, Number((p.elo + individualDeltaB).toFixed(2)));
         p.peakElo = Math.max(p.peakElo, p.elo);
         p.matches += 1;
         p.pointsFor += scoreB;
         p.pointsAgainst += scoreA;
-        if (scoreB > scoreA) p.wins += 1;
-        else p.losses += 1;
+        if (scoreB > scoreA) p.wins += 1; else p.losses += 1;
+
+        const agg = sessionAgg.get(p.id);
+        agg.matchesPlayed += 1;
+        agg.pointsFor += scoreB;
+        agg.pointsAgainst += scoreA;
+        if (scoreB > scoreA) agg.wins += 1; else agg.losses += 1;
       });
 
       totalMatchesSimulated += 1;
 
       matchInserts.push({
         session_id: sessionData.id,
+        round_id: roundIdByNumber.get(roundNumber),
         community_id: newComm.id,
-        sport: 'PADEL',
-        round_number: Math.ceil(mIdx / 4),
-        court_number: ((mIdx - 1) % 4) + 1,
-        team_a_player1_id: p1.id,
-        team_a_player2_id: p2.id,
-        team_b_player1_id: p3.id,
-        team_b_player2_id: p4.id,
-        score_a: scoreA,
-        score_b: scoreB,
+        round_number: roundNumber,
+        court_number: courtNumber,
+        team_a_score: scoreA,
+        team_b_score: scoreB,
+        winner_side: scoreA > scoreB ? 'A' : 'B',
+        is_draw: false,
         status: 'COMPLETED',
+        elo_applied: true,
+        completed_at: new Date(sessionDate.getTime() + mIdx * 600000).toISOString(),
         created_at: new Date(sessionDate.getTime() + mIdx * 600000).toISOString(),
+      });
+
+      matchMeta.push({
+        round: roundNumber,
+        court: courtNumber,
+        players: [
+          { profile_id: p1.id, team: 'A', slot: 1, elo_before: eloBefore.a1, elo_delta: individualDeltaA, elo_after: p1.elo },
+          { profile_id: p2.id, team: 'A', slot: 2, elo_before: eloBefore.a2, elo_delta: individualDeltaA, elo_after: p2.elo },
+          { profile_id: p3.id, team: 'B', slot: 1, elo_before: eloBefore.b1, elo_delta: individualDeltaB, elo_after: p3.elo },
+          { profile_id: p4.id, team: 'B', slot: 2, elo_before: eloBefore.b2, elo_delta: individualDeltaB, elo_after: p4.elo },
+        ],
       });
     }
 
-    await supabase.from('matches').insert(matchInserts);
+    const { data: insertedMatches, error: matchErr } = await supabase
+      .from('matches')
+      .insert(matchInserts)
+      .select('id, round_number, court_number');
+    assertNoError(matchErr, `Session #${sIdx} matches insert failed`);
+
+    const matchIdByKey = new Map(insertedMatches.map((m) => [`${m.round_number}:${m.court_number}`, m.id]));
+
+    const matchPlayerInserts = [];
+    matchMeta.forEach((meta) => {
+      const matchId = matchIdByKey.get(`${meta.round}:${meta.court}`);
+      meta.players.forEach((pl) => {
+        matchPlayerInserts.push({
+          match_id: matchId,
+          session_id: sessionData.id,
+          community_id: newComm.id,
+          profile_id: pl.profile_id,
+          team: pl.team,
+          slot: pl.slot,
+          elo_before: pl.elo_before,
+          elo_delta: pl.elo_delta,
+          elo_after: pl.elo_after,
+        });
+      });
+    });
+
+    const { error: mpErr } = await supabase.from('match_players').insert(matchPlayerInserts);
+    assertNoError(mpErr, `Session #${sIdx} match_players insert failed`);
+
+    const sPlayerInserts = sessionAttendees.map((p) => {
+      const agg = sessionAgg.get(p.id);
+      return {
+        session_id: sessionData.id,
+        community_id: newComm.id,
+        profile_id: p.id,
+        seed_elo: seedEloByProfile.get(p.id),
+        matches_played: agg.matchesPlayed,
+        session_points_for: agg.pointsFor,
+        session_points_against: agg.pointsAgainst,
+        session_wins: agg.wins,
+        session_losses: agg.losses,
+        session_draws: agg.draws,
+      };
+    });
+    const { error: spErr } = await supabase.from('session_players').insert(sPlayerInserts);
+    assertNoError(spErr, `Session #${sIdx} session_players insert failed`);
+
+    console.log(`✅ Session #${sIdx} (${formatName}, ${sessionStatus}): ${totalRounds} rounds, ${matchInserts.length} matches, ${sPlayerInserts.length} attendees.`);
   }
 
   const rankingInserts = [];
@@ -377,8 +496,13 @@ async function runFullTournamentSimulation() {
     });
   });
 
-  await supabase.from('player_rankings').insert(rankingInserts);
-  console.log(`🎉 SIMULATION COMPLETE! 100 Players seeded with Gender attributes.`);
+  const { error: rankErr } = await supabase.from('player_rankings').insert(rankingInserts);
+  assertNoError(rankErr, 'Failed to insert player_rankings');
+
+  console.log(`🎉 SIMULATION COMPLETE! 100 players, ${NUM_SESSIONS - 1} completed sessions (${totalMatchesSimulated} real matches with rounds/match_players), 1 ACTIVE session ready for live testing.`);
 }
 
-runFullTournamentSimulation().catch(console.error);
+runFullTournamentSimulation().catch((err) => {
+  console.error('❌ Simulation failed:', err);
+  process.exit(1);
+});
