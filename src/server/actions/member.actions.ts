@@ -9,6 +9,7 @@ import { toTitleCase } from '@/lib/utils/profile';
 export async function addGuestPlayerAction(input: {
   communityId: string;
   fullName: string;
+  gender?: 'MALE' | 'FEMALE';
 }): Promise<ActionResult<any>> {
   try {
     // 1. Ensure user is authenticated, has a profile, and is at least community host or admin
@@ -38,6 +39,10 @@ export async function addGuestPlayerAction(input: {
         code: 'UNKNOWN',
         message: error.message || 'An unexpected database error occurred.',
       };
+    }
+
+    if (input.gender && guestProfile?.id) {
+      await supabase.from('profiles').update({ gender: input.gender }).eq('id', guestProfile.id);
     }
 
     return { ok: true, data: guestProfile };

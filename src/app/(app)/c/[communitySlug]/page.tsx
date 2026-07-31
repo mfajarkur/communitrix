@@ -54,6 +54,7 @@ export default async function CommunityDashboardPage({
         full_name,
         display_name,
         username,
+        gender,
         is_guest,
         avatar_url
       )
@@ -85,6 +86,7 @@ export default async function CommunityDashboardPage({
         full_name,
         display_name,
         username,
+        gender,
         is_guest,
         avatar_url
       )

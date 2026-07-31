@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import BannerImageEditor from './banner-image-editor';
-import { getDisplayName } from '@/lib/utils/profile';
+import { getDisplayName, getPlayerGender } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { updateCommunityInfoAction } from '@/server/actions/community.actions';
@@ -460,9 +460,20 @@ export default function CommunityTabs({
 
                             {/* Right Side: Details with Orange Gradient Shading */}
                             <div className="p-3 flex-1 flex flex-col justify-center space-y-1 min-w-0">
-                              <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md border border-orange-200/80 w-fit">
-                                {item.badge}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md border border-orange-200/80 w-fit">
+                                  {item.badge}
+                                </span>
+                                {getPlayerGender(profile) === 'FEMALE' ? (
+                                  <span className="text-[8px] font-extrabold uppercase bg-pink-50 text-pink-600 border border-pink-200/80 px-1.5 py-0.2 rounded-full">
+                                    ♀️ Female
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] font-extrabold uppercase bg-blue-50 text-blue-600 border border-blue-200/80 px-1.5 py-0.2 rounded-full">
+                                    ♂️ Male
+                                  </span>
+                                )}
+                              </div>
                               <h4 className="text-xs font-black text-zinc-900 truncate group-hover:text-orange-600 transition-colors">
                                 {getDisplayName(profile)}
                               </h4>
