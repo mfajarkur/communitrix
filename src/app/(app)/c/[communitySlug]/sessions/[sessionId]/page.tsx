@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireProfile } from '@/server/guards';
 import { notFound } from 'next/navigation';
 import LiveBoardWrapper from './live-board-wrapper';
+import SessionResults from './session-results';
 import { getDisplayName } from '@/lib/utils/profile';
 
 export default async function SessionLiveBoardPage({
@@ -34,45 +35,48 @@ export default async function SessionLiveBoardPage({
 
   const isHostOrAdmin = membership?.role === 'ADMIN' || membership?.role === 'HOST';
 
-  // 3. Fetch latest round
-  const { data: rounds, error: rErr } = await supabase
+  // 3. Fetch ALL rounds (not just the latest) so both the round carousel (active sessions)
+  // and the final results recap (ended sessions) can show full match history.
+  const { data: rounds } = await supabase
     .from('rounds')
     .select('id, round_number, status')
     .eq('session_id', sessionId)
-    .order('round_number', { ascending: false });
+    .order('round_number', { ascending: true });
 
-  const latestRound = rounds && rounds.length > 0 ? rounds[0] : null;
+  const allRounds = rounds || [];
 
-  // 4. Fetch matches of latest round (if exists)
-  let matches: any[] = [];
-  if (latestRound) {
-    const { data: mData } = await supabase
-      .from('matches')
-      .select(`
-        id,
-        court_number,
-        round_number,
-        team_a_score,
-        team_b_score,
-        status,
-        winner_side,
-        match_players (
-          profile_id,
-          team,
-          slot,
-          profile:profiles (
-            full_name,
-            display_name
-          )
+  // 4. Fetch ALL matches across every round
+  const { data: matchesData } = await supabase
+    .from('matches')
+    .select(`
+      id,
+      court_number,
+      round_number,
+      round_id,
+      team_a_score,
+      team_b_score,
+      status,
+      winner_side,
+      match_players (
+        profile_id,
+        team,
+        slot,
+        profile:profiles (
+          full_name,
+          display_name
         )
-      `)
-      .eq('round_id', latestRound.id)
-      .order('court_number', { ascending: true });
+      )
+    `)
+    .eq('session_id', sessionId)
+    .order('round_number', { ascending: true })
+    .order('court_number', { ascending: true });
 
-    matches = mData || [];
-  }
+  // Supabase infers the joined `profile` relation as an array even though it's a single row
+  // at runtime (same pre-existing quirk worked around loosely elsewhere in this codebase) —
+  // typed `any[]` here rather than fighting the inference for a read-only display list.
+  const allMatches: any[] = matchesData || [];
 
-  // 5. Fetch Active Session Players to calculate sit-outs
+  // 5. Fetch Active Session Players
   const { data: sessionPlayers } = await supabase
     .from('session_players')
     .select(`
@@ -92,24 +96,56 @@ export default async function SessionLiveBoardPage({
 
   const activePlayers = sessionPlayers || [];
 
-  // Determine sit-outs for the current round
-  const playingPlayerIds = new Set(
-    matches.flatMap(m => m.match_players.map((mp: any) => mp.profile_id))
-  );
-  
-  const sitOuts = activePlayers
-    .filter(p => !playingPlayerIds.has(p.profile_id))
-    .map((p: any) => ({
-      id: p.profile_id,
-      name: getDisplayName(p.profile),
-      stats: {
-        pointsFor: p.session_points_for,
-        pointsAgainst: p.session_points_against,
-        wins: p.session_wins,
-        losses: p.session_losses,
-        draws: p.session_draws,
-      }
-    }));
+  // 6. Standings — same shape LeaderboardPoster/LeaderboardPrintSection expect (PosterStanding),
+  // computed once here so both the live board and the results recap share identical numbers.
+  const standings = activePlayers
+    .map((p: any) => {
+      const wins = p.session_wins;
+      const losses = p.session_losses;
+      const ties = p.session_draws;
+      const totalPoints = p.session_points_for;
+      const diff = p.session_points_for - p.session_points_against;
+      return {
+        playerId: p.profile_id,
+        name: getDisplayName(p.profile),
+        wins,
+        losses,
+        ties,
+        totalPoints,
+        diff,
+        realMatchesPlayed: wins + losses + ties,
+      };
+    })
+    .sort((a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      if (b.diff !== a.diff) return b.diff - a.diff;
+      return b.totalPoints - a.totalPoints;
+    })
+    .map((s, idx) => ({ ...s, rank: idx + 1 }));
+
+  const sessionPlayersForBoard = activePlayers.map((p: any) => ({
+    id: p.profile_id,
+    name: getDisplayName(p.profile),
+    pointsFor: p.session_points_for,
+    pointsAgainst: p.session_points_against,
+    wins: p.session_wins,
+    losses: p.session_losses,
+    draws: p.session_draws,
+  }));
+
+  const isActiveSession = session.status === 'ACTIVE' || session.status === 'DRAFT' || session.status === 'PAUSED';
+
+  if (!isActiveSession) {
+    return (
+      <SessionResults
+        communitySlug={communitySlug}
+        session={{ name: session.session_name, sport: session.sport, format: session.format, status: session.status }}
+        rounds={allRounds}
+        matches={allMatches}
+        standings={standings}
+      />
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
@@ -143,18 +179,11 @@ export default async function SessionLiveBoardPage({
           pointsMode: session.points_mode,
           maxScoreTarget: session.max_score_target,
         }}
-        latestRound={latestRound}
-        matches={matches}
-        sitOuts={sitOuts}
-        sessionPlayers={activePlayers.map((p: any) => ({
-          id: p.profile_id,
-          name: getDisplayName(p.profile),
-          pointsFor: p.session_points_for,
-          pointsAgainst: p.session_points_against,
-          wins: p.session_wins,
-          losses: p.session_losses,
-          draws: p.session_draws,
-        }))}
+        sessionMeta={{ name: session.session_name, sport: session.sport, format: session.format }}
+        rounds={allRounds}
+        matches={allMatches}
+        sessionPlayers={sessionPlayersForBoard}
+        standings={standings}
       />
     </div>
   );

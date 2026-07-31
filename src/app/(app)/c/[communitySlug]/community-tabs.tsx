@@ -565,38 +565,35 @@ export default function CommunityTabs({
                       >
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                  isActive
-                                    ? 'bg-orange-500/10 text-orange-600'
-                                    : 'bg-zinc-100 text-zinc-500'
-                                }`}
-                              >
-                                {isActive ? (
-                                  <>
-                                    <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
-                                    Active Live
-                                  </>
-                                ) : (
-                                  'Completed'
-                                )}
-                              </span>
-                              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
-                                {s.sport} • {s.format}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {isActive ? (
+                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-200">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                                  Live · Ongoing
+                                </span>
+                              ) : (
+                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200">
+                                  Ended
+                                </span>
+                              )}
+                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
+                                {s.sport} · {s.format}
                               </span>
                             </div>
                             <h4 className="text-base font-extrabold text-[#111827]">
                               {s.session_name}
                             </h4>
-                            <p className="text-xs text-zinc-500">
-                              Created: {new Date(s.created_at).toLocaleDateString()} • {s.court_count} Courts
-                            </p>
+                            <div className="flex items-center gap-3 text-[11px] text-zinc-500 font-semibold">
+                              <span>{new Date(s.created_at).toLocaleDateString()}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3 w-3" /> {s.court_count} Courts
+                              </span>
+                            </div>
                           </div>
 
                           <Link
                             href={`/c/${communitySlug}/sessions/${s.id}`}
-                            className={`inline-flex h-9 px-4 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all ${
+                            className={`inline-flex h-9 px-4 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                               isActive
                                 ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-xs'
                                 : 'border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
