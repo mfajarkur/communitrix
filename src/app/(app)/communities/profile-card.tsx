@@ -66,10 +66,15 @@ export default function ProfileCard({ profileData, stats }: Props) {
     .toUpperCase();
 
   const handleGenderChange = async (g: 'MALE' | 'FEMALE') => {
+    const previous = gender;
     setGender(g);
     setIsSavingGender(true);
-    await updateGenderAction(g);
+    const result = await updateGenderAction(g);
     setIsSavingGender(false);
+    if (result.error) {
+      setGender(previous);
+      setUploadError(`Failed to save gender: ${result.error}`);
+    }
   };
 
   const handleUsernameChange = useCallback((val: string) => {
@@ -95,8 +100,8 @@ export default function ProfileCard({ profileData, stats }: Props) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('File size must be under 5MB');
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('File size must be under 2MB');
       return;
     }
     setUploadError(null);
@@ -120,10 +125,14 @@ export default function ProfileCard({ profileData, stats }: Props) {
     }
 
     if ('url' in result) {
-      setAvatarUrl(result.url);
       const saveFd = new FormData();
       saveFd.append('avatar_url', result.url);
-      await updateProfile(saveFd);
+      const saveResult = await updateProfile(saveFd);
+      if (saveResult?.error) {
+        setUploadError(`Photo uploaded but failed to save: ${saveResult.error}`);
+      } else {
+        setAvatarUrl(result.url);
+      }
     } else {
       setUploadError(result.error);
     }
