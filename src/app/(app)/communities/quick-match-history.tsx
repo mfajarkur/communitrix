@@ -4,10 +4,10 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Zap, Trash2, Trophy, Users, Loader2 } from 'lucide-react';
 import { deletePersonalQuickMatchAction } from '@/server/actions/personal-match.actions';
-import type { PersonalQuickMatch } from '@/server/actions/personal-match.actions';
+import type { QuickMatchSummary } from '@/server/actions/personal-match.actions';
 
 type Props = {
-  matches: PersonalQuickMatch[];
+  matches: QuickMatchSummary[];
 };
 
 export default function QuickMatchHistory({ matches: initialMatches }: Props) {

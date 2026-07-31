@@ -71,6 +71,17 @@ export type QuickMatchStatePayload = {
 const SELECT_COLUMNS =
   'id, activity_name, sport, game_type, scoring_system, point_target, status, config, round_sit_outs, players, matches, standings, created_at';
 
+// Lighter shape for the history list — omits `matches` (the largest field, a full
+// round-by-round log) and `config`/`round_sit_outs` (only needed to resume/recap a single
+// match), since the list only ever renders name, date, status, player count, and the leader.
+export type QuickMatchSummary = Pick<
+  PersonalQuickMatch,
+  'id' | 'activity_name' | 'game_type' | 'status' | 'players' | 'standings' | 'created_at'
+>;
+
+const SUMMARY_COLUMNS = 'id, activity_name, game_type, status, players, standings, created_at';
+const HISTORY_LIMIT = 30;
+
 // Creates (id omitted) or updates (id present) a Personal Quick Match's live state. Called
 // as soon as the first round is generated (status OPEN, so the session survives a lost
 // connection or a dead phone), on every subsequent score/round change, and finally when the
@@ -119,18 +130,19 @@ export async function saveQuickMatchStateAction(
   return { ok: true, id: data.id as string };
 }
 
-export async function getMyQuickMatches(): Promise<PersonalQuickMatch[]> {
+export async function getMyQuickMatches(): Promise<QuickMatchSummary[]> {
   const profile = await requireProfile();
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('personal_quick_matches')
-    .select(SELECT_COLUMNS)
+    .select(SUMMARY_COLUMNS)
     .eq('profile_id', profile.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(HISTORY_LIMIT);
 
   if (error || !data) return [];
-  return data as unknown as PersonalQuickMatch[];
+  return data as unknown as QuickMatchSummary[];
 }
 
 export async function getQuickMatchById(id: string): Promise<PersonalQuickMatch | null> {

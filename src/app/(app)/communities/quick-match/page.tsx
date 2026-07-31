@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft, Zap, AlertCircle } from 'lucide-react';
 import { requireProfile } from '@/server/guards';
 import { getMyProfileWithCommunities } from '../../profile-actions';
 import { getQuickMatchById } from '@/server/actions/personal-match.actions';
@@ -34,6 +34,10 @@ export default async function PersonalQuickMatchPage({
         }
       : undefined;
 
+  // resume was given but there's nothing OPEN to resume (already ended, not found, or not
+  // owned by this user) — say so instead of silently dropping into a blank new match.
+  const resumeFailed = Boolean(resume) && !initialState;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -48,6 +52,15 @@ export default async function PersonalQuickMatchPage({
           Quick Match
         </span>
       </div>
+
+      {resumeFailed && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs font-medium text-amber-800">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+          <span>
+            That match couldn&apos;t be resumed (it may have already ended). Starting a new one below.
+          </span>
+        </div>
+      )}
 
       <div className="rounded-3xl bg-white border border-zinc-200 p-6 sm:p-8 text-zinc-900 shadow-sm">
         <WizardForm
