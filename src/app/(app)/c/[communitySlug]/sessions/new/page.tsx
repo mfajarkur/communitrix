@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { requireCommunityAdmin } from '@/server/guards';
+import { requireCommunityHost } from '@/server/guards';
 import { notFound } from 'next/navigation';
 import WizardForm from './wizard-form';
 
@@ -23,7 +23,7 @@ export default async function NewSessionPage({
   }
 
   // 2. Enforce admin guard and get current profile
-  const profile = await requireCommunityAdmin(community.id);
+  const profile = await requireCommunityHost(community.id);
 
   // 3. Fetch active community members
   const { data: members, error: mErr } = await supabase

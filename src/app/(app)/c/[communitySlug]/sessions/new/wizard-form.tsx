@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { startSessionAction, finalizeSessionAction } from '@/server/actions/session.actions';
-import { persistRoundAction, submitMatchScoreAction } from '@/server/actions/round.actions';
-import { createClient } from '@/lib/supabase/client';
+import { startSessionAction } from '@/server/actions/session.actions';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
 import {
   Trophy,
@@ -185,6 +183,10 @@ export default function WizardForm({
   const [player2NameInput, setPlayer2NameInput] = useState('');
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [guestErrorMessage, setGuestErrorMessage] = useState<string | null>(null);
+  // Maps a temp client-side guest id to the promise resolving its real DB profile id
+  // (set by addGuestPlayerAction's background call). Awaited before starting a real
+  // community session so attendeeIds sent to the DB are never stale temp ids.
+  const pendingGuestCreations = useRef<Map<string, Promise<string>>>(new Map());
 
   // Community member list for selection
   const [availableCommunityPlayers, setAvailableCommunityPlayers] = useState<Player[]>(initialPlayers);
@@ -387,16 +389,22 @@ export default function WizardForm({
 
     // Asynchronously create guest member in DB for community mode
     if (!isGuestDemoMode && communityId) {
-      addGuestPlayerAction({ communityId, fullName: name })
+      const creationPromise = addGuestPlayerAction({ communityId, fullName: name })
         .then((result) => {
           if (result.ok && result.data) {
             const dbId = result.data.id;
             setRegisteredPlayers((prev) =>
               prev.map((p) => (p.id === tempId ? { ...p, id: dbId, name: result.data.full_name || name } : p))
             );
+            return dbId;
           }
+          return tempId;
         })
-        .catch((err) => console.error('Background guest creation error:', err));
+        .catch((err) => {
+          console.error('Background guest creation error:', err);
+          return tempId;
+        });
+      pendingGuestCreations.current.set(tempId, creationPromise);
     }
   };
 
@@ -437,16 +445,22 @@ export default function WizardForm({
 
     // Asynchronously create guest member in DB for community mode
     if (!isGuestDemoMode && communityId) {
-      addGuestPlayerAction({ communityId, fullName })
+      const creationPromise = addGuestPlayerAction({ communityId, fullName })
         .then((result) => {
           if (result.ok && result.data) {
             const dbId = result.data.id;
             setRegisteredPlayers((prev) =>
               prev.map((p) => (p.id === tempId ? { ...p, id: dbId } : p))
             );
+            return dbId;
           }
+          return tempId;
         })
-        .catch((err) => console.error('Background team creation error:', err));
+        .catch((err) => {
+          console.error('Background team creation error:', err);
+          return tempId;
+        });
+      pendingGuestCreations.current.set(tempId, creationPromise);
     }
   };
 
@@ -550,6 +564,63 @@ export default function WizardForm({
     setRoundSitOuts(newRoundSitOuts);
     setSelectedRound(1);
     setStep(4);
+  };
+
+  // Step 3 -> Live Board: Community sessions skip local play entirely. Create the
+  // session in the DB and hand off to the real-time Live Board (sessions/[sessionId]),
+  // which drives round generation + scoring live via generateNextRoundAction /
+  // submitMatchScoreAction — this is what actually applies Elo/CP, and it supports
+  // multiple Hosts scoring the same session concurrently, which local wizard state cannot.
+  const handleStartCommunitySession = async () => {
+    const isTeamMode = config.gameType.includes('TEAM_');
+    const minRequired = isTeamMode ? 2 : 4;
+
+    if (registeredPlayers.length < minRequired) {
+      setErrorMessage(`Minimum ${minRequired} ${isTeamMode ? 'teams' : 'players'} required to start a session.`);
+      return;
+    }
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      // Wait for any in-flight guest-player DB creations so attendeeIds are all real profile ids.
+      const attendeeIds = await Promise.all(
+        registeredPlayers.map((p) => pendingGuestCreations.current.get(p.id) ?? Promise.resolve(p.id))
+      );
+
+      const result = await startSessionAction({
+        communityId,
+        name: config.activityName,
+        format: config.gameType.includes('MEXICANO') ? 'MEXICANO' : 'AMERICANO',
+        sport: config.sport,
+        scoringType: config.scoringSystem === 'POINTS' ? 'POINTS' : 'GAMES',
+        pointsMode: 'FIRST_TO_TARGET',
+        maxScoreTarget: configN,
+        courtCount: config.courtCount,
+        roundsPlanned: null, // open-ended — Live Board generates rounds until a Host ends the session
+        attendeeIds,
+      });
+
+      if (!result.ok) {
+        setIsSubmitting(false);
+        setErrorMessage(result.message || 'Failed to start the session.');
+        return;
+      }
+
+      router.push(`/c/${communitySlug}/sessions/${result.data.sessionId}`);
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setErrorMessage(err.message || 'Failed to start the session.');
+    }
+  };
+
+  // Step 3 -> Step 4/Live Board: dispatch by mode
+  const handleProceedFromRegistration = () => {
+    if (isGuestDemoMode) {
+      handleGenerateMatches();
+    } else {
+      handleStartCommunitySession();
+    }
   };
 
   // Step 4: Generate Next Match Round
@@ -887,106 +958,11 @@ export default function WizardForm({
     setShowConfirmEndModal(true);
   };
 
-  const handleConfirmEndMatch = async () => {
+  // Quick Match only — Community sessions never reach step 4/5 (they hand off to the
+  // Live Board in handleStartCommunitySession above), so there's nothing to persist here.
+  const handleConfirmEndMatch = () => {
     setShowConfirmEndModal(false);
     setShowPodium(true);
-
-    if (!isGuestDemoMode) {
-      setIsSubmitting(true);
-      try {
-        const supabase = createClient();
-
-        // 1. Create session in DB
-        const startResult = await startSessionAction({
-          communityId,
-          name: config.activityName,
-          format: config.gameType.includes('MEXICANO') ? 'MEXICANO' : 'AMERICANO',
-          sport: config.sport,
-          scoringType: config.scoringSystem === 'POINTS' ? 'POINTS' : 'GAMES',
-          pointsMode: 'FIRST_TO_TARGET',
-          maxScoreTarget: configN,
-          courtCount: config.courtCount,
-          roundsPlanned: matches.length > 0 ? Math.max(...matches.map((m) => m.round)) : 1,
-          attendeeIds: registeredPlayers.map((p) => p.id),
-        });
-
-        if (startResult.ok && startResult.data?.sessionId) {
-          const dbSessionId = startResult.data.sessionId;
-
-          // 2. Group completed matches by round
-          const roundsMap = new Map<number, typeof matches>();
-          matches.forEach((m) => {
-            const list = roundsMap.get(m.round) || [];
-            list.push(m);
-            roundsMap.set(m.round, list);
-          });
-
-          // Sort rounds sequentially 1..N
-          const roundNumbers = Array.from(roundsMap.keys()).sort((a, b) => a - b);
-
-          for (const roundNum of roundNumbers) {
-            const roundMatches = roundsMap.get(roundNum) || [];
-
-            // Find sit-outs for this round if any
-            const playingIds = new Set<string>();
-            roundMatches.forEach((m) => {
-              if (m.player1Id) playingIds.add(m.player1Id);
-              if (m.player2Id) playingIds.add(m.player2Id);
-              if (m.player3Id) playingIds.add(m.player3Id);
-              if (m.player4Id) playingIds.add(m.player4Id);
-            });
-
-            const roundSitOuts = registeredPlayers
-              .map((p) => p.id)
-              .filter((id) => !playingIds.has(id));
-
-            // Persist the round in DB
-            const persistRes = await persistRoundAction({
-              sessionId: dbSessionId,
-              roundNumber: roundNum,
-              courts: roundMatches.map((m) => ({
-                courtNumber: m.court,
-                teamA: [m.player1Id, m.player2Id].filter(Boolean) as string[],
-                teamB: [m.player3Id, m.player4Id].filter(Boolean) as string[],
-              })),
-              sitOuts: roundSitOuts,
-            });
-
-            if (persistRes.ok && persistRes.data?.roundId) {
-              const dbRoundId = persistRes.data.roundId;
-
-              // Query created matches from DB to get match IDs
-              const { data: dbMatches } = await supabase
-                .from('matches')
-                .select('id, court_number')
-                .eq('round_id', dbRoundId)
-                .order('court_number');
-
-              if (dbMatches) {
-                for (const dbM of dbMatches) {
-                  const localMatch = roundMatches.find((m) => m.court === dbM.court_number);
-                  if (localMatch) {
-                    // Submit match score (triggers DB Elo update & drift checks)
-                    await submitMatchScoreAction({
-                      matchId: dbM.id,
-                      scoreA: localMatch.score1,
-                      scoreB: localMatch.score2,
-                    });
-                  }
-                }
-              }
-            }
-          }
-
-          // 3. Finalize session (awards CP points and marks session COMPLETED)
-          await finalizeSessionAction(dbSessionId);
-        }
-      } catch (err: any) {
-        console.error('Failed to save community session to DB:', err);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
   };
 
   const handleDownloadImage = async () => {
@@ -1896,15 +1872,24 @@ export default function WizardForm({
             )}
           </div>
 
-          {/* Action Button to Generate Matches */}
+          {/* Action Button: local match generation (Quick Match) or start real session (Community) */}
           <button
             type="button"
-            onClick={handleGenerateMatches}
-            disabled={registeredPlayers.length < 4}
+            onClick={handleProceedFromRegistration}
+            disabled={registeredPlayers.length < 4 || isSubmitting}
             className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all disabled:opacity-40 cursor-pointer shadow-md flex items-center justify-center gap-2"
           >
-            <Trophy className="h-4 w-4" />
-            Generate Matches & Open Session
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Starting Session...
+              </>
+            ) : (
+              <>
+                <Trophy className="h-4 w-4" />
+                {isGuestDemoMode ? 'Generate Matches & Open Session' : 'Start Session & Open Live Board'}
+              </>
+            )}
           </button>
         </div>
       )}

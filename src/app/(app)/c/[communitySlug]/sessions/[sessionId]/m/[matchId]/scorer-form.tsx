@@ -48,6 +48,7 @@ interface ScorerFormProps {
   initialScoreA?: number;
   initialScoreB?: number;
   initialStatus?: string;
+  isAdmin: boolean;
 }
 
 export default function ScorerForm({
@@ -60,6 +61,7 @@ export default function ScorerForm({
   initialScoreA,
   initialScoreB,
   initialStatus,
+  isAdmin,
 }: ScorerFormProps) {
   const router = useRouter();
   const [scoreA, setScoreA] = useState(initialScoreA ?? 0);
@@ -451,25 +453,31 @@ export default function ScorerForm({
       )}
 
       {/* Submit & Admin panel */}
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => setShowConfirm(true)}
-          className="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 transition-all font-bold text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <span>{initialStatus === 'COMPLETED' ? 'Amend Match Score' : 'Submit Match Score'}</span>
-        </button>
-
-        {initialStatus === 'COMPLETED' && (
+      {initialStatus === 'COMPLETED' && !isAdmin ? (
+        <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-500 text-center">
+          This match is completed. Only a community Admin can amend or void it.
+        </div>
+      ) : (
+        <div className="space-y-3">
           <button
             type="button"
-            onClick={() => setShowVoidConfirm(true)}
-            className="w-full h-12 rounded-xl border border-red-200 bg-white hover:bg-red-50 transition-all font-bold text-red-650 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            onClick={() => setShowConfirm(true)}
+            className="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 transition-all font-bold text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Void Match</span>
+            <span>{initialStatus === 'COMPLETED' ? 'Amend Match Score' : 'Submit Match Score'}</span>
           </button>
-        )}
-      </div>
+
+          {initialStatus === 'COMPLETED' && (
+            <button
+              type="button"
+              onClick={() => setShowVoidConfirm(true)}
+              className="w-full h-12 rounded-xl border border-red-200 bg-white hover:bg-red-50 transition-all font-bold text-red-650 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <span>Void Match</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Confirmation Dialog Sheet for scoring / amending */}
       {showConfirm && (

@@ -61,7 +61,7 @@ interface SessionPlayer {
 interface LiveBoardWrapperProps {
   sessionId: string;
   communitySlug: string;
-  isAdmin: boolean;
+  isHostOrAdmin: boolean;
   latestRound: { id: string; round_number: number; status: string } | null;
   matches: Match[];
   sitOuts: SitOut[];
@@ -71,7 +71,7 @@ interface LiveBoardWrapperProps {
 export default function LiveBoardWrapper({
   sessionId,
   communitySlug,
-  isAdmin,
+  isHostOrAdmin,
   latestRound,
   matches,
   sitOuts,
@@ -206,7 +206,7 @@ export default function LiveBoardWrapper({
         )}
 
         {/* Generate / match controls */}
-        {isAdmin && (
+        {isHostOrAdmin && (
           <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm flex items-center justify-between gap-4">
             <div>
               <h3 className="font-bold text-[#111827] flex items-center gap-1.5 text-sm">
@@ -260,7 +260,7 @@ export default function LiveBoardWrapper({
             <div className="text-center py-16 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50 text-zinc-400 space-y-3">
               <HelpCircle className="h-10 w-10 mx-auto opacity-50" />
               <p className="text-sm">No rounds have been generated for this session yet.</p>
-              {isAdmin && (
+              {isHostOrAdmin && (
                 <button
                   onClick={handleGenerateClick}
                   className="mt-2 text-xs font-bold text-orange-500 hover:underline cursor-pointer"
@@ -323,7 +323,7 @@ export default function LiveBoardWrapper({
                         ))}
                       </div>
                     </div>
-                    {isAdmin && (
+                    {isHostOrAdmin && (
                       <Link
                         href={`/c/${communitySlug}/sessions/${sessionId}/m/${m.id}`}
                         className="mt-2 text-center text-xs font-bold py-2 bg-zinc-100 hover:bg-zinc-200/80 rounded-xl border border-zinc-200/60 transition-all text-zinc-700"

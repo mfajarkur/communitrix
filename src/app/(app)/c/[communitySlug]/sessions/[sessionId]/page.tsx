@@ -32,7 +32,7 @@ export default async function SessionLiveBoardPage({
     .eq('profile_id', profile.id)
     .maybeSingle();
 
-  const isAdmin = membership?.role === 'ADMIN';
+  const isHostOrAdmin = membership?.role === 'ADMIN' || membership?.role === 'HOST';
 
   // 3. Fetch latest round
   const { data: rounds, error: rErr } = await supabase
@@ -137,7 +137,7 @@ export default async function SessionLiveBoardPage({
       <LiveBoardWrapper
         sessionId={sessionId}
         communitySlug={communitySlug}
-        isAdmin={isAdmin}
+        isHostOrAdmin={isHostOrAdmin}
         latestRound={latestRound}
         matches={matches}
         sitOuts={sitOuts}

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { requireCommunityAdmin } from '@/server/guards';
+import { requireCommunityHost } from '@/server/guards';
 import { notFound } from 'next/navigation';
 import ScorerForm from './scorer-form';
 
@@ -40,8 +40,17 @@ export default async function MatchScorerPage({
     notFound();
   }
 
-  // 2. Enforce admin guard
-  await requireCommunityAdmin(match.community_id);
+  // 2. Enforce host-or-admin guard (amend/void stay admin-only, enforced separately below)
+  const profile = await requireCommunityHost(match.community_id);
+
+  const { data: membership } = await supabase
+    .from('community_members')
+    .select('role')
+    .eq('community_id', match.community_id)
+    .eq('profile_id', profile.id)
+    .maybeSingle();
+
+  const isAdmin = membership?.role === 'ADMIN';
 
   // 3. Fetch session settings
   const { data: session, error: sErr } = await supabase
@@ -110,6 +119,7 @@ export default async function MatchScorerPage({
           initialScoreA={match.team_a_score ?? 0}
           initialScoreB={match.team_b_score ?? 0}
           initialStatus={match.status}
+          isAdmin={isAdmin}
           sessionConfig={{
             sport: session.sport,
             scoringType: session.scoring_type,
