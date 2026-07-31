@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Trophy, Calendar, Users, Crown } from 'lucide-react';
+import { ArrowLeft, Trophy, Calendar, Users, Crown, Play } from 'lucide-react';
 import { getQuickMatchById } from '@/server/actions/personal-match.actions';
 import LeaderboardPrintSection from './leaderboard-print-section';
 
@@ -38,9 +38,21 @@ export default async function QuickMatchDetailPage({
 
       {/* Header */}
       <div className="rounded-2xl bg-zinc-950 p-6 text-white shadow-md space-y-2">
-        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-orange-500/20 text-orange-300 border border-orange-500/30">
-          {match.game_type.replace('_', ' ')} · {match.sport}
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-orange-500/20 text-orange-300 border border-orange-500/30">
+            {match.game_type.replace('_', ' ')} · {match.sport}
+          </span>
+          {match.status === 'OPEN' ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-green-500/15 text-green-400 border border-green-500/30">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+              Live · Ongoing
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-white/10 text-white/60 border border-white/10">
+              Ended
+            </span>
+          )}
+        </div>
         <h1 className="text-2xl font-black tracking-tight">{match.activity_name}</h1>
         <div className="flex flex-wrap items-center gap-4 text-xs text-white/60 font-semibold pt-1">
           <span className="inline-flex items-center gap-1.5">
@@ -50,6 +62,21 @@ export default async function QuickMatchDetailPage({
             <Users className="h-3.5 w-3.5" /> {match.players.length} players
           </span>
         </div>
+        {match.status === 'OPEN' && (
+          <div className="pt-2">
+            <Link
+              href={`/communities/quick-match?resume=${match.id}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-xs font-black uppercase tracking-widest transition-all shadow-sm"
+            >
+              <Play className="h-4 w-4" />
+              Continue This Match
+            </Link>
+            <p className="text-[11px] text-white/40 font-medium mt-2">
+              This session is still open — safe in your history even if you lost connection. The
+              standings below reflect scores entered so far.
+            </p>
+          </div>
+        )}
       </div>
 
       <LeaderboardPrintSection

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { startSessionAction } from '@/server/actions/session.actions';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
-import { savePersonalQuickMatchAction } from '@/server/actions/personal-match.actions';
+import { saveQuickMatchStateAction } from '@/server/actions/personal-match.actions';
 import LeaderboardPoster from '@/components/leaderboard-poster';
 import {
   Trophy,
@@ -116,6 +116,16 @@ interface WizardFormProps {
   // Personal Quick Match (from the Profile page): local play like guest demo mode, but the
   // finished match is saved to the logged-in user's own profile (not a community, no ELO).
   saveToProfile?: boolean;
+  // Resume an existing OPEN Personal Quick Match (from a "Continue" link on the Profile
+  // page's history) — hydrates straight into Live Matches instead of starting a new session.
+  initialState?: {
+    matchId: string;
+    config: GameConfiguration;
+    registeredPlayers: PlayerRegistration[];
+    matches: Match[];
+    roundSitOuts: Record<string, string[]>;
+    selectedRound: number;
+  };
 }
 
 const POINTS_TARGET_OPTIONS = [
@@ -153,33 +163,43 @@ export default function WizardForm({
   currentProfile,
   isGuestDemoMode = false,
   saveToProfile = false,
+  initialState,
 }: WizardFormProps) {
   const router = useRouter();
 
   // Wizard Step State (1: Game Type, 2: Setup Config, 3: Registration, 4: Match Generation, 5: Leaderboard)
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialState ? 4 : 1);
   const [showDemoCompleteModal, setShowDemoCompleteModal] = useState(false);
   const [showConfirmEndModal, setShowConfirmEndModal] = useState(false);
   const [showPodium, setShowPodium] = useState(false);
 
+  // Tracks the personal_quick_matches row id once the session has been created in the DB
+  // (as soon as the first round is generated), so a lost connection or a dead phone doesn't
+  // lose the match — it's already saved as OPEN and resumable from the Profile page.
+  const [profileMatchId, setProfileMatchId] = useState<string | null>(initialState?.matchId ?? null);
+
   // ------------------------------------------
   // STEP 1 & 2: CONFIGURATION STATE
   // ------------------------------------------
-  const [config, setConfig] = useState<GameConfiguration>({
-    sport: 'PADEL',
-    gameType: 'AMERICANO',
-    activityName: `Match Session - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-    courtCount: 1,
-    scoringSystem: 'POINTS',
-    pointTarget: '16 Points',
-    leaderboardRankedBy: 'POINT',
-    byeScoringMethod: 'PLAYER_AVERAGE', // default per brief §3
-  });
+  const [config, setConfig] = useState<GameConfiguration>(
+    initialState?.config ?? {
+      sport: 'PADEL',
+      gameType: 'AMERICANO',
+      activityName: `Match Session - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      courtCount: 1,
+      scoringSystem: 'POINTS',
+      pointTarget: '16 Points',
+      leaderboardRankedBy: 'POINT',
+      byeScoringMethod: 'PLAYER_AVERAGE', // default per brief §3
+    }
+  );
 
   // ------------------------------------------
   // STEP 3: PLAYER REGISTRATION STATE
   // ------------------------------------------
-  const [registeredPlayers, setRegisteredPlayers] = useState<PlayerRegistration[]>([]);
+  const [registeredPlayers, setRegisteredPlayers] = useState<PlayerRegistration[]>(
+    initialState?.registeredPlayers ?? []
+  );
   const [manualInputName, setManualInputName] = useState('');
   const [teamNameInput, setTeamNameInput] = useState('');
   const [player1NameInput, setPlayer1NameInput] = useState('');
@@ -197,11 +217,16 @@ export default function WizardForm({
   // ------------------------------------------
   // STEP 4: MATCH GENERATION & SCORE PICKER STATE
   // ------------------------------------------
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<Match[]>(initialState?.matches ?? []);
   // roundSitOuts: Map<roundNumber, Set<playerId>> — records who sat out each generated round
   // This is the source of truth for bye detection, set at round-generation time (not derived from completed matches)
-  const [roundSitOuts, setRoundSitOuts] = useState<Map<number, string[]>>(new Map());
-  const [selectedRound, setSelectedRound] = useState<number>(1);
+  const [roundSitOuts, setRoundSitOuts] = useState<Map<number, string[]>>(() => {
+    if (!initialState) return new Map();
+    const restored = new Map<number, string[]>();
+    Object.entries(initialState.roundSitOuts).forEach(([k, v]) => restored.set(Number(k), v));
+    return restored;
+  });
+  const [selectedRound, setSelectedRound] = useState<number>(initialState?.selectedRound ?? 1);
   const totalRounds = useMemo(() => {
     return matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 1);
   }, [matches]);
@@ -255,9 +280,10 @@ export default function WizardForm({
   const [isSavingResult, setIsSavingResult] = useState(false);
   const [saveResultError, setSaveResultError] = useState<string | null>(null);
 
-  // 1. Restore saved Quick Match session state on mount
+  // 1. Restore saved Quick Match session state on mount — skipped when resuming a DB-backed
+  // OPEN match (initialState), since that's already the source of truth for this session.
   useEffect(() => {
-    if (typeof window === 'undefined' || !isGuestDemoMode) return;
+    if (typeof window === 'undefined' || !isGuestDemoMode || initialState) return;
     const saved = localStorage.getItem(quickMatchStorageKey);
     if (saved) {
       try {
@@ -298,7 +324,49 @@ export default function WizardForm({
     localStorage.setItem(quickMatchStorageKey, JSON.stringify(payload));
   }, [isGuestDemoMode, quickMatchStorageKey, step, config, registeredPlayers, matches, roundSitOuts, selectedRound]);
 
-  // 3. Reset Quick Match session
+  // Serializes the current match state into the shape saveQuickMatchStateAction expects.
+  const buildQuickMatchStatePayload = (status: 'OPEN' | 'ENDED') => {
+    const sitOutsObj: Record<string, string[]> = {};
+    roundSitOuts.forEach((v, k) => { sitOutsObj[String(k)] = v; });
+    return {
+      activityName: config.activityName,
+      sport: config.sport,
+      gameType: config.gameType,
+      scoringSystem: config.scoringSystem,
+      pointTarget: config.pointTarget,
+      config,
+      players: registeredPlayers,
+      matches,
+      standings,
+      roundSitOuts: sitOutsObj,
+      status,
+    };
+  };
+
+  // 3. Personal Quick Match resilience — create the DB row as soon as the first round is
+  // generated (status OPEN), so a lost connection or a dead phone doesn't lose the match:
+  // it's already safely saved and resumable from the Profile page's history.
+  useEffect(() => {
+    if (!saveToProfile || profileMatchId || matches.length === 0) return;
+    (async () => {
+      const result = await saveQuickMatchStateAction(buildQuickMatchStatePayload('OPEN'));
+      if (result.ok && result.id) setProfileMatchId(result.id);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveToProfile, profileMatchId, matches.length]);
+
+  // 4. Once the row exists, keep it in sync (debounced) as scores are entered and new
+  // rounds are generated, so resuming after an interruption picks up from the latest state.
+  useEffect(() => {
+    if (!saveToProfile || !profileMatchId) return;
+    const timer = setTimeout(() => {
+      saveQuickMatchStateAction({ id: profileMatchId, ...buildQuickMatchStatePayload('OPEN') });
+    }, 1000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveToProfile, profileMatchId, matches, roundSitOuts]);
+
+  // 5. Reset Quick Match session
   const handleResetQuickMatchSession = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(quickMatchStorageKey);
@@ -308,6 +376,7 @@ export default function WizardForm({
     setMatches([]);
     setRoundSitOuts(new Map());
     setSelectedRound(1);
+    setProfileMatchId(null);
     setShowPodium(false);
     setShowConfirmEndModal(false);
   };
@@ -980,19 +1049,15 @@ export default function WizardForm({
     if (saveToProfile) {
       setIsSavingResult(true);
       setSaveResultError(null);
-      const result = await savePersonalQuickMatchAction({
-        activityName: config.activityName,
-        sport: config.sport,
-        gameType: config.gameType,
-        scoringSystem: config.scoringSystem,
-        pointTarget: config.pointTarget,
-        players: registeredPlayers,
-        matches,
-        standings,
+      const result = await saveQuickMatchStateAction({
+        id: profileMatchId ?? undefined,
+        ...buildQuickMatchStatePayload('ENDED'),
       });
       setIsSavingResult(false);
       if (!result.ok) {
         setSaveResultError(result.message || 'Failed to save this match to your profile.');
+      } else if (result.id) {
+        setProfileMatchId(result.id);
       }
 
       // The match is finished (saved or not) — clear the draft so re-opening Quick Match

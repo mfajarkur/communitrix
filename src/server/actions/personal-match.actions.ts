@@ -4,6 +4,17 @@ import { createClient } from '@/lib/supabase/server';
 import { requireProfile } from '@/server/guards';
 import { revalidatePath } from 'next/cache';
 
+export type StoredQuickMatchConfig = {
+  sport: string;
+  gameType: string;
+  activityName: string;
+  courtCount: number;
+  scoringSystem: string;
+  pointTarget: string;
+  leaderboardRankedBy: string;
+  byeScoringMethod: string;
+};
+
 export type PersonalQuickMatch = {
   id: string;
   activity_name: string;
@@ -11,6 +22,9 @@ export type PersonalQuickMatch = {
   game_type: string;
   scoring_system: string;
   point_target: string;
+  status: 'OPEN' | 'ENDED';
+  config: StoredQuickMatchConfig;
+  round_sit_outs: Record<string, string[]>;
   players: Array<{ id: string; name: string; isGuest: boolean; avatarUrl?: string | null }>;
   matches: Array<{
     id: string;
@@ -39,41 +53,70 @@ export type PersonalQuickMatch = {
   created_at: string;
 };
 
-export type SavePersonalQuickMatchPayload = {
+export type QuickMatchStatePayload = {
+  id?: string;
   activityName: string;
   sport: string;
   gameType: string;
   scoringSystem: string;
   pointTarget: string;
+  config: StoredQuickMatchConfig;
   players: PersonalQuickMatch['players'];
   matches: PersonalQuickMatch['matches'];
   standings: PersonalQuickMatch['standings'];
+  roundSitOuts: Record<string, string[]>;
+  status: 'OPEN' | 'ENDED';
 };
 
-export async function savePersonalQuickMatchAction(
-  payload: SavePersonalQuickMatchPayload
-): Promise<{ ok: boolean; message?: string }> {
+const SELECT_COLUMNS =
+  'id, activity_name, sport, game_type, scoring_system, point_target, status, config, round_sit_outs, players, matches, standings, created_at';
+
+// Creates (id omitted) or updates (id present) a Personal Quick Match's live state. Called
+// as soon as the first round is generated (status OPEN, so the session survives a lost
+// connection or a dead phone), on every subsequent score/round change, and finally when the
+// match is ended (status ENDED).
+export async function saveQuickMatchStateAction(
+  payload: QuickMatchStatePayload
+): Promise<{ ok: boolean; id?: string; message?: string }> {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { error } = await supabase.from('personal_quick_matches').insert({
+  const row = {
     profile_id: profile.id,
     activity_name: payload.activityName,
     sport: payload.sport,
     game_type: payload.gameType,
     scoring_system: payload.scoringSystem,
     point_target: payload.pointTarget,
+    config: payload.config,
     players: payload.players,
     matches: payload.matches,
     standings: payload.standings,
-  });
+    round_sit_outs: payload.roundSitOuts,
+    status: payload.status,
+  };
 
-  if (error) {
-    return { ok: false, message: error.message };
+  if (payload.id) {
+    const { error } = await supabase
+      .from('personal_quick_matches')
+      .update(row)
+      .eq('id', payload.id)
+      .eq('profile_id', profile.id);
+
+    if (error) return { ok: false, message: error.message };
+    revalidatePath('/communities');
+    return { ok: true, id: payload.id };
   }
 
+  const { data, error } = await supabase
+    .from('personal_quick_matches')
+    .insert(row)
+    .select('id')
+    .single();
+
+  if (error || !data) return { ok: false, message: error?.message };
   revalidatePath('/communities');
-  return { ok: true };
+  return { ok: true, id: data.id as string };
 }
 
 export async function getMyQuickMatches(): Promise<PersonalQuickMatch[]> {
@@ -82,7 +125,7 @@ export async function getMyQuickMatches(): Promise<PersonalQuickMatch[]> {
 
   const { data, error } = await supabase
     .from('personal_quick_matches')
-    .select('id, activity_name, sport, game_type, scoring_system, point_target, players, matches, standings, created_at')
+    .select(SELECT_COLUMNS)
     .eq('profile_id', profile.id)
     .order('created_at', { ascending: false });
 
@@ -96,7 +139,7 @@ export async function getQuickMatchById(id: string): Promise<PersonalQuickMatch 
 
   const { data, error } = await supabase
     .from('personal_quick_matches')
-    .select('id, activity_name, sport, game_type, scoring_system, point_target, players, matches, standings, created_at')
+    .select(SELECT_COLUMNS)
     .eq('id', id)
     .eq('profile_id', profile.id)
     .maybeSingle();

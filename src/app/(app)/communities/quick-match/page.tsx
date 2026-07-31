@@ -2,15 +2,37 @@ import Link from 'next/link';
 import { ArrowLeft, Zap } from 'lucide-react';
 import { requireProfile } from '@/server/guards';
 import { getMyProfileWithCommunities } from '../../profile-actions';
-import WizardForm from '../../c/[communitySlug]/sessions/new/wizard-form';
+import { getQuickMatchById } from '@/server/actions/personal-match.actions';
+import WizardForm, { type GameConfiguration } from '../../c/[communitySlug]/sessions/new/wizard-form';
 
-export default async function PersonalQuickMatchPage() {
+export default async function PersonalQuickMatchPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ resume?: string }>;
+}) {
   const profile = await requireProfile();
-  const profileData = await getMyProfileWithCommunities();
+  const { resume } = await searchParams;
+
+  const [profileData, existing] = await Promise.all([
+    getMyProfileWithCommunities(),
+    resume ? getQuickMatchById(resume) : Promise.resolve(null),
+  ]);
 
   const displayName =
     profileData?.profile.display_name || profileData?.profile.full_name || 'You';
   const avatarUrl = profileData?.profile.avatar_url ?? null;
+
+  const initialState =
+    existing && existing.status === 'OPEN'
+      ? {
+          matchId: existing.id,
+          config: existing.config as unknown as GameConfiguration,
+          registeredPlayers: existing.players,
+          matches: existing.matches,
+          roundSitOuts: existing.round_sit_outs,
+          selectedRound: existing.matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 1),
+        }
+      : undefined;
 
   return (
     <div className="space-y-6">
@@ -35,6 +57,7 @@ export default async function PersonalQuickMatchPage() {
           currentProfile={{ id: profile.id, name: displayName, avatarUrl }}
           isGuestDemoMode={true}
           saveToProfile={true}
+          initialState={initialState}
         />
       </div>
     </div>

@@ -59,6 +59,16 @@ export default function QuickMatchHistory({ matches: initialMatches }: Props) {
                 <p className="text-sm font-black text-zinc-900 truncate group-hover/link:text-orange-600 transition-colors">
                   {m.activity_name}
                 </p>
+                {m.status === 'OPEN' ? (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                    Live · Ongoing
+                  </span>
+                ) : (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200">
+                    Ended
+                  </span>
+                )}
                 <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
                   {m.game_type.replace('_', ' ')}
                 </span>
@@ -70,7 +80,9 @@ export default function QuickMatchHistory({ matches: initialMatches }: Props) {
                 </span>
                 {winner && (
                   <span className="inline-flex items-center gap-1 text-amber-600">
-                    <Trophy className="h-3 w-3" /> {winner.name} · {winner.totalPoints} pts
+                    <Trophy className="h-3 w-3" />
+                    {m.status === 'OPEN' ? 'Leading: ' : ''}
+                    {winner.name} · {winner.totalPoints} pts
                   </span>
                 )}
               </div>
