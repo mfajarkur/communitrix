@@ -279,52 +279,61 @@ export default function WizardForm({
   // System Submission State (declared early so handleConfirmEndMatch below can use it)
   const [isSavingResult, setIsSavingResult] = useState(false);
   const [saveResultError, setSaveResultError] = useState<string | null>(null);
+  // Tracks failures from the background OPEN-match sync below, surfaced in the UI (not
+  // silent) so a lost connection is visible instead of only discovered after data is gone.
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const syncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 1. Restore saved Quick Match session state on mount. Skipped entirely for Personal Quick
-  // Match (saveToProfile): the database is that mode's source of truth, resumed only via an
-  // explicit "Continue This Match" link (initialState) — never silently from local browser
-  // state, or opening "Quick Match" fresh would keep re-entering whatever was last in progress.
+  // 1. Restore saved Quick Match session state on mount.
+  // - Sandbox mode: restores everything, including in-progress matches (unchanged behavior).
+  // - Personal Quick Match (saveToProfile): once a match reaches step 4 (rounds generated),
+  //   the database is the source of truth, resumed only via an explicit "Continue This Match"
+  //   link (initialState) — never silently from local browser state. But steps 1-3 (game
+  //   type, config, player registration) happen before any DB row exists, so a local draft is
+  //   still restored there — otherwise a crash while just picking players loses everything
+  //   with zero recovery, which defeats the point of this feature.
   useEffect(() => {
-    if (typeof window === 'undefined' || !isGuestDemoMode || saveToProfile) return;
+    if (typeof window === 'undefined' || !isGuestDemoMode || initialState) return;
     const saved = localStorage.getItem(quickMatchStorageKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (saveToProfile && (!parsed.step || parsed.step >= 4)) return; // never restore a generated match locally in profile mode
         if (parsed.step) setStep(parsed.step);
         if (parsed.config) setConfig(parsed.config);
         if (parsed.registeredPlayers) setRegisteredPlayers(parsed.registeredPlayers);
-        if (parsed.matches) setMatches(parsed.matches);
-        if (parsed.roundSitOuts) {
-          // Restore Map from serialized plain object {"1": ["id1", "id2"], ...}
-          const restoredMap = new Map<number, string[]>();
-          Object.entries(parsed.roundSitOuts).forEach(([k, v]) => {
-            restoredMap.set(Number(k), v as string[]);
-          });
-          setRoundSitOuts(restoredMap);
+        if (!saveToProfile) {
+          if (parsed.matches) setMatches(parsed.matches);
+          if (parsed.roundSitOuts) {
+            // Restore Map from serialized plain object {"1": ["id1", "id2"], ...}
+            const restoredMap = new Map<number, string[]>();
+            Object.entries(parsed.roundSitOuts).forEach(([k, v]) => {
+              restoredMap.set(Number(k), v as string[]);
+            });
+            setRoundSitOuts(restoredMap);
+          }
+          if (parsed.selectedRound) setSelectedRound(parsed.selectedRound);
         }
-        if (parsed.selectedRound) setSelectedRound(parsed.selectedRound);
       } catch (e) {
         console.error('Failed to restore quick match session state', e);
       }
     }
-  }, [isGuestDemoMode, quickMatchStorageKey]);
+  }, [isGuestDemoMode, saveToProfile, quickMatchStorageKey, initialState]);
 
-  // 2. Auto-save Quick Match session state when state changes (sandbox mode only — see note above)
+  // 2. Auto-save Quick Match session state on every change. In profile mode this only matters
+  // for steps 1-3 (see above) — once matches exist, the DB sync below takes over and this
+  // local draft is cleared so it's never mistaken for a resumable session on next visit.
   useEffect(() => {
-    if (typeof window === 'undefined' || !isGuestDemoMode || saveToProfile) return;
-    // Convert Map to plain object for JSON serialization
+    if (typeof window === 'undefined' || !isGuestDemoMode) return;
+    if (saveToProfile && step >= 4) {
+      localStorage.removeItem(quickMatchStorageKey);
+      return;
+    }
     const sitOutsObj: Record<string, string[]> = {};
     roundSitOuts.forEach((v, k) => { sitOutsObj[String(k)] = v; });
-    const payload = {
-      step,
-      config,
-      registeredPlayers,
-      matches,
-      roundSitOuts: sitOutsObj,
-      selectedRound,
-    };
+    const payload = { step, config, registeredPlayers, matches, roundSitOuts: sitOutsObj, selectedRound };
     localStorage.setItem(quickMatchStorageKey, JSON.stringify(payload));
-  }, [isGuestDemoMode, quickMatchStorageKey, step, config, registeredPlayers, matches, roundSitOuts, selectedRound]);
+  }, [isGuestDemoMode, saveToProfile, quickMatchStorageKey, step, config, registeredPlayers, matches, roundSitOuts, selectedRound]);
 
   // Serializes the current match state into the shape saveQuickMatchStateAction expects.
   const buildQuickMatchStatePayload = (status: 'OPEN' | 'ENDED') => {
@@ -345,40 +354,82 @@ export default function WizardForm({
     };
   };
 
-  // 3. Personal Quick Match resilience — create the DB row as soon as the first round is
-  // generated (status OPEN), so a lost connection or a dead phone doesn't lose the match:
-  // it's already safely saved and resumable from the Profile page's history.
-  useEffect(() => {
-    if (!saveToProfile || profileMatchId || matches.length === 0) return;
-    (async () => {
-      const result = await saveQuickMatchStateAction(buildQuickMatchStatePayload('OPEN'));
-      if (result.ok && result.id) setProfileMatchId(result.id);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveToProfile, profileMatchId, matches.length]);
+  // Creates the row on first call (profileMatchId still null), updates it on every call after.
+  // Used by the debounced sync, the retry-on-failure loop, and the flush-on-background handler
+  // below, so every one of them is also a natural retry opportunity for a failed creation.
+  const syncQuickMatchToProfile = async () => {
+    if (!saveToProfile || matches.length === 0) return;
+    const payload = buildQuickMatchStatePayload('OPEN');
+    const result = profileMatchId
+      ? await saveQuickMatchStateAction({ id: profileMatchId, ...payload })
+      : await saveQuickMatchStateAction(payload);
+    if (result.ok) {
+      setSyncError(null);
+      if (result.id && !profileMatchId) setProfileMatchId(result.id);
+    } else {
+      setSyncError(result.message || 'Could not save this match to your profile — will keep retrying.');
+    }
+  };
 
-  // 4. Once the row exists, keep it in sync (debounced) as scores are entered and new
-  // rounds are generated, so resuming after an interruption picks up from the latest state.
-  useEffect(() => {
-    if (!saveToProfile || !profileMatchId) return;
-    const timer = setTimeout(() => {
-      saveQuickMatchStateAction({ id: profileMatchId, ...buildQuickMatchStatePayload('OPEN') });
-    }, 1000);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveToProfile, profileMatchId, matches, roundSitOuts]);
+  // Keep a ref to the latest sync function so the visibility/pagehide listener (registered
+  // once) always calls the version closed over the current match state, not a stale one.
+  const syncQuickMatchToProfileRef = useRef(syncQuickMatchToProfile);
+  syncQuickMatchToProfileRef.current = syncQuickMatchToProfile;
 
-  // 5. Reset Quick Match session
+  // 3. Personal Quick Match resilience — debounced sync to the DB (create on first round,
+  // update on every score/round change after) so a lost connection or a dead phone after this
+  // point doesn't lose the match: it's already saved as OPEN and resumable from the Profile page.
+  useEffect(() => {
+    if (!saveToProfile || matches.length === 0) return;
+    syncDebounceRef.current = setTimeout(() => { syncQuickMatchToProfile(); }, 1000);
+    return () => {
+      if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveToProfile, matches, roundSitOuts]);
+
+  // 4. If a sync failed, keep retrying every 5s until it succeeds — a failure with no further
+  // score/round changes (e.g. player walks away right after a network blip) would otherwise
+  // never get another chance via effect 3 above.
+  useEffect(() => {
+    if (!saveToProfile || !syncError) return;
+    const retryTimer = setInterval(() => { syncQuickMatchToProfile(); }, 5000);
+    return () => clearInterval(retryTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveToProfile, syncError, profileMatchId]);
+
+  // 5. Flush immediately when the app is backgrounded/closed, instead of waiting out the
+  // debounce — shrinks the window in which a dead phone could lose the last few seconds of play.
+  useEffect(() => {
+    if (!saveToProfile) return;
+    const flushNow = () => {
+      if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+      syncQuickMatchToProfileRef.current();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushNow();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', flushNow);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', flushNow);
+    };
+  }, [saveToProfile]);
+
+  // 6. Reset Quick Match session
   const handleResetQuickMatchSession = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(quickMatchStorageKey);
     }
+    if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     setStep(1);
     setRegisteredPlayers([]);
     setMatches([]);
     setRoundSitOuts(new Map());
     setSelectedRound(1);
     setProfileMatchId(null);
+    setSyncError(null);
     setShowPodium(false);
     setShowConfirmEndModal(false);
   };
@@ -1049,6 +1100,12 @@ export default function WizardForm({
     setShowConfirmEndModal(false);
 
     if (saveToProfile) {
+      // Cancel any pending/looping OPEN-status sync so it can't fire after (and silently
+      // undo) the ENDED save below — the retry loop in particular would otherwise keep
+      // flipping this match back to OPEN forever if it had a failure right before ending.
+      if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+      setSyncError(null);
+
       setIsSavingResult(true);
       setSaveResultError(null);
       const result = await saveQuickMatchStateAction({
@@ -1228,6 +1285,13 @@ export default function WizardForm({
         <div className="flex items-center gap-2.5 rounded-2xl bg-red-50 border border-red-200 p-4 text-xs font-medium text-red-700">
           <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
           <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {saveToProfile && syncError && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs font-medium text-amber-800">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-500 animate-pulse" />
+          <span>Not saved to your profile yet — {syncError} Keep this tab open if you can.</span>
         </div>
       )}
 
