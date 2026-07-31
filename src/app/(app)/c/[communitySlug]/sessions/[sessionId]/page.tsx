@@ -16,7 +16,7 @@ export default async function SessionLiveBoardPage({
   // 1. Fetch Session Info
   const { data: session, error: sErr } = await supabase
     .from('sessions')
-    .select('id, session_name, sport, format, status, court_count, rounds_planned, community_id')
+    .select('id, session_name, sport, format, status, court_count, rounds_planned, community_id, scoring_type, points_mode, max_score_target')
     .eq('id', sessionId)
     .single();
 
@@ -138,6 +138,11 @@ export default async function SessionLiveBoardPage({
         sessionId={sessionId}
         communitySlug={communitySlug}
         isHostOrAdmin={isHostOrAdmin}
+        sessionConfig={{
+          scoringType: session.scoring_type,
+          pointsMode: session.points_mode,
+          maxScoreTarget: session.max_score_target,
+        }}
         latestRound={latestRound}
         matches={matches}
         sitOuts={sitOuts}

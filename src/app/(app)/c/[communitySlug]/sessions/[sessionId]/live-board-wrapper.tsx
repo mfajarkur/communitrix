@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   generateNextRoundAction,
   persistRoundAction,
+  submitMatchScoreAction,
 } from '@/server/actions/round.actions';
 import { finalizeSessionAction } from '@/server/actions/session.actions';
 import {
@@ -14,13 +15,14 @@ import {
   Grid,
   Zap,
   Play,
-  CheckCircle,
   HelpCircle,
   Loader2,
   Calendar,
+  Send,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDisplayName } from '@/lib/utils/profile';
+import ScorePickerModal from '@/components/score-picker-modal';
 
 interface MatchPlayer {
   profile_id: string;
@@ -58,20 +60,33 @@ interface SessionPlayer {
   draws: number;
 }
 
+interface SessionScoringConfig {
+  scoringType: 'POINTS' | 'GAMES';
+  pointsMode: 'FIRST_TO_TARGET' | 'FIXED_TOTAL' | 'TIMED';
+  maxScoreTarget: number;
+}
+
 interface LiveBoardWrapperProps {
   sessionId: string;
   communitySlug: string;
   isHostOrAdmin: boolean;
+  sessionConfig: SessionScoringConfig;
   latestRound: { id: string; round_number: number; status: string } | null;
   matches: Match[];
   sitOuts: SitOut[];
   sessionPlayers: SessionPlayer[];
 }
 
+interface ScoreDraft {
+  scoreA: number | null;
+  scoreB: number | null;
+}
+
 export default function LiveBoardWrapper({
   sessionId,
   communitySlug,
   isHostOrAdmin,
+  sessionConfig,
   latestRound,
   matches,
   sitOuts,
@@ -79,11 +94,72 @@ export default function LiveBoardWrapper({
 }: LiveBoardWrapperProps) {
   const router = useRouter();
   const supabase = createClient();
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [previewRound, setPreviewRound] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Inline scoring (Quick Match-style tap-to-pick), staged locally per match until "Send Score"
+  const [scoreDrafts, setScoreDrafts] = useState<Map<string, ScoreDraft>>(new Map());
+  const [activePicker, setActivePicker] = useState<{
+    matchId: string;
+    team: 'A' | 'B';
+    teamName: string;
+    currentScore: number | null;
+  } | null>(null);
+  const [submittingMatchId, setSubmittingMatchId] = useState<string | null>(null);
+
+  // Same rule scorer-form.tsx already uses: POINTS (or FIXED_TOTAL) scoring sums to the
+  // target, so picking one team's score auto-fills the other — matches Quick Match's feel.
+  const isPointsSystem = sessionConfig.scoringType === 'POINTS' || sessionConfig.pointsMode === 'FIXED_TOTAL';
+  const targetN = sessionConfig.maxScoreTarget || 24;
+
+  const getDraft = (matchId: string): ScoreDraft => scoreDrafts.get(matchId) || { scoreA: null, scoreB: null };
+
+  const handleDraftScoreSelect = (matchId: string, team: 'A' | 'B', score: number) => {
+    setScoreDrafts((prev) => {
+      const next = new Map(prev);
+      const current = next.get(matchId) || { scoreA: null, scoreB: null };
+      let { scoreA, scoreB } = current;
+      if (team === 'A') {
+        scoreA = Math.max(0, score);
+        if (isPointsSystem && targetN > 0) scoreB = Math.max(0, targetN - scoreA);
+      } else {
+        scoreB = Math.max(0, score);
+        if (isPointsSystem && targetN > 0) scoreA = Math.max(0, targetN - scoreB);
+      }
+      next.set(matchId, { scoreA, scoreB });
+      return next;
+    });
+  };
+
+  const handleSendScore = async (matchId: string) => {
+    const draft = scoreDrafts.get(matchId);
+    if (!draft || draft.scoreA === null || draft.scoreB === null) return;
+    setSubmittingMatchId(matchId);
+    setError(null);
+
+    const result = await submitMatchScoreAction({
+      matchId,
+      scoreA: draft.scoreA,
+      scoreB: draft.scoreB,
+      communitySlug,
+    });
+
+    setSubmittingMatchId(null);
+
+    if (result.ok) {
+      setScoreDrafts((prev) => {
+        const next = new Map(prev);
+        next.delete(matchId);
+        return next;
+      });
+      router.refresh();
+    } else {
+      setError(result.message);
+    }
+  };
 
   const handleFinalizeClick = async () => {
     if (!confirm('Are you sure you want to end this match session? This will finalize all ratings.')) return;
@@ -275,6 +351,11 @@ export default function LiveBoardWrapper({
                 const teamA = m.match_players.filter(mp => mp.team === 'A');
                 const teamB = m.match_players.filter(mp => mp.team === 'B');
                 const isCompleted = m.status === 'COMPLETED';
+                const teamAName = teamA.map(mp => getDisplayName(mp.profile)).join(' / ');
+                const teamBName = teamB.map(mp => getDisplayName(mp.profile)).join(' / ');
+                const draft = getDraft(m.id);
+                const isSubmittingThis = submittingMatchId === m.id;
+                const canSend = isHostOrAdmin && !isCompleted && draft.scoreA !== null && draft.scoreB !== null;
 
                 return (
                   <div
@@ -297,7 +378,7 @@ export default function LiveBoardWrapper({
                     </div>
 
                     <div className="py-4 flex justify-between items-center gap-6">
-                      <div className="space-y-1 flex-1">
+                      <div className="space-y-1 flex-1 text-right">
                         {teamA.map(mp => (
                           <p key={mp.profile_id} className="text-sm font-bold text-zinc-800 truncate">
                             {getDisplayName(mp.profile)}
@@ -305,17 +386,65 @@ export default function LiveBoardWrapper({
                         ))}
                       </div>
 
-                      <div className="text-center font-black tabular-nums tracking-tight px-3 py-1 bg-zinc-50 rounded-xl flex items-center gap-3">
-                        <span className={`text-xl ${isCompleted && m.winner_side === 'A' ? 'text-orange-500' : 'text-zinc-400'}`}>
-                          {m.team_a_score ?? 0}
-                        </span>
-                        <span className="text-zinc-300 text-xs">—</span>
-                        <span className={`text-xl ${isCompleted && m.winner_side === 'B' ? 'text-orange-500' : 'text-zinc-400'}`}>
-                          {m.team_b_score ?? 0}
-                        </span>
-                      </div>
+                      {isCompleted ? (
+                        <div className="text-center font-black tabular-nums tracking-tight px-3 py-1 bg-zinc-50 rounded-xl flex items-center gap-3">
+                          <span className={`text-xl ${m.winner_side === 'A' ? 'text-orange-500' : 'text-zinc-400'}`}>
+                            {m.team_a_score ?? 0}
+                          </span>
+                          <span className="text-zinc-300 text-xs">—</span>
+                          <span className={`text-xl ${m.winner_side === 'B' ? 'text-orange-500' : 'text-zinc-400'}`}>
+                            {m.team_b_score ?? 0}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            disabled={!isHostOrAdmin || isSubmittingThis}
+                            onClick={() =>
+                              setActivePicker({
+                                matchId: m.id,
+                                team: 'A',
+                                teamName: teamAName,
+                                currentScore: draft.scoreA,
+                              })
+                            }
+                            className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all shadow-2xs ${
+                              !isHostOrAdmin ? 'cursor-default' : 'cursor-pointer'
+                            } ${
+                              draft.scoreA !== null
+                                ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
+                                : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+                            }`}
+                          >
+                            {draft.scoreA ?? '-'}
+                          </button>
+                          <span className="text-zinc-400 font-bold">:</span>
+                          <button
+                            type="button"
+                            disabled={!isHostOrAdmin || isSubmittingThis}
+                            onClick={() =>
+                              setActivePicker({
+                                matchId: m.id,
+                                team: 'B',
+                                teamName: teamBName,
+                                currentScore: draft.scoreB,
+                              })
+                            }
+                            className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all shadow-2xs ${
+                              !isHostOrAdmin ? 'cursor-default' : 'cursor-pointer'
+                            } ${
+                              draft.scoreB !== null
+                                ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
+                                : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+                            }`}
+                          >
+                            {draft.scoreB ?? '-'}
+                          </button>
+                        </div>
+                      )}
 
-                      <div className="space-y-1 flex-1 text-right">
+                      <div className="space-y-1 flex-1 text-left">
                         {teamB.map(mp => (
                           <p key={mp.profile_id} className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
                             {getDisplayName(mp.profile)}
@@ -323,13 +452,30 @@ export default function LiveBoardWrapper({
                         ))}
                       </div>
                     </div>
-                    {isHostOrAdmin && (
+
+                    {isHostOrAdmin && isCompleted && (
                       <Link
                         href={`/c/${communitySlug}/sessions/${sessionId}/m/${m.id}`}
                         className="mt-2 text-center text-xs font-bold py-2 bg-zinc-100 hover:bg-zinc-200/80 rounded-xl border border-zinc-200/60 transition-all text-zinc-700"
                       >
-                        {isCompleted ? 'Edit Score' : 'Score Court'}
+                        Edit Score
                       </Link>
+                    )}
+
+                    {canSend && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendScore(m.id)}
+                        disabled={isSubmittingThis}
+                        className="mt-2 text-center text-xs font-black uppercase tracking-wider py-2.5 bg-orange-500 hover:bg-orange-600 rounded-xl transition-all text-white flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-sm"
+                      >
+                        {isSubmittingThis ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Send className="h-3.5 w-3.5" />
+                        )}
+                        <span>Send Score</span>
+                      </button>
                     )}
                   </div>
                 );
@@ -483,6 +629,30 @@ export default function LiveBoardWrapper({
           </div>
         </div>
       )}
+
+      {/* Interactive Score Picker Modal (inline scoring, same component Quick Match uses) */}
+      {activePicker && (() => {
+        const draft = getDraft(activePicker.matchId);
+        let maxAllowed = targetN;
+        if (!isPointsSystem) {
+          const otherScore = activePicker.team === 'A' ? draft.scoreB : draft.scoreA;
+          if (otherScore !== null) {
+            maxAllowed = Math.max(0, targetN - otherScore);
+          }
+        }
+
+        return (
+          <ScorePickerModal
+            isOpen={!!activePicker}
+            onClose={() => setActivePicker(null)}
+            teamName={activePicker.teamName}
+            currentScore={activePicker.currentScore}
+            maxTarget={targetN}
+            maxAllowedScore={maxAllowed}
+            onSelectScore={(score) => handleDraftScoreSelect(activePicker.matchId, activePicker.team, score)}
+          />
+        );
+      })()}
     </div>
   );
 }
