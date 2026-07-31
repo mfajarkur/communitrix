@@ -12,6 +12,10 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Target,
+  TrendingUp,
+  Trophy,
+  Users2,
 } from 'lucide-react';
 import {
   updateProfile,
@@ -21,14 +25,15 @@ import {
   updateGenderAction,
   signOutAction,
 } from '../profile-actions';
-import type { ProfileWithCommunities } from '../profile-actions';
+import type { ProfileWithCommunities, StatsHighlights } from '../profile-actions';
 import AvatarCropModal from '../avatar-crop-modal';
 
 type Props = {
   profileData: ProfileWithCommunities;
+  stats: StatsHighlights;
 };
 
-export default function ProfileCard({ profileData }: Props) {
+export default function ProfileCard({ profileData, stats }: Props) {
   const [displayName, setDisplayName] = useState(profileData.profile.display_name ?? profileData.profile.full_name);
   const [username, setUsername] = useState(profileData.profile.username ?? '');
   const [avatarUrl, setAvatarUrl] = useState(profileData.profile.avatar_url ?? '');
@@ -169,50 +174,72 @@ export default function ProfileCard({ profileData }: Props) {
     }
   };
 
+  const winRateLabel = stats.winRate !== null ? `${stats.winRate}% Win Rate` : 'No matches yet';
+  const peakEloLabel = stats.peakElo !== null ? `Peak Elo ${Math.round(stats.peakElo)}` : 'Unranked';
+
   return (
-    <div className="rounded-3xl bg-white border border-zinc-100 shadow-sm p-6 sm:p-8 space-y-6">
-      {/* Header row: avatar, name, gender, actions */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="relative w-24 h-24 rounded-full overflow-hidden ring-4 ring-orange-100 hover:ring-orange-300 transition-all cursor-pointer group shrink-0"
-        >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <span className="bg-orange-500 w-full h-full flex items-center justify-center text-2xl font-black text-white font-sans">
-              {initials}
-            </span>
-          )}
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            {isUploading ? (
-              <Loader2 className="h-5 w-5 text-white animate-spin" />
-            ) : (
-              <Camera className="h-5 w-5 text-white" />
-            )}
-          </div>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={handleFileSelect}
-        />
+    <div className="space-y-4">
+      {/* Hero card: gradient banner, overlapping avatar, name, and stat highlights — same visual
+          language as the community "Wall of Fame" cards (orange gradient + dark content area) */}
+      <div className="rounded-3xl overflow-hidden border border-orange-200/60 shadow-sm bg-zinc-950">
+        <div className="h-24 sm:h-28 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600" />
 
-        <div className="flex-1 text-center sm:text-left space-y-2 min-w-0">
-          <div>
-            <h2 className="text-2xl font-black tracking-tight text-[#111827] truncate">{displayName}</h2>
-            {username && <p className="text-sm text-zinc-400 font-medium">@{username}</p>}
+        <div className="px-5 sm:px-6 pb-5 -mt-12 sm:-mt-14">
+          <div className="flex items-end justify-between gap-3">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="relative w-24 h-24 rounded-2xl overflow-hidden ring-4 ring-zinc-950 shadow-lg cursor-pointer group shrink-0 bg-zinc-800"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="bg-orange-500 w-full h-full flex items-center justify-center text-2xl font-black text-white font-sans">
+                  {initials}
+                </span>
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {isUploading ? (
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="h-5 w-5 text-white" />
+                )}
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+
+            <div className="flex gap-2 pb-1 shrink-0">
+              <button
+                onClick={() => setIsEditing((v) => !v)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                {isEditing ? <ChevronUp className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                <span>{isEditing ? 'Close' : 'Edit Info'}</span>
+              </button>
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-red-500/80 text-white text-xs font-bold transition-all cursor-pointer border border-white/10"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </form>
+            </div>
           </div>
 
-          <div className="inline-flex p-1 bg-zinc-100 rounded-lg border border-zinc-200/80">
+          {/* Gender pill, positioned like the sport tag under a community's photo */}
+          <div className="mt-2 inline-flex p-0.5 bg-white/10 rounded-lg border border-white/10">
             <button
               type="button"
               onClick={() => handleGenderChange('MALE')}
               disabled={isSavingGender}
-              className={`px-3 py-1 rounded text-xs font-extrabold cursor-pointer transition-all ${
-                gender === 'MALE' ? 'bg-orange-500 text-white shadow-2xs' : 'text-zinc-500 hover:text-zinc-800'
+              className={`px-2.5 py-1 rounded text-[10px] font-extrabold cursor-pointer transition-all ${
+                gender === 'MALE' ? 'bg-orange-500 text-white shadow-2xs' : 'text-white/60 hover:text-white'
               }`}
             >
               ♂️ Male
@@ -221,39 +248,42 @@ export default function ProfileCard({ profileData }: Props) {
               type="button"
               onClick={() => handleGenderChange('FEMALE')}
               disabled={isSavingGender}
-              className={`px-3 py-1 rounded text-xs font-extrabold cursor-pointer transition-all ${
-                gender === 'FEMALE' ? 'bg-orange-500 text-white shadow-2xs' : 'text-zinc-500 hover:text-zinc-800'
+              className={`px-2.5 py-1 rounded text-[10px] font-extrabold cursor-pointer transition-all ${
+                gender === 'FEMALE' ? 'bg-orange-500 text-white shadow-2xs' : 'text-white/60 hover:text-white'
               }`}
             >
               ♀️ Female
             </button>
           </div>
-          {uploadError && <p className="text-xs text-red-500 font-light">{uploadError}</p>}
-        </div>
+          {uploadError && <p className="text-xs text-red-400 font-light mt-1.5">{uploadError}</p>}
 
-        <div className="flex gap-2 shrink-0">
-          <button
-            onClick={() => setIsEditing((v) => !v)}
-            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-sm font-bold text-zinc-700 transition-all cursor-pointer shadow-sm"
-          >
-            {isEditing ? <ChevronUp className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-            {isEditing ? 'Close' : 'Edit Profile'}
-          </button>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-red-100 bg-white hover:bg-red-50 text-sm font-bold text-red-500 transition-all cursor-pointer shadow-sm"
-            >
-              <LogOut className="h-4 w-4" />
-              Log Out
-            </button>
-          </form>
+          <h2 className="text-xl font-black tracking-tight text-white truncate mt-3">{displayName}</h2>
+          {username && <p className="text-xs text-white/50 font-medium">@{username}</p>}
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-white/80 font-semibold pt-3 mt-3 border-t border-white/10">
+            <div className="flex items-center gap-1.5">
+              <Target className="h-3.5 w-3.5 text-orange-400" />
+              <span>{stats.totalMatches} Matches</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5 text-orange-400" />
+              <span>{winRateLabel}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Trophy className="h-3.5 w-3.5 text-orange-400" />
+              <span>{peakEloLabel}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users2 className="h-3.5 w-3.5 text-orange-400" />
+              <span>{stats.communitiesCount} Communities</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Expandable Edit Profile section */}
       {isEditing && (
-        <div className="pt-6 border-t border-zinc-100 space-y-6 animate-in fade-in duration-150">
+        <div className="rounded-3xl bg-white border border-zinc-100 shadow-sm p-6 sm:p-8 space-y-6 animate-in fade-in duration-150">
           <div className="space-y-1.5">
             <label className="text-xs font-black uppercase tracking-widest text-zinc-500 font-sans">
               Display Name

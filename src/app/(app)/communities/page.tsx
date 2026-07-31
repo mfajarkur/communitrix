@@ -1,7 +1,7 @@
 import { requireProfile } from '@/server/guards';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { Plus, Compass, ChevronRight, Shield, User, Trophy, Target, TrendingUp, Users2 } from 'lucide-react';
+import { Plus, Compass, ChevronRight, Shield, User } from 'lucide-react';
 import { getMyProfileWithCommunities, getMyStatsHighlights } from '../profile-actions';
 import ProfileCard from './profile-card';
 
@@ -35,30 +35,14 @@ export default async function CommunitiesPage() {
 
   return (
     <div className="space-y-8 bg-white">
-      {/* Profile header: photo, name, gender, edit, log out */}
-      {profileData && <ProfileCard profileData={profileData} />}
-
-      {/* Stats highlight row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatTile icon={Target} label="Total Matches" value={stats.totalMatches} />
-        <StatTile
-          icon={TrendingUp}
-          label="Win Rate"
-          value={stats.winRate !== null ? `${stats.winRate}%` : '—'}
-        />
-        <StatTile
-          icon={Trophy}
-          label="Peak Elo"
-          value={stats.peakElo !== null ? Math.round(stats.peakElo) : '—'}
-        />
-        <StatTile icon={Users2} label="Communities" value={stats.communitiesCount} />
-      </div>
+      {/* Profile header: photo, name, gender, stats highlights, edit, log out */}
+      {profileData && <ProfileCard profileData={profileData} stats={stats} />}
 
       {/* Top Banner */}
       <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-[#111827]">My Communities</h2>
-          <p className="text-sm text-zinc-500 mt-1">
+          <h2 className="text-lg font-extrabold tracking-tight text-[#111827]">My Communities</h2>
+          <p className="text-xs text-zinc-500 mt-0.5">
             Manage your organizations, view leaderboards, and launch sessions.
           </p>
         </div>
@@ -176,24 +160,6 @@ export default async function CommunitiesPage() {
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-function StatTile({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | number;
-}) {
-  return (
-    <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4 flex flex-col gap-1.5">
-      <Icon className="h-4 w-4 text-orange-500" />
-      <span className="text-xl font-black tracking-tight text-[#111827] tabular-nums">{value}</span>
-      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{label}</span>
     </div>
   );
 }
