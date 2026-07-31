@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import WizardForm from '../(app)/c/[communitySlug]/sessions/new/wizard-form';
 import { ArrowLeft, Zap, ShieldAlert } from 'lucide-react';
+import { APP_VERSION } from '@/lib/version';
 
 export default function QuickMatchPage() {
+  const year = new Date().getFullYear();
+
   return (
     <div className="relative min-h-screen bg-orange-950 text-white flex flex-col items-center justify-between p-4 sm:p-6 select-none overflow-x-hidden">
       {/* Video background */}
@@ -92,7 +95,7 @@ export default function QuickMatchPage() {
           Contact Us
         </a>
         <span className="mx-2 opacity-70">•</span>
-        <span className="opacity-90">Version 1.0 © 2026 Communitrix</span>
+        <span className="opacity-90">communitrix.id © {year} • version {APP_VERSION}</span>
       </div>
     </div>
   );
