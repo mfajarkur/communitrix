@@ -80,10 +80,10 @@ const SELECT_COLUMNS =
 // match), since the list only ever renders name, date, status, player count, and the leader.
 export type QuickMatchSummary = Pick<
   PersonalQuickMatch,
-  'id' | 'activity_name' | 'game_type' | 'status' | 'players' | 'standings' | 'created_at'
+  'id' | 'activity_name' | 'sport' | 'game_type' | 'status' | 'players' | 'standings' | 'created_at'
 >;
 
-const SUMMARY_COLUMNS = 'id, activity_name, game_type, status, players, standings, created_at';
+const SUMMARY_COLUMNS = 'id, activity_name, sport, game_type, status, players, standings, created_at';
 const HISTORY_LIMIT = 30;
 
 // Creates (id omitted) or updates (id present) a Personal Quick Match's live state. Called
