@@ -12,10 +12,9 @@ import { finalizeSessionAction } from '@/server/actions/session.actions';
 import {
   Trophy,
   Zap,
-  Play,
+  Plus,
   HelpCircle,
   Loader2,
-  Calendar,
   Send,
   ChevronLeft,
   ChevronRight,
@@ -316,9 +315,10 @@ export default function LiveBoardWrapper({
 
       {viewMode === 'MATCHES' ? (
         <div className="space-y-5">
-          {/* Round Carousel Navigation Bar */}
-          {totalRounds > 0 && (
-            <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 text-white shadow-md space-y-3">
+          {/* Round Carousel Navigation Bar — always visible, same dark card Quick Match uses,
+              showing a "No Rounds Yet" state before the host generates the first one. */}
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 text-white shadow-md space-y-3">
+            {totalRounds > 0 ? (
               <div className="flex items-center justify-between">
                 <button
                   type="button"
@@ -349,70 +349,64 @@ export default function LiveBoardWrapper({
                   <ChevronRight className="h-4 w-4 text-orange-400" />
                 </button>
               </div>
+            ) : (
+              <div className="text-center py-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-orange-400 block">
+                  Match Round Navigation
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">No Rounds Yet</h2>
+              </div>
+            )}
 
-              {totalRounds > 1 && (
-                <div className="flex items-center justify-center gap-1.5 pt-2.5 border-t border-zinc-800/80 overflow-x-auto py-1">
-                  {rounds.map((r) => {
-                    const isSelected = r.round_number === selectedRound;
-                    const roundMatchesList = matches.filter((m) => m.round_number === r.round_number);
-                    const isCompleted = roundMatchesList.length > 0 && roundMatchesList.every((m) => m.status === 'COMPLETED');
+            {totalRounds > 1 && (
+              <div className="flex items-center justify-center gap-1.5 pt-2.5 border-t border-zinc-800/80 overflow-x-auto py-1">
+                {rounds.map((r) => {
+                  const isSelected = r.round_number === selectedRound;
+                  const roundMatchesList = matches.filter((m) => m.round_number === r.round_number);
+                  const isCompleted = roundMatchesList.length > 0 && roundMatchesList.every((m) => m.status === 'COMPLETED');
 
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedRound(r.round_number)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                          isSelected ? 'bg-orange-500 text-white shadow-sm' : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                        }`}
-                      >
-                        <span>Round {r.round_number}</span>
-                        {isCompleted && <Check className="h-3 w-3 text-emerald-400" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setSelectedRound(r.round_number)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        isSelected ? 'bg-orange-500 text-white shadow-sm' : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                      }`}
+                    >
+                      <span>Round {r.round_number}</span>
+                      {isCompleted && <Check className="h-3 w-3 text-emerald-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-          {/* Round Playback Controls */}
+          {/* Generate / End Session — same full-width orange button pattern as Quick Match's
+              "+ Generate Next Round" button, instead of a separate boxed control panel. */}
           {isHostOrAdmin && (
-            <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm flex items-center justify-between gap-4">
-              <div>
-                <h3 className="font-bold text-[#111827] flex items-center gap-1.5 text-sm">
-                  <Calendar className="h-4.5 w-4.5 text-orange-500" />
-                  Round Playback Controls
-                </h3>
-                <p className="text-xs text-zinc-500 mt-1">
-                  {totalRounds === 0
-                    ? 'No rounds created. Start the first round.'
-                    : allMatchesCompleted
-                    ? `All matches in Round ${latestRoundNumber} completed. Ready for next round.`
-                    : `Waiting for matches in Round ${latestRoundNumber} to finish.`}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {totalRounds > 0 && (
-                  <button
-                    onClick={handleFinalizeClick}
-                    disabled={isFinalizing || isGenerating}
-                    className="h-10 px-4 rounded-lg border border-red-200 hover:bg-red-50 text-xs font-bold text-red-600 transition-all cursor-pointer flex items-center gap-1.5 bg-white shadow-sm"
-                  >
-                    {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    <span>End Session</span>
-                  </button>
-                )}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleGenerateClick}
+                disabled={!canGenerateNextRound || isGenerating || isFinalizing}
+                className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
+              >
+                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                <span>+ Generate Next Round (Round {nextRoundNumber})</span>
+              </button>
+              {totalRounds > 0 && (
                 <button
-                  onClick={handleGenerateClick}
-                  disabled={!canGenerateNextRound || isGenerating || isFinalizing}
-                  className="h-10 px-4 rounded-lg bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  type="button"
+                  onClick={handleFinalizeClick}
+                  disabled={isFinalizing || isGenerating}
+                  className="w-full py-2.5 rounded-xl border border-red-200 hover:bg-red-50 text-xs font-bold text-red-600 transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white shadow-sm disabled:opacity-50"
                 >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-3.5 w-3.5 fill-current" />}
-                  <span>Generate Round {nextRoundNumber}</span>
+                  {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  <span>End Session</span>
                 </button>
-              </div>
+              )}
             </div>
           )}
 
@@ -431,11 +425,6 @@ export default function LiveBoardWrapper({
             <div className="text-center py-16 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50 text-zinc-400 space-y-3">
               <HelpCircle className="h-10 w-10 mx-auto opacity-50" />
               <p className="text-sm">No rounds have been generated for this session yet.</p>
-              {isHostOrAdmin && (
-                <button onClick={handleGenerateClick} className="mt-2 text-xs font-bold text-orange-500 hover:underline cursor-pointer">
-                  Generate Round 1
-                </button>
-              )}
             </div>
           ) : (
             <div className="space-y-4">
