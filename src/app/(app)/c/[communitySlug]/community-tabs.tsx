@@ -554,58 +554,52 @@ export default function CommunityTabs({
                   )}
                 </div>
               ) : (
-                <div className="grid gap-3 grid-cols-1">
+                <div className="space-y-3">
                   {sessions.map((s: any) => {
                     const isActive = s.status === 'ACTIVE';
                     return (
                       <div
                         key={s.id}
-                        className={`p-4 rounded-2xl border transition-all space-y-3 ${
-                          isActive
-                            ? 'border-orange-200 bg-orange-50/30 shadow-sm'
-                            : 'border-zinc-100 bg-zinc-50'
-                        }`}
+                        className="rounded-2xl border border-zinc-200 bg-white p-4 flex items-center justify-between gap-3 shadow-sm"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {isActive ? (
-                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-200">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                                  Live · Ongoing
-                                </span>
-                              ) : (
-                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200">
-                                  Ended
-                                </span>
-                              )}
-                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
-                                {s.sport} · {s.format}
-                              </span>
-                            </div>
-                            <h4 className="text-base font-extrabold text-[#111827]">
+                        <Link href={`/c/${communitySlug}/sessions/${s.id}`} className="min-w-0 flex-1 group/link">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-black text-zinc-900 truncate group-hover/link:text-orange-600 transition-colors">
                               {s.session_name}
-                            </h4>
-                            <div className="flex items-center gap-3 text-[11px] text-zinc-500 font-semibold">
-                              <span>{new Date(s.created_at).toLocaleDateString()}</span>
-                              <span className="inline-flex items-center gap-1">
-                                <Users className="h-3 w-3" /> {s.court_count} Courts
+                            </p>
+                            {isActive ? (
+                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-200">
+                                <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                                Live · Ongoing
                               </span>
-                            </div>
+                            ) : (
+                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200">
+                                Ended
+                              </span>
+                            )}
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
+                              {s.format} · {s.sport}
+                            </span>
                           </div>
+                          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-zinc-500 font-semibold">
+                            <span>{new Date(s.created_at).toLocaleDateString()}</span>
+                            <span className="inline-flex items-center gap-1">
+                              <Users className="h-3 w-3" /> {s.court_count} Courts
+                            </span>
+                          </div>
+                        </Link>
 
-                          <Link
-                            href={`/c/${communitySlug}/sessions/${s.id}`}
-                            className={`inline-flex h-9 px-4 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                              isActive
-                                ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-xs'
-                                : 'border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
-                            }`}
-                          >
-                            {isActive ? 'Open Live Board' : 'View Final Results'}
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          </Link>
-                        </div>
+                        <Link
+                          href={`/c/${communitySlug}/sessions/${s.id}`}
+                          className={`inline-flex h-9 px-4 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                            isActive
+                              ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-xs'
+                              : 'border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
+                          }`}
+                        >
+                          {isActive ? 'Open Live Board' : 'View Final Results'}
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Link>
                       </div>
                     );
                   })}
