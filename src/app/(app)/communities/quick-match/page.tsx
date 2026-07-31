@@ -26,6 +26,7 @@ export default async function PersonalQuickMatchPage({
     existing && existing.status === 'OPEN'
       ? {
           matchId: existing.id,
+          version: existing.version,
           config: existing.config as unknown as GameConfiguration,
           registeredPlayers: existing.players,
           matches: existing.matches,

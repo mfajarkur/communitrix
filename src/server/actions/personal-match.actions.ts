@@ -23,6 +23,7 @@ export type PersonalQuickMatch = {
   scoring_system: string;
   point_target: string;
   status: 'OPEN' | 'ENDED';
+  version: number;
   config: StoredQuickMatchConfig;
   round_sit_outs: Record<string, string[]>;
   players: Array<{ id: string; name: string; isGuest: boolean; avatarUrl?: string | null }>;
@@ -55,6 +56,9 @@ export type PersonalQuickMatch = {
 
 export type QuickMatchStatePayload = {
   id?: string;
+  // Required whenever id is set — the version this client last read. The update is rejected
+  // (treated as a conflict) if the row has since moved on, instead of blindly overwriting it.
+  expectedVersion?: number;
   activityName: string;
   sport: string;
   gameType: string;
@@ -69,7 +73,7 @@ export type QuickMatchStatePayload = {
 };
 
 const SELECT_COLUMNS =
-  'id, activity_name, sport, game_type, scoring_system, point_target, status, config, round_sit_outs, players, matches, standings, created_at';
+  'id, activity_name, sport, game_type, scoring_system, point_target, status, version, config, round_sit_outs, players, matches, standings, created_at';
 
 // Lighter shape for the history list — omits `matches` (the largest field, a full
 // round-by-round log) and `config`/`round_sit_outs` (only needed to resume/recap a single
@@ -88,7 +92,7 @@ const HISTORY_LIMIT = 30;
 // match is ended (status ENDED).
 export async function saveQuickMatchStateAction(
   payload: QuickMatchStatePayload
-): Promise<{ ok: boolean; id?: string; message?: string }> {
+): Promise<{ ok: boolean; id?: string; version?: number; conflict?: boolean; message?: string }> {
   const profile = await requireProfile();
   const supabase = await createClient();
 
@@ -108,26 +112,35 @@ export async function saveQuickMatchStateAction(
   };
 
   if (payload.id) {
-    const { error } = await supabase
+    const nextVersion = (payload.expectedVersion ?? 0) + 1;
+    const { data, error } = await supabase
       .from('personal_quick_matches')
-      .update(row)
+      .update({ ...row, version: nextVersion })
       .eq('id', payload.id)
-      .eq('profile_id', profile.id);
+      .eq('profile_id', profile.id)
+      .eq('version', payload.expectedVersion ?? 0)
+      .select('id')
+      .maybeSingle();
 
     if (error) return { ok: false, message: error.message };
+    if (!data) {
+      // No row matched — the version moved on since this client last read it, meaning
+      // another tab/device has since written newer data. Don't overwrite it.
+      return { ok: false, conflict: true, message: 'This match is open somewhere else and has newer changes.' };
+    }
     revalidatePath('/communities');
-    return { ok: true, id: payload.id };
+    return { ok: true, id: payload.id, version: nextVersion };
   }
 
   const { data, error } = await supabase
     .from('personal_quick_matches')
-    .insert(row)
+    .insert({ ...row, version: 1 })
     .select('id')
     .single();
 
   if (error || !data) return { ok: false, message: error?.message };
   revalidatePath('/communities');
-  return { ok: true, id: data.id as string };
+  return { ok: true, id: data.id as string, version: 1 };
 }
 
 export async function getMyQuickMatches(): Promise<QuickMatchSummary[]> {

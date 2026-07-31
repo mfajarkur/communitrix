@@ -120,6 +120,7 @@ interface WizardFormProps {
   // page's history) — hydrates straight into Live Matches instead of starting a new session.
   initialState?: {
     matchId: string;
+    version: number;
     config: GameConfiguration;
     registeredPlayers: PlayerRegistration[];
     matches: Match[];
@@ -177,6 +178,10 @@ export default function WizardForm({
   // (as soon as the first round is generated), so a lost connection or a dead phone doesn't
   // lose the match — it's already saved as OPEN and resumable from the Profile page.
   const [profileMatchId, setProfileMatchId] = useState<string | null>(initialState?.matchId ?? null);
+  // Optimistic-concurrency version for the row above — prevents two tabs/devices resuming the
+  // same match from silently overwriting each other (see syncConflict below).
+  const [profileMatchVersion, setProfileMatchVersion] = useState<number>(initialState?.version ?? 0);
+  const [syncConflict, setSyncConflict] = useState(false);
 
   // ------------------------------------------
   // STEP 1 & 2: CONFIGURATION STATE
@@ -357,15 +362,20 @@ export default function WizardForm({
   // Creates the row on first call (profileMatchId still null), updates it on every call after.
   // Used by the debounced sync, the retry-on-failure loop, and the flush-on-background handler
   // below, so every one of them is also a natural retry opportunity for a failed creation.
+  // Stops entirely once a version conflict is detected (another tab/device has newer changes)
+  // rather than risk silently overwriting them.
   const syncQuickMatchToProfile = async () => {
-    if (!saveToProfile || matches.length === 0) return;
+    if (!saveToProfile || matches.length === 0 || syncConflict) return;
     const payload = buildQuickMatchStatePayload('OPEN');
     const result = profileMatchId
-      ? await saveQuickMatchStateAction({ id: profileMatchId, ...payload })
+      ? await saveQuickMatchStateAction({ id: profileMatchId, expectedVersion: profileMatchVersion, ...payload })
       : await saveQuickMatchStateAction(payload);
     if (result.ok) {
       setSyncError(null);
       if (result.id && !profileMatchId) setProfileMatchId(result.id);
+      if (typeof result.version === 'number') setProfileMatchVersion(result.version);
+    } else if (result.conflict) {
+      setSyncConflict(true);
     } else {
       setSyncError(result.message || 'Could not save this match to your profile — will keep retrying.');
     }
@@ -380,28 +390,28 @@ export default function WizardForm({
   // update on every score/round change after) so a lost connection or a dead phone after this
   // point doesn't lose the match: it's already saved as OPEN and resumable from the Profile page.
   useEffect(() => {
-    if (!saveToProfile || matches.length === 0) return;
+    if (!saveToProfile || matches.length === 0 || syncConflict) return;
     syncDebounceRef.current = setTimeout(() => { syncQuickMatchToProfile(); }, 1000);
     return () => {
       if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveToProfile, matches, roundSitOuts]);
+  }, [saveToProfile, matches, roundSitOuts, syncConflict]);
 
   // 4. If a sync failed, keep retrying every 5s until it succeeds — a failure with no further
   // score/round changes (e.g. player walks away right after a network blip) would otherwise
   // never get another chance via effect 3 above.
   useEffect(() => {
-    if (!saveToProfile || !syncError) return;
+    if (!saveToProfile || !syncError || syncConflict) return;
     const retryTimer = setInterval(() => { syncQuickMatchToProfile(); }, 5000);
     return () => clearInterval(retryTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saveToProfile, syncError, profileMatchId]);
+  }, [saveToProfile, syncError, syncConflict, profileMatchId]);
 
   // 5. Flush immediately when the app is backgrounded/closed, instead of waiting out the
   // debounce — shrinks the window in which a dead phone could lose the last few seconds of play.
   useEffect(() => {
-    if (!saveToProfile) return;
+    if (!saveToProfile || syncConflict) return;
     const flushNow = () => {
       if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
       syncQuickMatchToProfileRef.current();
@@ -415,7 +425,7 @@ export default function WizardForm({
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('pagehide', flushNow);
     };
-  }, [saveToProfile]);
+  }, [saveToProfile, syncConflict]);
 
   // 6. Reset Quick Match session
   const handleResetQuickMatchSession = () => {
@@ -429,7 +439,9 @@ export default function WizardForm({
     setRoundSitOuts(new Map());
     setSelectedRound(1);
     setProfileMatchId(null);
+    setProfileMatchVersion(0);
     setSyncError(null);
+    setSyncConflict(false);
     setShowPodium(false);
     setShowConfirmEndModal(false);
   };
@@ -1110,13 +1122,17 @@ export default function WizardForm({
       setSaveResultError(null);
       const result = await saveQuickMatchStateAction({
         id: profileMatchId ?? undefined,
+        expectedVersion: profileMatchVersion,
         ...buildQuickMatchStatePayload('ENDED'),
       });
       setIsSavingResult(false);
-      if (!result.ok) {
+      if (result.conflict) {
+        setSaveResultError('This match was already updated somewhere else — refresh the Profile page to see its latest state instead of ending it from here.');
+      } else if (!result.ok) {
         setSaveResultError(result.message || 'Failed to save this match to your profile.');
       } else if (result.id) {
         setProfileMatchId(result.id);
+        if (typeof result.version === 'number') setProfileMatchVersion(result.version);
       }
 
       // The match is finished (saved or not) — clear the draft so re-opening Quick Match
@@ -1288,7 +1304,17 @@ export default function WizardForm({
         </div>
       )}
 
-      {saveToProfile && syncError && (
+      {saveToProfile && syncConflict && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-red-50 border border-red-200 p-4 text-xs font-medium text-red-700">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+          <span>
+            This match is open somewhere else with newer changes — this tab has stopped saving to
+            avoid overwriting them. Refresh the Profile page to continue from the latest version.
+          </span>
+        </div>
+      )}
+
+      {saveToProfile && !syncConflict && syncError && (
         <div className="flex items-center gap-2.5 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs font-medium text-amber-800">
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-500 animate-pulse" />
           <span>Not saved to your profile yet — {syncError} Keep this tab open if you can.</span>
