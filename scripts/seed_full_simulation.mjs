@@ -212,12 +212,58 @@ async function runFullTournamentSimulation() {
 
   assertNoError(commError, 'Failed to create community');
 
-  const profileInserts = DUMMY_PLAYERS.map((item) => ({
-    full_name: toTitleCase(item.name),
-    display_name: toTitleCase(item.name),
-    gender: item.gender,
-    created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
-  }));
+const MALE_SPORTS_AVATARS = [
+  "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1463453091185-61582044d556?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200&auto=format&fit=crop&q=80"
+];
+
+const FEMALE_SPORTS_AVATARS = [
+  "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1548142813-c348350df52b?w=200&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=200&auto=format&fit=crop&q=80"
+];
+
+  let maleIdx = 0;
+  let femaleIdx = 0;
+  const profileInserts = DUMMY_PLAYERS.map((item) => {
+    let avatarUrl = '';
+    if (item.gender === 'FEMALE') {
+      avatarUrl = FEMALE_SPORTS_AVATARS[femaleIdx % FEMALE_SPORTS_AVATARS.length];
+      femaleIdx++;
+    } else {
+      avatarUrl = MALE_SPORTS_AVATARS[maleIdx % MALE_SPORTS_AVATARS.length];
+      maleIdx++;
+    }
+    return {
+      full_name: toTitleCase(item.name),
+      display_name: toTitleCase(item.name),
+      gender: item.gender,
+      avatar_url: avatarUrl,
+      created_at: new Date(Date.now() - 90 * 86400000).toISOString(),
+    };
+  });
 
   const { data: createdProfiles, error: profError } = await supabase
     .from('profiles')

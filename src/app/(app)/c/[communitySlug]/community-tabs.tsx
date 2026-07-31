@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import BannerImageEditor from './banner-image-editor';
-import { getDisplayName, getPlayerGender } from '@/lib/utils/profile';
+import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { updateCommunityInfoAction } from '@/server/actions/community.actions';
@@ -445,17 +445,11 @@ export default function CommunityTabs({
                           >
                             {/* Left Side: Square Photo */}
                             <div className="w-20 sm:w-24 shrink-0 relative bg-zinc-200 border-r border-orange-200/60 flex items-center justify-center overflow-hidden">
-                              {profile.avatar_url ? (
-                                <img
-                                  src={profile.avatar_url}
-                                  alt={getDisplayName(profile)}
-                                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-orange-500 to-amber-600 text-white font-black text-lg uppercase">
-                                  {getDisplayName(profile).slice(0, 2)}
-                                </div>
-                              )}
+                              <img
+                                src={getAvatarUrl(profile)}
+                                alt={getDisplayName(profile)}
+                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
                             </div>
 
                             {/* Right Side: Details with Orange Gradient Shading */}
@@ -760,17 +754,11 @@ export default function CommunityTabs({
                                   className="flex flex-col items-center w-full"
                                 >
                                   <div className="relative">
-                                    {p.avatar_url ? (
-                                      <img
-                                        src={p.avatar_url}
-                                        alt={pName}
-                                        className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
-                                      />
-                                    ) : (
-                                      <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black text-base uppercase shadow-xs">
-                                        {pName.slice(0, 2)}
-                                      </div>
-                                    )}
+                                    <img
+                                      src={getAvatarUrl(p)}
+                                      alt={pName}
+                                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
+                                    />
                                     <div className="absolute top-0 right-0 bg-amber-500 rounded-full p-1 text-white shadow-sm border-2 border-white">
                                       <UserCheck className="h-3 w-3" />
                                     </div>
@@ -1019,17 +1007,11 @@ export default function CommunityTabs({
                                   href={`/c/${communitySlug}/players/${r.profile.id}`}
                                   className="flex items-center gap-2.5 hover:underline"
                                 >
-                                  {r.profile.avatar_url ? (
-                                    <img
-                                      src={r.profile.avatar_url}
-                                      alt={getDisplayName(r.profile)}
-                                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-zinc-100"
-                                    />
-                                  ) : (
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-600 font-extrabold text-xs uppercase">
-                                      {getDisplayName(r.profile).slice(0, 2)}
-                                    </div>
-                                  )}
+                                  <img
+                                     src={getAvatarUrl(r.profile)}
+                                     alt={getDisplayName(r.profile)}
+                                     className="h-8 w-8 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
+                                   />
                                   <div className="min-w-0">
                                     <p className="text-xs font-extrabold text-[#111827] truncate flex items-center gap-1.5">
                                       {getDisplayName(r.profile)}
