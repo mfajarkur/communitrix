@@ -2,8 +2,9 @@ import { requireProfile } from '@/server/guards';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Shield, User, Trophy } from 'lucide-react';
+import { Shield, User, Trophy, LogOut } from 'lucide-react';
 import BannerImageEditor from './banner-image-editor';
+import { signOutAction } from '../../profile-actions';
 
 export default async function CommunityLayout({
   children,
@@ -78,14 +79,23 @@ export default async function CommunityLayout({
         <div className="absolute inset-0 bg-gradient-to-t from-orange-600/90 via-orange-600/30 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-orange-950/40 via-transparent to-transparent" />
 
-        {/* Back Link Overlay */}
-        <div className="absolute top-4 left-4 z-20">
+        {/* Back Link + Log Out Overlay */}
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
           <Link
             href="/communities"
             className="inline-flex items-center gap-1 text-[10px] font-bold text-white/95 hover:text-white transition-all bg-black/30 hover:bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm"
           >
-            ← Back
+            ← Back to My Profile
           </Link>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-white/95 hover:text-white transition-all bg-black/30 hover:bg-red-500/70 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm cursor-pointer"
+            >
+              <LogOut className="h-3 w-3" />
+              Log Out
+            </button>
+          </form>
         </div>
 
         {/* Edit Banner Button for Admin Only */}

@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { requireProfile } from '@/server/guards';
 
 export type ProfileWithCommunities = {
   profile: {
@@ -11,6 +13,7 @@ export type ProfileWithCommunities = {
     display_name: string | null;
     username: string | null;
     avatar_url: string | null;
+    gender: 'MALE' | 'FEMALE' | null;
   };
   communities: Array<{
     id: string;
@@ -20,6 +23,15 @@ export type ProfileWithCommunities = {
     role: string;
     joined_at: string;
   }> | null;
+};
+
+export type StatsHighlights = {
+  totalMatches: number;
+  totalWins: number;
+  winRate: number | null;
+  peakElo: number | null;
+  communitiesCount: number;
+  sportsPlayed: string[];
 };
 
 export async function getMyProfileWithCommunities(): Promise<ProfileWithCommunities | null> {
@@ -93,4 +105,46 @@ export async function updatePasswordAction(password: string): Promise<{ success:
   }
 
   return { success: true };
+}
+
+export async function updateGenderAction(gender: 'MALE' | 'FEMALE'): Promise<{ error?: string }> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  // profiles_update_self RLS policy already allows a user to update their own row directly.
+  const { error } = await supabase.from('profiles').update({ gender }).eq('id', profile.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/', 'layout');
+  return {};
+}
+
+export async function getMyStatsHighlights(): Promise<StatsHighlights> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { data: rankings } = await supabase
+    .from('player_rankings')
+    .select('community_id, sport, total_matches, total_wins, elo_peak')
+    .eq('profile_id', profile.id);
+
+  const rows = rankings || [];
+
+  const totalMatches = rows.reduce((sum, r) => sum + (r.total_matches || 0), 0);
+  const totalWins = rows.reduce((sum, r) => sum + (r.total_wins || 0), 0);
+  const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 1000) / 10 : null;
+  const peakElo = rows.length > 0 ? Math.max(...rows.map((r) => Number(r.elo_peak) || 0)) : null;
+  const communitiesCount = new Set(rows.map((r) => r.community_id)).size;
+  const sportsPlayed = Array.from(new Set(rows.map((r) => r.sport)));
+
+  return { totalMatches, totalWins, winRate, peakElo, communitiesCount, sportsPlayed };
+}
+
+export async function signOutAction() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect('/');
 }
