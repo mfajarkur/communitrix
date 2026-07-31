@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Trophy, Calendar, Users, Crown } from 'lucide-react';
 import { getQuickMatchById } from '@/server/actions/personal-match.actions';
+import LeaderboardPrintSection from './leaderboard-print-section';
 
 export default async function QuickMatchDetailPage({
   params,
@@ -50,6 +51,13 @@ export default async function QuickMatchDetailPage({
           </span>
         </div>
       </div>
+
+      <LeaderboardPrintSection
+        activityName={match.activity_name}
+        gameType={match.game_type}
+        sport={match.sport}
+        standings={match.standings}
+      />
 
       {/* Leaderboard */}
       <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
