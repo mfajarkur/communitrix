@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { startSessionAction } from '@/server/actions/session.actions';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
+import { savePersonalQuickMatchAction } from '@/server/actions/personal-match.actions';
 import {
   Trophy,
   Users,
@@ -113,6 +114,9 @@ interface WizardFormProps {
   players: Player[];
   currentProfile: CurrentProfile;
   isGuestDemoMode?: boolean;
+  // Personal Quick Match (from the Profile page): local play like guest demo mode, but the
+  // finished match is saved to the logged-in user's own profile (not a community, no ELO).
+  saveToProfile?: boolean;
 }
 
 const POINTS_TARGET_OPTIONS = [
@@ -149,6 +153,7 @@ export default function WizardForm({
   players: initialPlayers,
   currentProfile,
   isGuestDemoMode = false,
+  saveToProfile = false,
 }: WizardFormProps) {
   const router = useRouter();
 
@@ -242,10 +247,20 @@ export default function WizardForm({
   // ------------------------------------------
   // QUICK MATCH PERSISTENCE (AUTO-SAVE & AUTO-RESTORE ON REFRESH)
   // ------------------------------------------
+  // Separate keys for the public sandbox vs. a logged-in user's Personal Quick Match so the
+  // two entry points never bleed into each other's in-progress local state.
+  const quickMatchStorageKey = saveToProfile
+    ? 'communitrix_quick_match_session_profile'
+    : 'communitrix_quick_match_session';
+
+  // System Submission State (declared early so handleConfirmEndMatch below can use it)
+  const [isSavingResult, setIsSavingResult] = useState(false);
+  const [saveResultError, setSaveResultError] = useState<string | null>(null);
+
   // 1. Restore saved Quick Match session state on mount
   useEffect(() => {
     if (typeof window === 'undefined' || !isGuestDemoMode) return;
-    const saved = localStorage.getItem('communitrix_quick_match_session');
+    const saved = localStorage.getItem(quickMatchStorageKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -266,7 +281,7 @@ export default function WizardForm({
         console.error('Failed to restore quick match session state', e);
       }
     }
-  }, [isGuestDemoMode]);
+  }, [isGuestDemoMode, quickMatchStorageKey]);
 
   // 2. Auto-save Quick Match session state when state changes
   useEffect(() => {
@@ -282,13 +297,13 @@ export default function WizardForm({
       roundSitOuts: sitOutsObj,
       selectedRound,
     };
-    localStorage.setItem('communitrix_quick_match_session', JSON.stringify(payload));
-  }, [isGuestDemoMode, step, config, registeredPlayers, matches, roundSitOuts, selectedRound]);
+    localStorage.setItem(quickMatchStorageKey, JSON.stringify(payload));
+  }, [isGuestDemoMode, quickMatchStorageKey, step, config, registeredPlayers, matches, roundSitOuts, selectedRound]);
 
   // 3. Reset Quick Match session
   const handleResetQuickMatchSession = () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('communitrix_quick_match_session');
+      localStorage.removeItem(quickMatchStorageKey);
     }
     setStep(1);
     setRegisteredPlayers([]);
@@ -959,9 +974,30 @@ export default function WizardForm({
   };
 
   // Quick Match only — Community sessions never reach step 4/5 (they hand off to the
-  // Live Board in handleStartCommunitySession above), so there's nothing to persist here.
-  const handleConfirmEndMatch = () => {
+  // Live Board in handleStartCommunitySession above). Sandbox mode has nothing to persist;
+  // Personal Quick Match (saveToProfile) saves the finished match to the user's own profile.
+  const handleConfirmEndMatch = async () => {
     setShowConfirmEndModal(false);
+
+    if (saveToProfile) {
+      setIsSavingResult(true);
+      setSaveResultError(null);
+      const result = await savePersonalQuickMatchAction({
+        activityName: config.activityName,
+        sport: config.sport,
+        gameType: config.gameType,
+        scoringSystem: config.scoringSystem,
+        pointTarget: config.pointTarget,
+        players: registeredPlayers,
+        matches,
+        standings,
+      });
+      setIsSavingResult(false);
+      if (!result.ok) {
+        setSaveResultError(result.message || 'Failed to save this match to your profile.');
+      }
+    }
+
     setShowPodium(true);
   };
 
@@ -1030,6 +1066,35 @@ export default function WizardForm({
 
     return (
       <div className="space-y-6 font-sans">
+        {saveToProfile && (
+          <div
+            className={`flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-medium ${
+              saveResultError
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : isSavingResult
+                ? 'bg-zinc-50 border-zinc-200 text-zinc-600'
+                : 'bg-green-50 border-green-200 text-green-700'
+            }`}
+          >
+            {isSavingResult ? (
+              <>
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                <span>Saving this match to your profile...</span>
+              </>
+            ) : saveResultError ? (
+              <>
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{saveResultError} Your results are still shown below, but weren&apos;t saved to My Quick Matches.</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 shrink-0" />
+                <span>Saved to My Quick Matches on your profile.</span>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Scrollable Wrapper for Mobile Viewports to prevent clipping */}
         <div className="overflow-x-auto w-full pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
           {/* Downloadable Poster Container with fixed width to ensure unclipped image output */}
@@ -1255,7 +1320,16 @@ export default function WizardForm({
             <span>⚡ Play Again</span>
           </button>
 
-          {isGuestDemoMode ? (
+          {saveToProfile ? (
+            <button
+              type="button"
+              onClick={() => router.push('/communities')}
+              className="flex-1 py-3.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              <span>Back to My Profile</span>
+            </button>
+          ) : isGuestDemoMode ? (
             <button
               type="button"
               onClick={() => router.push('/login')}

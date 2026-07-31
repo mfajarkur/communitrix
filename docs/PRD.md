@@ -1068,3 +1068,19 @@ Label controls by what happens: "Send score", not "Submit". The action keeps its
 - Supabase Realtime scaling behavior, the publishable/anon key naming transition, and Next.js 16 caching semantics are all areas where the ecosystem moved recently — **verify from primary docs**, do not trust this document or a model's memory.
 - The Elo constants are engineering judgment, not empirical calibration for padel Americano specifically. No public dataset was consulted.
 - The `1+4 vs 2+3` Mexicano pairing and the "partner everyone once" Americano property are widely used community conventions; there is no single normative governing-body specification for either format. If your community plays a local variant, the variant wins.
+
+---
+
+## 17. Post-v1.0 feature addenda
+
+This section is a running log of features shipped after the v1.0 baseline above, which is **not** rewritten in place to stay accurate to what actually shipped (e.g. §2.2 lists `Team Americano` as out of scope, but it exists today as a Quick Match / session format option). Treat §1–16 as the original architectural spec and this section as the delta.
+
+### 17.1 Personal Quick Match (profile-scoped, no ELO)
+
+- **What**: a Quick Match flow reachable from the Profile page (`/communities`, below "My Communities") for a logged-in user to play a match without creating or joining a community. The finished match is saved to that user's own profile only — it never touches `player_rankings` or any Elo calculation, and isn't attached to a `community_id`.
+- **Entry points**:
+  - `src/app/quick-match/page.tsx` — public, unauthenticated sandbox. Purely client-side (localStorage), never persisted.
+  - `src/app/(app)/communities/quick-match/page.tsx` — authenticated, linked from the Profile page. Same local play mechanics, but persists the finished match via `savePersonalQuickMatchAction`.
+- **Data model**: `personal_quick_matches` (`supabase/migrations/0021_personal_quick_matches.sql`) — a standalone table keyed on `profile_id` only (RLS: owner can select/insert/delete). Deliberately *not* built on `sessions`/`rounds`/`matches`/`match_players`, since those all require a non-null `community_id` and feed the Elo RPCs.
+- **Server actions**: `src/server/actions/personal-match.actions.ts` — `savePersonalQuickMatchAction`, `getMyQuickMatches`, `deletePersonalQuickMatchAction`.
+- **UI**: `src/app/(app)/communities/quick-match-history.tsx` renders the full "My Quick Matches" history on the Profile page with a per-entry delete (confirm/cancel inline, no native `confirm()`).

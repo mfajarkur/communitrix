@@ -1,17 +1,20 @@
 import { requireProfile } from '@/server/guards';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { Plus, Compass, ChevronRight, Shield, User } from 'lucide-react';
+import { Plus, Compass, ChevronRight, Shield, User, Zap } from 'lucide-react';
 import { getMyProfileWithCommunities, getMyStatsHighlights } from '../profile-actions';
+import { getMyQuickMatches } from '@/server/actions/personal-match.actions';
 import ProfileCard from './profile-card';
+import QuickMatchHistory from './quick-match-history';
 
 export default async function CommunitiesPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [profileData, stats] = await Promise.all([
+  const [profileData, stats, quickMatches] = await Promise.all([
     getMyProfileWithCommunities(),
     getMyStatsHighlights(),
+    getMyQuickMatches(),
   ]);
 
   // Fetch all communities where user is active
@@ -160,6 +163,31 @@ export default async function CommunitiesPage() {
           })}
         </div>
       )}
+
+      {/* Quick Match: play without a community — results saved to this profile only, no ELO impact */}
+      <div className="space-y-4 pt-2">
+        <Link
+          href="/communities/quick-match"
+          className="group relative overflow-hidden rounded-2xl flex items-center justify-between gap-4 p-5 sm:p-6 bg-zinc-950 border border-orange-500/20 shadow-sm hover:shadow-md transition-all"
+        >
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="shrink-0 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
+              <Zap className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-black text-white truncate">Quick Match</h3>
+              <p className="text-xs text-white/50 mt-0.5">Play now without a community — saved to your profile only.</p>
+            </div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-white/40 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+
+        <div>
+          <h2 className="text-sm font-extrabold tracking-tight text-[#111827]">My Quick Matches</h2>
+          <p className="text-xs text-zinc-500 mt-0.5 mb-3">Your personal match history, separate from any community.</p>
+          <QuickMatchHistory matches={quickMatches} />
+        </div>
+      </div>
     </div>
   );
 }
