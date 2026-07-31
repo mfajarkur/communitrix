@@ -141,6 +141,7 @@ export default function ScorerForm({
               matchId,
               scoreA: draft.a,
               scoreB: draft.b,
+              communitySlug,
             });
             setIsSubmitting(false);
             if (result.ok) {
@@ -254,6 +255,7 @@ export default function ScorerForm({
           matchId,
           scoreA,
           scoreB,
+          communitySlug,
         });
 
     if (result.ok) {

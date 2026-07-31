@@ -184,8 +184,11 @@ export default function CommunityTabs({
       const result = await resolveClaimAction(requestId, action, communitySlug, communityId);
       if (result?.success) {
         window.location.reload();
+      } else {
+        alert(result?.error || 'Failed to resolve claim request');
       }
-    } catch (err) {
+    } catch (err: any) {
+      alert(err?.message || 'Failed to resolve claim request');
       console.error('Failed to resolve claim request', err);
     } finally {
       setResolvingId(null);

@@ -1,70 +1,25 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { requireCommunityAdmin, requireCommunityHost } from '../guards';
+import { requireCommunityAdmin } from '../guards';
 import { ActionResult } from '../result';
 import { revalidatePath } from 'next/cache';
+import {
+  submitMatchScoreAction as submitMatchScoreActionImpl,
+  type SubmitMatchScoreInput,
+} from './round.actions';
 
-export interface SubmitMatchScoreInput {
-  matchId: string;
-  scoreA: number;
-  scoreB: number;
-}
+export type { SubmitMatchScoreInput };
 
+// Score submission lived here as a second, drifting implementation of the same operation
+// already in round.actions.ts (used by the community Live Board) — this file must still
+// declare its own top-level async function (Next.js's "use server" transform doesn't support
+// `export { x } from 'y'` re-exports), but it now just delegates to the one shared body
+// instead of duplicating the logic.
 export async function submitMatchScoreAction(
   input: SubmitMatchScoreInput
 ): Promise<ActionResult<{ success: boolean }>> {
-  try {
-    const supabase = await createClient();
-
-    // 1. Fetch match to get community_id for authorization check
-    const { data: match, error: mErr } = await supabase
-      .from('matches')
-      .select('community_id, session_id')
-      .eq('id', input.matchId)
-      .single();
-
-    if (mErr || !match) {
-      return {
-        ok: false,
-        code: 'NOT_FOUND',
-        message: 'Match not found.',
-      };
-    }
-
-    // 2. Enforce admin guard
-    await requireCommunityHost(match.community_id);
-
-    // 3. Call submit_match_score RPC
-    const { error: rpcErr } = await supabase.rpc('submit_match_score', {
-      p_match_id: input.matchId,
-      p_score_a: input.scoreA,
-      p_score_b: input.scoreB,
-    });
-
-    if (rpcErr) {
-      return {
-        ok: false,
-        code: 'UNKNOWN',
-        message: rpcErr.message || 'Failed to submit match score.',
-      };
-    }
-
-    // 4. Revalidate session board page cache
-    revalidatePath(`/c/[communitySlug]/sessions/${match.session_id}`);
-
-    return {
-      ok: true,
-      data: { success: true },
-    };
-  } catch (error: any) {
-    if (error.message?.includes('redirect')) throw error;
-    return {
-      ok: false,
-      code: 'FORBIDDEN',
-      message: error.message || 'You do not have permission to score this match.',
-    };
-  }
+  return submitMatchScoreActionImpl(input);
 }
 
 export interface AmendMatchScoreInput {
@@ -83,7 +38,7 @@ export async function amendMatchScoreAction(
     // 1. Fetch match to get community_id for authorization check
     const { data: match, error: mErr } = await supabase
       .from('matches')
-      .select('community_id, session_id')
+      .select('community_id, session_id, community:communities(slug)')
       .eq('id', input.matchId)
       .single();
 
@@ -115,7 +70,10 @@ export async function amendMatchScoreAction(
     }
 
     // 4. Revalidate session board page cache
-    revalidatePath(`/c/[communitySlug]/sessions/${match.session_id}`);
+    const communitySlug = (match as any).community?.slug;
+    if (communitySlug) {
+      revalidatePath(`/c/${communitySlug}/sessions/${match.session_id}`);
+    }
 
     return {
       ok: true,
@@ -145,7 +103,7 @@ export async function voidMatchAction(
     // 1. Fetch match to get community_id for authorization check
     const { data: match, error: mErr } = await supabase
       .from('matches')
-      .select('community_id, session_id')
+      .select('community_id, session_id, community:communities(slug)')
       .eq('id', input.matchId)
       .single();
 
@@ -175,7 +133,10 @@ export async function voidMatchAction(
     }
 
     // 4. Revalidate session board page cache
-    revalidatePath(`/c/[communitySlug]/sessions/${match.session_id}`);
+    const communitySlug = (match as any).community?.slug;
+    if (communitySlug) {
+      revalidatePath(`/c/${communitySlug}/sessions/${match.session_id}`);
+    }
 
     return {
       ok: true,

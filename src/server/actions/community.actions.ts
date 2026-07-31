@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { requireProfile, requireCommunityAdmin } from '@/server/guards';
 import { type ActionResult } from '@/server/result';
 import { revalidatePath } from 'next/cache';
+import { detectImageType } from '@/lib/utils/image';
 
 export async function createCommunityAction(input: {
   name: string;
@@ -175,14 +176,21 @@ export async function uploadCommunityLogoAction(formData: FormData) {
     return { error: 'Only community administrators can change the logo or badge.' };
   }
 
-  // 4. Upload logo to Supabase Storage using admin client
-  const ext = file.name.split('.').pop() || 'jpg';
-  const fileName = `community-${communityId}-${Date.now()}.${ext}`;
+  // 4. Upload logo to Supabase Storage using admin client — the stored extension/content-type
+  // are derived from the file's actual signature, not the client-supplied name/MIME type
+  // (both spoofable), same fix already applied to personal avatar uploads.
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const detectedType = detectImageType(bytes);
+  if (!detectedType) {
+    return { error: 'File must be a valid JPEG, PNG, or WEBP image' };
+  }
+  const contentType = detectedType === 'jpeg' ? 'image/jpeg' : `image/${detectedType}`;
+  const fileName = `community-${communityId}-${Date.now()}.${detectedType === 'jpeg' ? 'jpg' : detectedType}`;
 
   const adminClient = createAdminClient();
   const { error: uploadError } = await adminClient.storage
     .from('avatars')
-    .upload(fileName, file, { upsert: true, contentType: file.type });
+    .upload(fileName, bytes, { upsert: true, contentType });
 
   if (uploadError) {
     return { error: uploadError.message };

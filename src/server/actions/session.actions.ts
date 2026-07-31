@@ -104,7 +104,7 @@ export async function finalizeSessionAction(
     // 1. Fetch session community_id for authorization
     const { data: session, error: sErr } = await supabase
       .from('sessions')
-      .select('community_id')
+      .select('community_id, community:communities(slug)')
       .eq('id', sessionId)
       .single();
 
@@ -133,7 +133,10 @@ export async function finalizeSessionAction(
     }
 
     const { revalidatePath } = require('next/cache');
-    revalidatePath(`/c/[communitySlug]/sessions/${sessionId}`);
+    const communitySlug = (session as any).community?.slug;
+    if (communitySlug) {
+      revalidatePath(`/c/${communitySlug}/sessions/${sessionId}`);
+    }
 
     return {
       ok: true,

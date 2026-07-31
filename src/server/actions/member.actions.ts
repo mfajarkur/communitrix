@@ -67,11 +67,41 @@ export async function updateMemberRoleAction(input: {
     await requireCommunityAdmin(input.communityId);
 
     const supabase = await createClient();
-    const { error } = await supabase
+
+    const { data: targetMember, error: fetchError } = await supabase
+      .from('community_members')
+      .select('role')
+      .eq('community_id', input.communityId)
+      .eq('profile_id', input.targetProfileId)
+      .maybeSingle();
+
+    if (fetchError || !targetMember) {
+      return { ok: false, code: 'NOT_FOUND', message: 'This member is no longer in the community.' };
+    }
+
+    if (targetMember.role === 'ADMIN' && input.newRole !== 'ADMIN') {
+      const { count } = await supabase
+        .from('community_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('community_id', input.communityId)
+        .eq('role', 'ADMIN')
+        .eq('is_active', true);
+
+      if ((count ?? 0) <= 1) {
+        return {
+          ok: false,
+          code: 'VALIDATION',
+          message: "Can't change this member's role — they're the community's last active admin.",
+        };
+      }
+    }
+
+    const { data, error } = await supabase
       .from('community_members')
       .update({ role: input.newRole })
       .eq('community_id', input.communityId)
-      .eq('profile_id', input.targetProfileId);
+      .eq('profile_id', input.targetProfileId)
+      .select('profile_id');
 
     if (error) {
       return {
@@ -79,6 +109,10 @@ export async function updateMemberRoleAction(input: {
         code: 'UNKNOWN',
         message: error.message || 'Failed to update member role.',
       };
+    }
+
+    if (!data || data.length === 0) {
+      return { ok: false, code: 'NOT_FOUND', message: 'This member is no longer in the community.' };
     }
 
     if (input.communitySlug) {
@@ -106,11 +140,41 @@ export async function removeMemberAction(input: {
     await requireCommunityAdmin(input.communityId);
 
     const supabase = await createClient();
-    const { error } = await supabase
+
+    const { data: targetMember, error: fetchError } = await supabase
+      .from('community_members')
+      .select('role, is_active')
+      .eq('community_id', input.communityId)
+      .eq('profile_id', input.targetProfileId)
+      .maybeSingle();
+
+    if (fetchError || !targetMember) {
+      return { ok: false, code: 'NOT_FOUND', message: 'This member is no longer in the community.' };
+    }
+
+    if (targetMember.role === 'ADMIN' && targetMember.is_active) {
+      const { count } = await supabase
+        .from('community_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('community_id', input.communityId)
+        .eq('role', 'ADMIN')
+        .eq('is_active', true);
+
+      if ((count ?? 0) <= 1) {
+        return {
+          ok: false,
+          code: 'VALIDATION',
+          message: "Can't remove this member — they're the community's last active admin.",
+        };
+      }
+    }
+
+    const { data, error } = await supabase
       .from('community_members')
       .update({ is_active: false })
       .eq('community_id', input.communityId)
-      .eq('profile_id', input.targetProfileId);
+      .eq('profile_id', input.targetProfileId)
+      .select('profile_id');
 
     if (error) {
       return {
@@ -118,6 +182,10 @@ export async function removeMemberAction(input: {
         code: 'UNKNOWN',
         message: error.message || 'Failed to remove member from community.',
       };
+    }
+
+    if (!data || data.length === 0) {
+      return { ok: false, code: 'NOT_FOUND', message: 'This member is no longer in the community.' };
     }
 
     if (input.communitySlug) {

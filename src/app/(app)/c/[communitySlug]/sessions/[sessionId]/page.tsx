@@ -76,11 +76,14 @@ export default async function SessionLiveBoardPage({
   // typed `any[]` here rather than fighting the inference for a read-only display list.
   const allMatches: any[] = matchesData || [];
 
-  // 5. Fetch Active Session Players
+  // 5. Fetch session players who actually participate in standings: ACTIVE + WITHDRAWN (a
+  // player who played real, scored matches and then had to leave still keeps their results in
+  // the final leaderboard/print poster) — only NO_SHOW is excluded, since they never played.
   const { data: sessionPlayers } = await supabase
     .from('session_players')
     .select(`
       profile_id,
+      status,
       session_points_for,
       session_points_against,
       session_wins,
@@ -92,13 +95,16 @@ export default async function SessionLiveBoardPage({
       )
     `)
     .eq('session_id', sessionId)
-    .eq('status', 'ACTIVE');
+    .in('status', ['ACTIVE', 'WITHDRAWN']);
 
-  const activePlayers = sessionPlayers || [];
+  const participatingPlayers = sessionPlayers || [];
+  // The Live Board's sit-out banner should only ever consider currently-ACTIVE players —
+  // someone who withdrew isn't "sitting out" this round, they've left the session.
+  const activePlayers = participatingPlayers.filter((p: any) => p.status === 'ACTIVE');
 
   // 6. Standings — same shape LeaderboardPoster/LeaderboardPrintSection expect (PosterStanding),
   // computed once here so both the live board and the results recap share identical numbers.
-  const standings = activePlayers
+  const standings = participatingPlayers
     .map((p: any) => {
       const wins = p.session_wins;
       const losses = p.session_losses;

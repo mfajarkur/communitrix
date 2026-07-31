@@ -231,7 +231,7 @@ export async function persistRoundAction(
     // 1. Fetch Session Info
     const { data: session, error: sErr } = await supabase
       .from('sessions')
-      .select('community_id')
+      .select('community_id, community:communities(slug)')
       .eq('id', input.sessionId)
       .single();
 
@@ -269,7 +269,10 @@ export async function persistRoundAction(
       };
     }
 
-    revalidatePath(`/c/[communitySlug]/sessions`);
+    const communitySlug = (session as any).community?.slug;
+    if (communitySlug) {
+      revalidatePath(`/c/${communitySlug}/sessions`);
+    }
 
     return {
       ok: true,
