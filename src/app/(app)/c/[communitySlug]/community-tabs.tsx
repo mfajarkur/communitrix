@@ -717,7 +717,7 @@ export default function CommunityTabs({
 
                   {/* HOSTS SECTION */}
                   {(hostsList.length > 0 || isAdmin) && (
-                    <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-150">
+                    <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-100/60">
                       <div className="flex items-center justify-between">
                         <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Hosts</h3>
                         {isAdmin && (
@@ -770,7 +770,7 @@ export default function CommunityTabs({
                   )}
 
                   {/* MEMBERS SECTION */}
-                  <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-150">
+                  <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-100/60">
                     <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">
                       Members · {generalMembers.length}
                     </h3>
