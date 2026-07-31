@@ -216,6 +216,10 @@ end;
 $$;
 
 -- ─────────────── submit_match_score: return whether this call actually applied the score ───────────────
+-- Postgres won't let CREATE OR REPLACE change a function's return type (void -> boolean here),
+-- so the old signature has to be dropped first.
+drop function if exists public.submit_match_score(uuid, int, int);
+
 create or replace function public.submit_match_score(
   p_match_id uuid,
   p_score_a int,
