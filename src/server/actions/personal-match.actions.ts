@@ -22,7 +22,20 @@ export type PersonalQuickMatch = {
     scoreB: number | null;
     isCompleted: boolean;
   }>;
-  standings: Array<{ rank: number; playerId: string; name: string; totalPoints: number; wins: number; losses: number; ties: number }>;
+  standings: Array<{
+    rank: number;
+    playerId: string;
+    name: string;
+    totalPoints: number;
+    wins: number;
+    losses: number;
+    ties: number;
+    pointsWon?: number;
+    pointsLost?: number;
+    diff?: number;
+    realMatchesPlayed?: number;
+    byesCount?: number;
+  }>;
   created_at: string;
 };
 
@@ -75,6 +88,21 @@ export async function getMyQuickMatches(): Promise<PersonalQuickMatch[]> {
 
   if (error || !data) return [];
   return data as unknown as PersonalQuickMatch[];
+}
+
+export async function getQuickMatchById(id: string): Promise<PersonalQuickMatch | null> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('personal_quick_matches')
+    .select('id, activity_name, sport, game_type, scoring_system, point_target, players, matches, standings, created_at')
+    .eq('id', id)
+    .eq('profile_id', profile.id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as unknown as PersonalQuickMatch;
 }
 
 export async function deletePersonalQuickMatchAction(id: string): Promise<{ ok: boolean; message?: string }> {

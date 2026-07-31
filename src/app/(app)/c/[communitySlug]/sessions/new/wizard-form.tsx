@@ -996,6 +996,12 @@ export default function WizardForm({
       if (!result.ok) {
         setSaveResultError(result.message || 'Failed to save this match to your profile.');
       }
+
+      // The match is finished (saved or not) — clear the draft so re-opening Quick Match
+      // from the Profile page always starts a brand new match instead of restoring this one.
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(quickMatchStorageKey);
+      }
     }
 
     setShowPodium(true);

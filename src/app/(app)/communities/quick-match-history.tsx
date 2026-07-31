@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { Zap, Trash2, Trophy, Users, Loader2 } from 'lucide-react';
 import { deletePersonalQuickMatchAction } from '@/server/actions/personal-match.actions';
 import type { PersonalQuickMatch } from '@/server/actions/personal-match.actions';
@@ -53,9 +54,11 @@ export default function QuickMatchHistory({ matches: initialMatches }: Props) {
             key={m.id}
             className="rounded-2xl border border-zinc-200 bg-white p-4 flex items-center justify-between gap-3 shadow-sm"
           >
-            <div className="min-w-0 flex-1">
+            <Link href={`/communities/quick-match/${m.id}`} className="min-w-0 flex-1 group/link">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-black text-zinc-900 truncate">{m.activity_name}</p>
+                <p className="text-sm font-black text-zinc-900 truncate group-hover/link:text-orange-600 transition-colors">
+                  {m.activity_name}
+                </p>
                 <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
                   {m.game_type.replace('_', ' ')}
                 </span>
@@ -71,7 +74,7 @@ export default function QuickMatchHistory({ matches: initialMatches }: Props) {
                   </span>
                 )}
               </div>
-            </div>
+            </Link>
 
             {isConfirming ? (
               <div className="flex items-center gap-1.5 shrink-0">
