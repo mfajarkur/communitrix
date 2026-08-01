@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { startSessionAction } from '@/server/actions/session.actions';
+import { generateNextRoundAction, persistRoundAction } from '@/server/actions/round.actions';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
 import { saveQuickMatchStateAction } from '@/server/actions/personal-match.actions';
 import LeaderboardPoster from '@/components/leaderboard-poster';
@@ -755,7 +756,28 @@ export default function WizardForm({
         return;
       }
 
-      router.push(`/c/${communitySlug}/sessions/${result.data.sessionId}`);
+      const sessionId = result.data.sessionId;
+
+      // Generate & persist Round 1 immediately, matching Quick Match: one action both starts
+      // the session and shows Round 1 already on court — no separate empty "Generate Round 1"
+      // step. Not blocking on failure here — the Live Board still has its own Generate button
+      // as a fallback if this happens to fail.
+      const genResult = await generateNextRoundAction(sessionId, 1);
+      if (genResult.ok) {
+        const formattedCourts = genResult.data.courts.map((c: any) => ({
+          courtNumber: c.courtNumber,
+          teamA: c.teamA.map((p: any) => p.id),
+          teamB: c.teamB.map((p: any) => p.id),
+        }));
+        await persistRoundAction({
+          sessionId,
+          roundNumber: 1,
+          courts: formattedCourts,
+          sitOuts: genResult.data.sitOuts.map((p: any) => p.id),
+        });
+      }
+
+      router.push(`/c/${communitySlug}/sessions/${sessionId}`);
     } catch (err: any) {
       setIsSubmitting(false);
       setErrorMessage(err.message || 'Failed to start the session.');
