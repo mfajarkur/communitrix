@@ -9,22 +9,17 @@ import {
   submitMatchScoreAction,
 } from '@/server/actions/round.actions';
 import { finalizeSessionAction } from '@/server/actions/session.actions';
-import {
-  Trophy,
-  Zap,
-  Plus,
-  HelpCircle,
-  Loader2,
-  Send,
-  ChevronLeft,
-  ChevronRight,
-  Check,
-} from 'lucide-react';
+import { HelpCircle, Loader2, Send } from 'lucide-react';
 import Link from 'next/link';
 import { getDisplayName } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
 import LeaderboardPrintSection from '@/app/(app)/communities/quick-match/[id]/leaderboard-print-section';
 import type { PosterStanding } from '@/components/leaderboard-poster';
+import RoundCarousel from '@/components/session-live/round-carousel';
+import LiveLeaderboardTabs from '@/components/session-live/live-leaderboard-tabs';
+import GenerateRoundButton from '@/components/session-live/generate-round-button';
+import ScoreButtonPair from '@/components/session-live/score-button-pair';
+import StandingsTable from '@/components/session-live/standings-table';
 
 interface MatchPlayer {
   profile_id: string;
@@ -279,127 +274,34 @@ export default function LiveBoardWrapper({
         </div>
       )}
 
-      {/* LIVE MATCHES / LEADERBOARD 2-tab switcher — same pattern as Quick Match */}
-      <div className="w-full pb-2 border-b border-zinc-100">
-        <div className="flex p-1 bg-zinc-100 rounded-2xl max-w-md mx-auto shadow-inner">
-          <button
-            type="button"
-            onClick={() => setViewMode('MATCHES')}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
-              viewMode === 'MATCHES' ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-zinc-600 hover:text-zinc-900'
-            }`}
-          >
-            <Zap className="h-4 w-4" />
-            <span>LIVE MATCHES</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('LEADERBOARD')}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
-              viewMode === 'LEADERBOARD' ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-zinc-600 hover:text-zinc-900'
-            }`}
-          >
-            <Trophy className="h-4 w-4" />
-            <span>LEADERBOARD</span>
-          </button>
-        </div>
-      </div>
+      <LiveLeaderboardTabs value={viewMode} onChange={setViewMode} />
 
       {viewMode === 'MATCHES' ? (
         <div className="space-y-5">
-          {/* Round Carousel Navigation Bar — always visible, same dark card Quick Match uses,
-              showing a "No Rounds Yet" state before the host generates the first one. */}
-          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 text-white shadow-md space-y-3">
-            {totalRounds > 0 ? (
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRound((prev) => Math.max(1, prev - 1))}
-                  disabled={selectedRound <= 1}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 transition-all text-xs font-extrabold cursor-pointer disabled:cursor-not-allowed text-white shadow-xs"
-                >
-                  <ChevronLeft className="h-4 w-4 text-orange-400" />
-                  <span className="hidden sm:inline">Prev Round</span>
-                </button>
-
-                <div className="text-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-orange-400 block">
-                    Match Round Navigation
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">
-                    ROUND {selectedRound} <span className="text-zinc-500 font-normal">/ {totalRounds}</span>
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedRound((prev) => Math.min(totalRounds, prev + 1))}
-                  disabled={selectedRound >= totalRounds}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 transition-all text-xs font-extrabold cursor-pointer disabled:cursor-not-allowed text-white shadow-xs"
-                >
-                  <span className="hidden sm:inline">Next Round</span>
-                  <ChevronRight className="h-4 w-4 text-orange-400" />
-                </button>
-              </div>
-            ) : (
-              <div className="text-center py-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-orange-400 block">
-                  Match Round Navigation
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">No Rounds Yet</h2>
-              </div>
-            )}
-
-            {totalRounds > 1 && (
-              <div className="flex items-center justify-center gap-1.5 pt-2.5 border-t border-zinc-800/80 overflow-x-auto py-1">
-                {rounds.map((r) => {
-                  const isSelected = r.round_number === selectedRound;
-                  const roundMatchesList = matches.filter((m) => m.round_number === r.round_number);
-                  const isCompleted = roundMatchesList.length > 0 && roundMatchesList.every((m) => m.status === 'COMPLETED');
-
-                  return (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => setSelectedRound(r.round_number)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                        isSelected ? 'bg-orange-500 text-white shadow-sm' : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                      }`}
-                    >
-                      <span>Round {r.round_number}</span>
-                      {isCompleted && <Check className="h-3 w-3 text-emerald-400" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <RoundCarousel
+            rounds={rounds.map((r) => {
+              const roundMatchesList = matches.filter((m) => m.round_number === r.round_number);
+              return {
+                number: r.round_number,
+                isCompleted: roundMatchesList.length > 0 && roundMatchesList.every((m) => m.status === 'COMPLETED'),
+              };
+            })}
+            selectedRound={selectedRound}
+            onSelectRound={setSelectedRound}
+          />
 
           {/* Generate / End Session — same full-width orange button pattern as Quick Match's
               "+ Generate Next Round" button, instead of a separate boxed control panel. */}
           {isHostOrAdmin && (
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={handleGenerateClick}
-                disabled={!canGenerateNextRound || isGenerating || isFinalizing}
-                className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
-              >
-                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                <span>+ Generate Next Round (Round {nextRoundNumber})</span>
-              </button>
-              {totalRounds > 0 && (
-                <button
-                  type="button"
-                  onClick={handleFinalizeClick}
-                  disabled={isFinalizing || isGenerating}
-                  className="w-full py-2.5 rounded-xl border border-red-200 hover:bg-red-50 text-xs font-bold text-red-600 transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white shadow-sm disabled:opacity-50"
-                >
-                  {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  <span>End Session</span>
-                </button>
-              )}
-            </div>
+            <GenerateRoundButton
+              nextRoundNumber={nextRoundNumber}
+              onGenerate={handleGenerateClick}
+              isGenerating={isGenerating}
+              disabled={!canGenerateNextRound || isFinalizing}
+              onEndSession={handleFinalizeClick}
+              isEndingSession={isFinalizing}
+              showEndSession={totalRounds > 0}
+            />
           )}
 
           {/* Sitting Out / Bye Players Banner for Selected Round */}
@@ -465,40 +367,18 @@ export default function LiveBoardWrapper({
                           </span>
                         </div>
                       ) : (
-                        <div className="sm:col-span-1 flex items-center justify-center gap-2">
-                          <button
-                            type="button"
+                        <div className="sm:col-span-1">
+                          <ScoreButtonPair
+                            scoreA={draft.scoreA}
+                            scoreB={draft.scoreB}
                             disabled={!isHostOrAdmin || isSubmittingThis}
-                            onClick={() =>
+                            onTapA={() =>
                               setActivePicker({ matchId: m.id, team: 'A', teamName: teamAName, currentScore: draft.scoreA })
                             }
-                            className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all shadow-2xs ${
-                              !isHostOrAdmin ? 'cursor-default' : 'cursor-pointer'
-                            } ${
-                              draft.scoreA !== null
-                                ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-                                : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
-                            }`}
-                          >
-                            {draft.scoreA ?? '-'}
-                          </button>
-                          <span className="text-zinc-400 font-bold">:</span>
-                          <button
-                            type="button"
-                            disabled={!isHostOrAdmin || isSubmittingThis}
-                            onClick={() =>
+                            onTapB={() =>
                               setActivePicker({ matchId: m.id, team: 'B', teamName: teamBName, currentScore: draft.scoreB })
                             }
-                            className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all shadow-2xs ${
-                              !isHostOrAdmin ? 'cursor-default' : 'cursor-pointer'
-                            } ${
-                              draft.scoreB !== null
-                                ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-                                : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
-                            }`}
-                          >
-                            {draft.scoreB ?? '-'}
-                          </button>
+                          />
                         </div>
                       )}
 
@@ -557,67 +437,7 @@ export default function LiveBoardWrapper({
             standings={standings}
           />
 
-          <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden space-y-2">
-            <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-zinc-200">
-              <table className="w-full text-left text-xs font-sans min-w-[560px]">
-                <thead>
-                  <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
-                    <th className="pb-3 pl-2">Rank</th>
-                    <th className="pb-3">Player</th>
-                    <th className="pb-3 text-center">Matches</th>
-                    <th className="pb-3 text-center">W-L-T</th>
-                    <th className="pb-3 text-center">Diff</th>
-                    <th className="pb-3 text-right pr-2">Points</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {standings.map((s) => (
-                    <tr key={s.playerId} className="hover:bg-zinc-50/60 transition-colors">
-                      <td className="py-3 pl-2 font-black text-sm text-[#111827]">
-                        {s.rank === 1 ? (
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-white font-black text-xs shadow-sm">1</span>
-                        ) : s.rank === 2 ? (
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-zinc-800 font-black text-xs shadow-sm">2</span>
-                        ) : s.rank === 3 ? (
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-700 text-white font-black text-xs shadow-sm">3</span>
-                        ) : (
-                          `#${s.rank}`
-                        )}
-                      </td>
-                      <td className="py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase shrink-0">
-                            {s.name.slice(0, 2)}
-                          </div>
-                          <p className="font-bold text-zinc-900 truncate max-w-[130px] sm:max-w-none">{s.name}</p>
-                        </div>
-                      </td>
-                      <td className="py-3 text-center font-bold text-zinc-900">
-                        {s.realMatchesPlayed ?? s.wins + s.losses + s.ties}
-                      </td>
-                      <td className="py-3 text-center font-mono font-bold text-zinc-700">
-                        {s.wins}-{s.losses}-{s.ties}
-                      </td>
-                      <td className="py-3 text-center font-mono font-bold text-zinc-900">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-xs ${
-                            (s.diff ?? 0) > 0
-                              ? 'bg-emerald-50 text-emerald-700 font-extrabold'
-                              : (s.diff ?? 0) < 0
-                              ? 'bg-rose-50 text-rose-600 font-extrabold'
-                              : 'text-zinc-500'
-                          }`}
-                        >
-                          {(s.diff ?? 0) > 0 ? `+${s.diff}` : s.diff ?? 0}
-                        </span>
-                      </td>
-                      <td className="py-3 text-right pr-2 font-black text-sm text-[#111827] whitespace-nowrap">{s.totalPoints}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <StandingsTable standings={standings} />
         </div>
       )}
 

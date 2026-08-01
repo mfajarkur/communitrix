@@ -6,6 +6,11 @@ import { startSessionAction } from '@/server/actions/session.actions';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
 import { saveQuickMatchStateAction } from '@/server/actions/personal-match.actions';
 import LeaderboardPoster from '@/components/leaderboard-poster';
+import RoundCarousel from '@/components/session-live/round-carousel';
+import LiveLeaderboardTabs from '@/components/session-live/live-leaderboard-tabs';
+import GenerateRoundButton from '@/components/session-live/generate-round-button';
+import ScoreButtonPair from '@/components/session-live/score-button-pair';
+import StandingsTable from '@/components/session-live/standings-table';
 import {
   Trophy,
   Users,
@@ -13,12 +18,8 @@ import {
   AlertCircle,
   Loader2,
   Check,
-  Zap,
   ArrowLeft,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
   UserPlus,
   Flame,
   Award,
@@ -1236,35 +1237,10 @@ export default function WizardForm({
     <div className="space-y-6 select-none font-sans">
       {/* Wizard Progress Navigation Header / Live Session 2-Tab Switcher */}
       {step >= 4 ? (
-        <div className="w-full pb-2 border-b border-zinc-100 dark:border-zinc-800">
-          <div className="flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-2xl max-w-md mx-auto shadow-inner">
-            <button
-              type="button"
-              onClick={() => setStep(4)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                step === 4
-                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
-              }`}
-            >
-              <Zap className="h-4 w-4" />
-              <span>LIVE MATCHES</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStep(5)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                step === 5
-                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
-              }`}
-            >
-              <Trophy className="h-4 w-4" />
-              <span>LEADERBOARD</span>
-            </button>
-          </div>
-        </div>
+        <LiveLeaderboardTabs
+          value={step === 5 ? 'LEADERBOARD' : 'MATCHES'}
+          onChange={(v: 'MATCHES' | 'LEADERBOARD') => setStep(v === 'LEADERBOARD' ? 5 : 4)}
+        />
       ) : (
         <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
           {step > 1 ? (
@@ -1869,66 +1845,14 @@ export default function WizardForm({
       {/* ========================================================= */}
       {step === 4 && (
         <div className="space-y-5 animate-in fade-in duration-200">
-          {/* Round Carousel Navigation Bar */}
-          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 text-white shadow-md space-y-3">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setSelectedRound((prev) => Math.max(1, prev - 1))}
-                disabled={selectedRound <= 1}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 transition-all text-xs font-extrabold cursor-pointer disabled:cursor-not-allowed text-white shadow-xs"
-              >
-                <ChevronLeft className="h-4 w-4 text-orange-400" />
-                <span className="hidden sm:inline">Prev Round</span>
-              </button>
-
-              <div className="text-center">
-                <span className="text-[10px] font-black uppercase tracking-widest text-orange-400 block">
-                  Match Round Navigation
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide">
-                  ROUND {selectedRound} <span className="text-zinc-500 font-normal">/ {totalRounds}</span>
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setSelectedRound((prev) => Math.min(totalRounds, prev + 1))}
-                disabled={selectedRound >= totalRounds}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 transition-all text-xs font-extrabold cursor-pointer disabled:cursor-not-allowed text-white shadow-xs"
-              >
-                <span className="hidden sm:inline">Next Round</span>
-                <ChevronRight className="h-4 w-4 text-orange-400" />
-              </button>
-            </div>
-
-            {/* Quick Round Selector Pills */}
-            {totalRounds > 1 && (
-              <div className="flex items-center justify-center gap-1.5 pt-2.5 border-t border-zinc-800/80 overflow-x-auto py-1">
-                {Array.from({ length: totalRounds }, (_, i) => i + 1).map((rNum) => {
-                  const isSelected = rNum === selectedRound;
-                  const roundMatchesList = matches.filter((m) => (m.roundNumber || 1) === rNum);
-                  const isCompleted = roundMatchesList.length > 0 && roundMatchesList.every((m) => m.isCompleted);
-
-                  return (
-                    <button
-                      key={rNum}
-                      type="button"
-                      onClick={() => setSelectedRound(rNum)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
-                        isSelected
-                          ? 'bg-orange-500 text-white shadow-sm'
-                          : 'bg-zinc-800/90 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                      }`}
-                    >
-                      <span>Round {rNum}</span>
-                      {isCompleted && <Check className="h-3 w-3 text-emerald-400" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <RoundCarousel
+            rounds={Array.from({ length: totalRounds }, (_, i) => i + 1).map((rNum) => {
+              const roundMatchesList = matches.filter((m) => (m.roundNumber || 1) === rNum);
+              return { number: rNum, isCompleted: roundMatchesList.length > 0 && roundMatchesList.every((m) => m.isCompleted) };
+            })}
+            selectedRound={selectedRound}
+            onSelectRound={setSelectedRound}
+          />
 
           {/* Sitting Out / Bye Players Banner for Selected Round */}
           {(() => {
@@ -1996,44 +1920,17 @@ export default function WizardForm({
                       </div>
 
                       {/* Interactive Score Picker Buttons */}
-                      <div className="sm:col-span-1 flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActivePicker({
-                              matchId: m.id,
-                              team: 'A',
-                              teamName: teamANamesJoined,
-                              currentScore: m.scoreA,
-                            })
+                      <div className="sm:col-span-1">
+                        <ScoreButtonPair
+                          scoreA={m.scoreA}
+                          scoreB={m.scoreB}
+                          onTapA={() =>
+                            setActivePicker({ matchId: m.id, team: 'A', teamName: teamANamesJoined, currentScore: m.scoreA })
                           }
-                          className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
-                            m.scoreA !== null
-                              ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-                              : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
-                          }`}
-                        >
-                          {m.scoreA !== null ? m.scoreA : '-'}
-                        </button>
-                        <span className="text-zinc-400 font-bold">:</span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setActivePicker({
-                              matchId: m.id,
-                              team: 'B',
-                              teamName: teamBNamesJoined,
-                              currentScore: m.scoreB,
-                            })
+                          onTapB={() =>
+                            setActivePicker({ matchId: m.id, team: 'B', teamName: teamBNamesJoined, currentScore: m.scoreB })
                           }
-                          className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all cursor-pointer shadow-2xs ${
-                            m.scoreB !== null
-                              ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-                              : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
-                          }`}
-                        >
-                          {m.scoreB !== null ? m.scoreB : '-'}
-                        </button>
+                        />
                       </div>
 
                       {/* Team B (stacked vertically, no Team B label) */}
@@ -2052,14 +1949,11 @@ export default function WizardForm({
           </div>
 
           <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleGenerateNextRound}
-              className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
-            >
-              <Plus className="h-4 w-4" />
-              <span>+ Generate Next Round (Round {totalRounds + 1})</span>
-            </button>
+            <GenerateRoundButton
+              nextRoundNumber={totalRounds + 1}
+              onGenerate={handleGenerateNextRound}
+              isGenerating={false}
+            />
           </div>
         </div>
       )}
@@ -2082,98 +1976,22 @@ export default function WizardForm({
             </div>
           </div>
 
-          {/* Standings Table Card with Horizontal Scroll */}
-          <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden space-y-2">
-            <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-zinc-200">
-              <table className="w-full text-left text-xs font-sans min-w-[560px]">
-                <thead>
-                  <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
-                    <th className="pb-3 pl-2">Rank</th>
-                    <th className="pb-3">Player</th>
-                    <th className="pb-3 text-center">Matches</th>
-                    <th className="pb-3 text-center">W-L-T</th>
-                    <th className="pb-3 text-center">Diff</th>
-                    <th className="pb-3 text-right pr-2">Points</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {standings.map((s) => (
-                    <tr key={s.playerId} className="hover:bg-zinc-50/60 transition-colors">
-                      <td className="py-3 pl-2 font-black text-sm text-[#111827]">
-                        {s.rank === 1 ? (
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-white font-black text-xs shadow-sm">
-                            1
-                          </span>
-                        ) : s.rank === 2 ? (
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-300 text-zinc-800 font-black text-xs shadow-sm">
-                            2
-                          </span>
-                        ) : s.rank === 3 ? (
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-700 text-white font-black text-xs shadow-sm">
-                            3
-                          </span>
-                        ) : (
-                          `#${s.rank}`
-                        )}
-                      </td>
-                      <td className="py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase shrink-0">
-                            {s.name.slice(0, 2)}
-                          </div>
-                          <div className="truncate max-w-[130px] sm:max-w-none">
-                            <p className="font-bold text-zinc-900 truncate">{s.name}</p>
-                            {!isGuestDemoMode && s.isGuest && (
-                              <span className="text-[9px] uppercase font-extrabold bg-amber-100 text-amber-800 px-1 rounded">
-                                Guest
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 text-center font-bold text-zinc-900">
-                        {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
-                      </td>
-                      <td className="py-3 text-center font-mono font-bold text-zinc-700">
-                        {s.wins}-{s.losses}-{s.ties}
-                      </td>
-                      <td className="py-3 text-center font-mono font-bold text-zinc-900">
-                        <span className={`px-2 py-0.5 rounded-md text-xs ${
-                          s.diff > 0
-                            ? 'bg-emerald-50 text-emerald-700 font-extrabold'
-                            : s.diff < 0
-                            ? 'bg-rose-50 text-rose-600 font-extrabold'
-                            : 'text-zinc-500'
-                        }`}>
-                          {s.diff > 0 ? `+${s.diff}` : s.diff}
-                        </span>
-                      </td>
-                      <td className="py-3 text-right pr-2 font-black text-sm text-[#111827] whitespace-nowrap">
-                        {s.byePoints && s.byePoints > 0 ? (
-                          <span
-                            title={s.byeIsPlaceholder
-                              ? 'Temporary placeholder score (no actual matches played yet)'
-                              : 'Dynamic bye points based on player average'}
-                            className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md mr-1.5 border ${
-                              s.byeIsPlaceholder
-                                ? 'text-zinc-500 bg-zinc-100 border-zinc-300' // greyed out = placeholder
-                                : 'text-amber-700 bg-amber-100 border-amber-300'  // amber = real average
-                            }`}
-                          >
-                            {s.byeIsPlaceholder ? '~' : '+'}{s.byePoints} Bye
-                          </span>
-                        ) : null}
-                        {s.totalPoints}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="block sm:hidden text-center text-[10px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
-              ← Scroll horizontally to view full stats →
-            </div>
-          </div>
+          <StandingsTable
+            standings={standings.map((s) => ({
+              rank: s.rank,
+              playerId: s.playerId,
+              name: s.name,
+              totalPoints: s.totalPoints,
+              wins: s.wins,
+              losses: s.losses,
+              ties: s.ties,
+              diff: s.diff,
+              realMatchesPlayed: s.realMatchesPlayed,
+              isGuest: !isGuestDemoMode && s.isGuest,
+              byePoints: s.byePoints,
+              byeIsPlaceholder: s.byeIsPlaceholder,
+            }))}
+          />
 
           {/* Start Real Live Session or Finish Demo Button */}
           <button
