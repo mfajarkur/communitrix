@@ -30,7 +30,7 @@ export default function StandingsTable({ standings }: Props) {
           <thead>
             <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
               <th className="pb-3 pl-2">Rank</th>
-              <th className="pb-3">Player</th>
+              <th className="pb-3 w-[135px]">Player</th>
               <th className="pb-3 text-center">Matches</th>
               <th className="pb-3 text-center">W-L-T</th>
               <th className="pb-3 text-center">Diff</th>

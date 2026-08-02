@@ -91,7 +91,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
             <thead>
               <tr className="border-b border-zinc-100 text-zinc-400 font-black uppercase text-[10px] tracking-wider">
                 <th className="py-3 pl-5 w-12">Rank</th>
-                <th className="py-3">Player</th>
+                <th className="py-3 w-28">Player</th>
                 <th className="py-3 text-center w-20">Matches</th>
                 <th className="py-3 text-center w-24">W-L-T</th>
                 <th className="py-3 text-center w-16">Diff</th>
