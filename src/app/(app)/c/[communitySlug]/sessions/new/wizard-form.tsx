@@ -260,6 +260,16 @@ export default function WizardForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Guards local round generation against rapid double-clicks. handleGenerateNextRound reads
+  // `matches` from a closure and appends to it — two clicks fired before React re-renders both
+  // capture the SAME stale `matches`, compute the SAME "next round number", and each append
+  // their own full set of matches for it, silently duplicating an entire round's worth of
+  // points under one round label. A ref (not state) is required here specifically because it
+  // updates synchronously, before any re-render — state-based disabling reacts too late to stop
+  // a second click fired in the same tick as the first.
+  const isGeneratingRoundRef = useRef(false);
+  const [isGeneratingRound, setIsGeneratingRound] = useState(false);
+
   // Helper map for fast player lookup by ID
   const playerMap = useMemo(() => {
     const map = new Map<string, PlayerRegistration>();
@@ -836,6 +846,10 @@ export default function WizardForm({
 
   // Step 4: Generate Next Match Round
   const handleGenerateNextRound = () => {
+    if (isGeneratingRoundRef.current) return;
+    isGeneratingRoundRef.current = true;
+    setIsGeneratingRound(true);
+
     const maxRound = matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0);
     const nextRoundNumber = maxRound + 1;
 
@@ -945,6 +959,9 @@ export default function WizardForm({
       setSelectedRound(nextRoundNumber);
     } catch (e: any) {
       setErrorMessage(`Failed to generate round ${nextRoundNumber}: ${e.message || 'Unknown error'}`);
+    } finally {
+      isGeneratingRoundRef.current = false;
+      setIsGeneratingRound(false);
     }
   };
 
@@ -2218,7 +2235,7 @@ export default function WizardForm({
             <GenerateRoundButton
               nextRoundNumber={totalRounds + 1}
               onGenerate={handleGenerateNextRound}
-              isGenerating={false}
+              isGenerating={isGeneratingRound}
             />
           </div>
         </div>
