@@ -90,30 +90,30 @@ export default function SessionResults({ communitySlug, session, rounds, matches
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-zinc-100 text-zinc-400 font-black uppercase text-[10px] tracking-wider">
-                <th className="py-3 pl-5 w-12">Rank</th>
-                <th className="py-3 w-28">Player</th>
-                <th className="py-3 text-center w-20">Matches</th>
-                <th className="py-3 text-center w-24">W-L-T</th>
-                <th className="py-3 text-center w-16">Diff</th>
-                <th className="py-3 text-right pr-5 w-20">Points</th>
+                <th className="py-2 pl-4 w-10">Rank</th>
+                <th className="py-2 w-24">Player</th>
+                <th className="py-2 text-center px-1 w-10">M</th>
+                <th className="py-2 text-center px-1 w-20">W-L-T</th>
+                <th className="py-2 text-center px-1 w-10">D</th>
+                <th className="py-2 text-right pr-4 w-14">P</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {standings.map((s) => (
                 <tr key={s.playerId} className="hover:bg-zinc-50 transition-colors">
-                  <td className="py-3 pl-5 font-black text-zinc-900">
+                  <td className="py-2 pl-4 font-black text-zinc-900">
                     {s.rank === 1 ? <Crown className="h-4 w-4 text-amber-500 inline" /> : `#${s.rank}`}
                   </td>
-                  <td className="py-3 font-extrabold text-zinc-900">
-                    <span className="block max-w-[90px] truncate">{s.name}</span>
+                  <td className="py-2 font-extrabold text-zinc-900">
+                    <span className="block max-w-[70px] truncate">{s.name}</span>
                   </td>
-                  <td className="py-3 text-center font-bold text-zinc-700">
+                  <td className="py-2 text-center px-1 font-bold text-zinc-700">
                     {s.realMatchesPlayed ?? s.wins + s.losses + s.ties}
                   </td>
-                  <td className="py-3 text-center font-mono font-black text-zinc-700">
+                  <td className="py-2 text-center px-1 font-mono font-black text-zinc-700">
                     {s.wins}-{s.losses}-{s.ties}
                   </td>
-                  <td className="py-3 text-center font-mono font-bold">
+                  <td className="py-2 text-center px-1 font-mono font-bold">
                     <span
                       className={
                         (s.diff ?? 0) > 0 ? 'text-emerald-600' : (s.diff ?? 0) < 0 ? 'text-rose-600' : 'text-zinc-500'
@@ -122,7 +122,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                       {(s.diff ?? 0) > 0 ? `+${s.diff}` : s.diff ?? 0}
                     </span>
                   </td>
-                  <td className="py-3 text-right pr-5 font-black text-zinc-900 whitespace-nowrap">
+                  <td className="py-2 text-right pr-4 font-black text-zinc-900 whitespace-nowrap">
                     {s.byePoints && s.byePoints > 0 ? (
                       <span
                         title={
@@ -146,6 +146,9 @@ export default function SessionResults({ communitySlug, session, rounds, matches
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="text-center text-[9px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
+          M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points
         </div>
       </div>
 

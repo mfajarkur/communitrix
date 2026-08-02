@@ -20,27 +20,29 @@ type Props = {
   standings: StandingsRow[];
 };
 
-// The ranked Rank/Player/Matches/W-L-T/Diff/Points table with medal badges, shared by Quick
-// Match and the community Live Board — see round-carousel.tsx for why this is extracted.
+// The ranked Rank/Player/M/W-L-T/D/P table with medal badges, shared by Quick Match and the
+// community Live Board — see round-carousel.tsx for why this is extracted. Columns are
+// abbreviated (M/D/P) and tightly packed so the table fits without horizontal scroll on most
+// screens; the legend row below the table spells them out.
 export default function StandingsTable({ standings }: Props) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden space-y-2">
-      <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-zinc-200">
-        <table className="w-full text-left text-xs font-sans min-w-[560px]">
+      <div className="overflow-x-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-zinc-200">
+        <table className="w-full text-left text-xs font-sans min-w-[380px]">
           <thead>
             <tr className="border-b border-zinc-100 text-zinc-400 font-extrabold uppercase text-[10px] tracking-wider">
-              <th className="pb-3 pl-2">Rank</th>
-              <th className="pb-3 w-[135px]">Player</th>
-              <th className="pb-3 text-center">Matches</th>
-              <th className="pb-3 text-center">W-L-T</th>
-              <th className="pb-3 text-center">Diff</th>
-              <th className="pb-3 text-right pr-2">Points</th>
+              <th className="pb-2 pl-1">Rank</th>
+              <th className="pb-2 w-[100px]">Player</th>
+              <th className="pb-2 text-center px-1">M</th>
+              <th className="pb-2 text-center px-1">W-L-T</th>
+              <th className="pb-2 text-center px-1">D</th>
+              <th className="pb-2 text-right pr-1">P</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {standings.map((s) => (
               <tr key={s.playerId ?? s.name} className="hover:bg-zinc-50/60 transition-colors">
-                <td className="py-3 pl-2 font-black text-sm text-[#111827]">
+                <td className="py-2 pl-1 font-black text-sm text-[#111827]">
                   {s.rank === 1 ? (
                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-white font-black text-xs shadow-sm">
                       1
@@ -57,12 +59,12 @@ export default function StandingsTable({ standings }: Props) {
                     `#${s.rank}`
                   )}
                 </td>
-                <td className="py-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase shrink-0">
+                <td className="py-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-7 w-7 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-600 uppercase shrink-0">
                       {s.name.slice(0, 2)}
                     </div>
-                    <div className="truncate max-w-[90px]">
+                    <div className="truncate max-w-[70px]">
                       <p className="font-bold text-zinc-900 truncate">{s.name}</p>
                       {s.isGuest && (
                         <span className="text-[9px] uppercase font-extrabold bg-amber-100 text-amber-800 px-1 rounded">
@@ -72,15 +74,15 @@ export default function StandingsTable({ standings }: Props) {
                     </div>
                   </div>
                 </td>
-                <td className="py-3 text-center font-bold text-zinc-900">
+                <td className="py-2 text-center px-1 font-bold text-zinc-900">
                   {s.realMatchesPlayed ?? s.wins + s.losses + s.ties}
                 </td>
-                <td className="py-3 text-center font-mono font-bold text-zinc-700">
+                <td className="py-2 text-center px-1 font-mono font-bold text-zinc-700">
                   {s.wins}-{s.losses}-{s.ties}
                 </td>
-                <td className="py-3 text-center font-mono font-bold text-zinc-900">
+                <td className="py-2 text-center px-1 font-mono font-bold text-zinc-900">
                   <span
-                    className={`px-2 py-0.5 rounded-md text-xs ${
+                    className={`px-1.5 py-0.5 rounded-md text-xs ${
                       (s.diff ?? 0) > 0
                         ? 'bg-emerald-50 text-emerald-700 font-extrabold'
                         : (s.diff ?? 0) < 0
@@ -91,7 +93,7 @@ export default function StandingsTable({ standings }: Props) {
                     {(s.diff ?? 0) > 0 ? `+${s.diff}` : s.diff ?? 0}
                   </span>
                 </td>
-                <td className="py-3 text-right pr-2 font-black text-sm text-[#111827] whitespace-nowrap">
+                <td className="py-2 text-right pr-1 font-black text-sm text-[#111827] whitespace-nowrap">
                   {s.byePoints && s.byePoints > 0 ? (
                     <span
                       title={
@@ -116,8 +118,8 @@ export default function StandingsTable({ standings }: Props) {
           </tbody>
         </table>
       </div>
-      <div className="block sm:hidden text-center text-[10px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
-        ← Scroll horizontally to view full stats →
+      <div className="text-center text-[9px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
+        M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points
       </div>
     </div>
   );
