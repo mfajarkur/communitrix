@@ -36,6 +36,7 @@ import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profi
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { updateCommunityInfoAction } from '@/server/actions/community.actions';
+import { startNewCpSeasonAction } from '@/server/actions/session.actions';
 
 interface CommunityTabsProps {
   community?: any;
@@ -104,7 +105,11 @@ export default function CommunityTabs({
   );
   const [editEstablishedDate, setEditEstablishedDate] = useState(community?.established_date || '');
   const [editSport, setEditSport] = useState(defaultSport);
+  const [editCpResetPolicy, setEditCpResetPolicy] = useState<'never' | 'seasonal'>(
+    community?.cp_reset_policy === 'seasonal' ? 'seasonal' : 'never'
+  );
   const [isSavingHome, setIsSavingHome] = useState(false);
+  const [isStartingSeason, setIsStartingSeason] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
   useEffect(() => {
@@ -143,6 +148,7 @@ export default function CommunityTabs({
         communitySlug,
         description: editDescription,
         defaultSport: editSport,
+        cpResetPolicy: editCpResetPolicy,
       });
       if (res.ok) {
         setIsEditHomeOpen(false);
@@ -154,6 +160,31 @@ export default function CommunityTabs({
       alert(err?.message || 'Error saving community info');
     } finally {
       setIsSavingHome(false);
+    }
+  };
+
+  // Ends the current CP season (if any) and starts a fresh one — only meaningful once
+  // cp_reset_policy is 'seasonal', since 'never' communities never look up a season at all.
+  const handleStartNewSeason = async () => {
+    if (
+      !confirm(
+        'Start a new Community Points season? This ends the current season — CP already awarded stays on the record, but the leaderboard for the new season starts from zero.'
+      )
+    ) {
+      return;
+    }
+    setIsStartingSeason(true);
+    try {
+      const res = await startNewCpSeasonAction(communityId, communitySlug);
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert(res.message || 'Failed to start a new CP season');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error starting a new CP season');
+    } finally {
+      setIsStartingSeason(false);
     }
   };
 
@@ -1362,6 +1393,43 @@ export default function CommunityTabs({
                   <option value="PADEL">PADEL</option>
                   <option value="TENNIS">TENNIS</option>
                 </select>
+              </div>
+
+              <div className="pt-1 border-t border-zinc-100">
+                <label className="font-bold text-zinc-700 block mb-1">Community Points Reset Policy</label>
+                <select
+                  value={editCpResetPolicy}
+                  onChange={(e) => setEditCpResetPolicy(e.target.value as 'never' | 'seasonal')}
+                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none font-bold"
+                >
+                  <option value="never">Never — CP accumulates for the community's lifetime</option>
+                  <option value="seasonal">Seasonal — CP resets when a new season starts</option>
+                </select>
+                <p className="text-[10px] text-zinc-400 font-medium mt-1">
+                  {editCpResetPolicy === 'seasonal'
+                    ? 'Members earn CP within the current season only. Start a new season below to reset the leaderboard.'
+                    : 'Members earn CP for as long as they stay in this community — no reset.'}
+                </p>
+
+                {/* Gated on the already-saved policy, not the dropdown's pending selection —
+                    starting a season reloads the page, which would silently discard an
+                    unsaved policy change before it's persisted. */}
+                {community?.cp_reset_policy === 'seasonal' && (
+                  <button
+                    type="button"
+                    onClick={handleStartNewSeason}
+                    disabled={isStartingSeason}
+                    className="w-full mt-2.5 py-2 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-xs font-bold text-orange-700 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isStartingSeason ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trophy className="h-3.5 w-3.5" />}
+                    Start New CP Season
+                  </button>
+                )}
+                {editCpResetPolicy === 'seasonal' && community?.cp_reset_policy !== 'seasonal' && (
+                  <p className="text-[10px] text-amber-600 font-bold mt-1.5">
+                    Save this change first — the "Start New Season" button appears here once Seasonal is active.
+                  </p>
+                )}
               </div>
             </div>
 

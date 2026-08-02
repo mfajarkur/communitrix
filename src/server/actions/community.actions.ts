@@ -224,6 +224,7 @@ export async function updateCommunityInfoAction(input: {
   description?: string;
   defaultSport?: string;
   bannerUrl?: string;
+  cpResetPolicy?: 'never' | 'seasonal';
 }): Promise<ActionResult<any>> {
   try {
     await requireCommunityAdmin(input.communityId);
@@ -232,6 +233,7 @@ export async function updateCommunityInfoAction(input: {
     if (input.name !== undefined) updates.name = input.name.trim();
     if (input.defaultSport !== undefined) updates.default_sport = input.defaultSport.trim();
     if (input.bannerUrl !== undefined) updates.banner_url = input.bannerUrl.trim();
+    if (input.cpResetPolicy !== undefined) updates.cp_reset_policy = input.cpResetPolicy;
 
     if (input.description !== undefined) {
       updates.description = input.description.trim();
