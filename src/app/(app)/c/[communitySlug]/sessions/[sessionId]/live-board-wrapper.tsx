@@ -415,12 +415,12 @@ export default function LiveBoardWrapper({
                 return (
                   <div
                     key={m.id}
-                    className={`p-4 rounded-2xl border bg-white space-y-3 shadow-sm transition-all ${
+                    className={`relative rounded-2xl border bg-white shadow-sm transition-all overflow-hidden ${
                       isCompleted ? 'border-zinc-200' : 'border-zinc-200 border-l-4 border-l-orange-500'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-[#111827]">Court {m.court_number}</span>
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+                      <span className="font-bold text-base text-[#111827]">Court {m.court_number}</span>
                       <span
                         className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
                           isCompleted ? 'bg-zinc-100 text-zinc-500' : 'bg-orange-100 text-orange-600'
@@ -430,69 +430,74 @@ export default function LiveBoardWrapper({
                       </span>
                     </div>
 
-                    <ScoreButtonPair
-                      scoreA={isCompleted ? m.team_a_score : draft.scoreA}
-                      scoreB={isCompleted ? m.team_b_score : draft.scoreB}
-                      isCompleted={isCompleted}
-                      winnerSide={m.winner_side}
-                      disabled={!isHostOrAdmin || isSubmittingThis}
-                      onTapA={() =>
-                        setActivePicker({ matchId: m.id, team: 'A', teamName: teamAName, currentScore: draft.scoreA })
-                      }
-                      onTapB={() =>
-                        setActivePicker({ matchId: m.id, team: 'B', teamName: teamBName, currentScore: draft.scoreB })
-                      }
-                    />
+                    <div className="relative px-4 pt-7 pb-4">
+                      {/* Score badge floats over the header/content seam */}
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
+                        <ScoreButtonPair
+                          scoreA={isCompleted ? m.team_a_score : draft.scoreA}
+                          scoreB={isCompleted ? m.team_b_score : draft.scoreB}
+                          isCompleted={isCompleted}
+                          winnerSide={m.winner_side}
+                          disabled={!isHostOrAdmin || isSubmittingThis}
+                          onTapA={() =>
+                            setActivePicker({ matchId: m.id, team: 'A', teamName: teamAName, currentScore: draft.scoreA })
+                          }
+                          onTapB={() =>
+                            setActivePicker({ matchId: m.id, team: 'B', teamName: teamBName, currentScore: draft.scoreB })
+                          }
+                        />
+                      </div>
 
-                    <div className="flex items-center gap-2">
-                      {renderTeam(teamA, 'A')}
-                      <span className="shrink-0 h-6 w-6 rounded-full bg-zinc-100 text-zinc-400 text-[9px] font-bold flex items-center justify-center uppercase">
-                        vs
-                      </span>
-                      {renderTeam(teamB, 'B')}
-                    </div>
+                      <div className="flex items-center gap-2">
+                        {renderTeam(teamA, 'A')}
+                        <span className="shrink-0 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 text-[9px] font-bold flex items-center justify-center uppercase">
+                          vs
+                        </span>
+                        {renderTeam(teamB, 'B')}
+                      </div>
 
-                    {isCompleted && hasEloData && (
-                      <div>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedEloMatchId(isEloExpanded ? null : m.id)}
-                          className="w-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-orange-600 py-1.5 cursor-pointer"
+                      {isCompleted && hasEloData && (
+                        <div className="mt-2">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedEloMatchId(isEloExpanded ? null : m.id)}
+                            className="w-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-orange-600 py-1.5 cursor-pointer hover:opacity-70 transition-opacity"
+                          >
+                            <span>{isEloExpanded ? 'Hide' : 'Show'} ELO Changes</span>
+                            {isEloExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                          </button>
+
+                          {isEloExpanded && (
+                            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-150">
+                              <div className="space-y-2.5">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase">Team A</span>
+                                {teamA.map(eloRow)}
+                              </div>
+                              <div className="space-y-2.5">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase">Team B</span>
+                                {teamB.map(eloRow)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {isHostOrAdmin && isCompleted && (
+                        <Link
+                          href={`/c/${communitySlug}/sessions/${sessionId}/m/${m.id}`}
+                          className="block text-center text-xs font-bold py-2 mt-2 bg-zinc-100 hover:bg-zinc-200/80 rounded-xl border border-zinc-200/60 transition-all text-zinc-700"
                         >
-                          <span>{isEloExpanded ? 'Hide' : 'Show'} ELO Changes</span>
-                          {isEloExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        </button>
+                          Edit Score
+                        </Link>
+                      )}
 
-                        {isEloExpanded && (
-                          <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-150">
-                            <div className="space-y-2.5">
-                              <span className="text-[10px] font-bold text-zinc-400 uppercase">Team A</span>
-                              {teamA.map(eloRow)}
-                            </div>
-                            <div className="space-y-2.5">
-                              <span className="text-[10px] font-bold text-zinc-400 uppercase">Team B</span>
-                              {teamB.map(eloRow)}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {isHostOrAdmin && isCompleted && (
-                      <Link
-                        href={`/c/${communitySlug}/sessions/${sessionId}/m/${m.id}`}
-                        className="block text-center text-xs font-bold py-2 bg-zinc-100 hover:bg-zinc-200/80 rounded-xl border border-zinc-200/60 transition-all text-zinc-700"
-                      >
-                        Edit Score
-                      </Link>
-                    )}
-
-                    {isSubmittingThis && (
-                      <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-orange-500">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Saving...</span>
-                      </div>
-                    )}
+                      {isSubmittingThis && (
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-orange-500 mt-2">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Saving...</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

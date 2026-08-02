@@ -20,7 +20,7 @@ export default function ScoreButtonPair({ scoreA, scoreB, onTapA, onTapB, disabl
     if (isCompleted) {
       return winnerSide === side
         ? 'bg-orange-500 text-white'
-        : 'bg-zinc-200 text-zinc-500';
+        : 'bg-zinc-200 text-zinc-800';
     }
     return 'bg-zinc-900 text-white';
   };
@@ -28,12 +28,12 @@ export default function ScoreButtonPair({ scoreA, scoreB, onTapA, onTapB, disabl
   const interactive = !disabled && !isCompleted;
 
   return (
-    <div className="flex items-center justify-center gap-3">
+    <div className="flex items-center justify-center gap-1.5">
       <button
         type="button"
         disabled={!interactive}
         onClick={onTapA}
-        className={`h-14 w-16 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-sm ${boxClass('A')} ${
+        className={`h-12 w-12 rounded-lg flex items-center justify-center text-lg font-black transition-all shadow-lg ${boxClass('A')} ${
           interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'
         }`}
       >
@@ -43,7 +43,7 @@ export default function ScoreButtonPair({ scoreA, scoreB, onTapA, onTapB, disabl
         type="button"
         disabled={!interactive}
         onClick={onTapB}
-        className={`h-14 w-16 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-sm ${boxClass('B')} ${
+        className={`h-12 w-12 rounded-lg flex items-center justify-center text-lg font-black transition-all shadow-lg ${boxClass('B')} ${
           interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'
         }`}
       >
