@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { startSessionAction } from '@/server/actions/session.actions';
+import { startSessionAction, uploadOfflineSessionAction } from '@/server/actions/session.actions';
 import { generateNextRoundAction, persistRoundAction } from '@/server/actions/round.actions';
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
 import { saveQuickMatchStateAction } from '@/server/actions/personal-match.actions';
@@ -47,6 +47,8 @@ export type LeaderboardRankBy = 'POINT' | 'WIN';
 
 export type ByeScoringMethod = 'PLAYER_AVERAGE' | 'HALF_N';
 
+export type SessionMode = 'ONLINE' | 'OFFLINE';
+
 export interface GameConfiguration {
   sport: SportType;
   gameType: GameType;
@@ -59,6 +61,10 @@ export interface GameConfiguration {
   // PLAYER_AVERAGE: average of player's own MATCH entries, fallback round(N/2)
   // HALF_N: always round(N/2), fixed & non-adaptive
   byeScoringMethod: ByeScoringMethod;
+  // Community sessions only (ignored in Quick Match) — ONLINE is today's realtime, multi-host,
+  // per-round server sync. OFFLINE plays entirely on this device with the same local engine
+  // Quick Match uses, uploading everything to the server only once, when the session ends.
+  sessionMode: SessionMode;
 }
 
 export interface PlayerRegistration {
@@ -201,6 +207,7 @@ export default function WizardForm({
       pointTarget: '16 Points',
       leaderboardRankedBy: 'POINT',
       byeScoringMethod: 'PLAYER_AVERAGE', // default per brief §3
+      sessionMode: 'ONLINE',
     }
   );
 
@@ -281,15 +288,23 @@ export default function WizardForm({
   // ------------------------------------------
   // QUICK MATCH PERSISTENCE (AUTO-SAVE & AUTO-RESTORE ON REFRESH)
   // ------------------------------------------
-  // Separate keys for the public sandbox vs. a logged-in user's Personal Quick Match so the
-  // two entry points never bleed into each other's in-progress local state.
+  // Separate keys per entry point so they never bleed into each other's in-progress local
+  // state: public sandbox, a logged-in user's Personal Quick Match, and an Offline community
+  // session (scoped per community, since a host could run Offline sessions for more than one).
   const quickMatchStorageKey = saveToProfile
     ? 'communitrix_quick_match_session_profile'
+    : !isGuestDemoMode
+    ? `communitrix_offline_session_${communityId}`
     : 'communitrix_quick_match_session';
 
   // System Submission State (declared early so handleConfirmEndMatch below can use it)
   const [isSavingResult, setIsSavingResult] = useState(false);
   const [saveResultError, setSaveResultError] = useState<string | null>(null);
+  // Offline community session upload — same shape as the Personal Quick Match save state above,
+  // but for the one-shot bulk upload that happens when an Offline session ends.
+  const [isUploadingOffline, setIsUploadingOffline] = useState(false);
+  const [uploadOfflineError, setUploadOfflineError] = useState<string | null>(null);
+  const [uploadedSessionId, setUploadedSessionId] = useState<string | null>(null);
   // Tracks failures from the background OPEN-match sync below, surfaced in the UI (not
   // silent) so a lost connection is visible instead of only discovered after data is gone.
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -303,8 +318,12 @@ export default function WizardForm({
   //   type, config, player registration) happen before any DB row exists, so a local draft is
   //   still restored there — otherwise a crash while just picking players loses everything
   //   with zero recovery, which defeats the point of this feature.
+  // - Community sessions (Online or Offline): same resilience, using the community-scoped key
+  //   above. Online never reaches step 4 locally (redirects to the server-backed Live Board
+  //   before that's possible), so in practice this only ever restores steps 1-3 for Online; a
+  //   full in-progress Offline session (any step) restores fully.
   useEffect(() => {
-    if (typeof window === 'undefined' || !isGuestDemoMode || initialState) return;
+    if (typeof window === 'undefined' || initialState) return;
     const saved = localStorage.getItem(quickMatchStorageKey);
     if (saved) {
       try {
@@ -335,7 +354,7 @@ export default function WizardForm({
   // for steps 1-3 (see above) — once matches exist, the DB sync below takes over and this
   // local draft is cleared so it's never mistaken for a resumable session on next visit.
   useEffect(() => {
-    if (typeof window === 'undefined' || !isGuestDemoMode) return;
+    if (typeof window === 'undefined') return;
     if (saveToProfile && step >= 4) {
       localStorage.removeItem(quickMatchStorageKey);
       return;
@@ -450,6 +469,9 @@ export default function WizardForm({
     setSyncConflict(false);
     setShowPodium(false);
     setShowConfirmEndModal(false);
+    setIsUploadingOffline(false);
+    setUploadOfflineError(null);
+    setUploadedSessionId(null);
   };
 
   // ==========================================
@@ -758,6 +780,7 @@ export default function WizardForm({
         roundsPlanned: null, // open-ended — Live Board generates rounds until a Host ends the session
         attendeeIds,
         byeScoringMethod: config.byeScoringMethod,
+        sessionMode: 'ONLINE', // this path is only ever reached for Online sessions — see handleProceedFromRegistration
       });
 
       if (!result.ok) {
@@ -787,6 +810,12 @@ export default function WizardForm({
         });
       }
 
+      // Session now exists server-side — clear the steps-1-3 local draft so re-opening the
+      // wizard for this community doesn't restore stale state from this finished attempt.
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(quickMatchStorageKey);
+      }
+
       router.push(`/c/${communitySlug}/sessions/${sessionId}`);
     } catch (err: any) {
       setIsSubmitting(false);
@@ -794,9 +823,11 @@ export default function WizardForm({
     }
   };
 
-  // Step 3 -> Step 4/Live Board: dispatch by mode
+  // Step 3 -> Step 4/Live Board: dispatch by mode. Offline community sessions reuse the exact
+  // same local engine as Quick Match (handleGenerateMatches) instead of creating a session on
+  // the server — nothing touches the database until handleUploadOfflineSession runs at the end.
   const handleProceedFromRegistration = () => {
-    if (isGuestDemoMode) {
+    if (isGuestDemoMode || config.sessionMode === 'OFFLINE') {
       handleGenerateMatches();
     } else {
       handleStartCommunitySession();
@@ -1172,6 +1203,85 @@ export default function WizardForm({
       if (typeof window !== 'undefined') {
         localStorage.removeItem(quickMatchStorageKey);
       }
+    } else if (!isGuestDemoMode && config.sessionMode === 'OFFLINE') {
+      // Offline community session — this is the one and only point it ever touches the
+      // database. Replay every fully-scored round through the same RPCs a live Online host
+      // would call, in order, then finalize.
+      setIsUploadingOffline(true);
+      setUploadOfflineError(null);
+
+      try {
+        // Resolve every player to a real profile id — a guest's creation may still be in
+        // flight (or, after a page reload mid-session, its promise may be gone entirely, in
+        // which case there's nothing to await and the id is used as-is).
+        const idEntries = await Promise.all(
+          registeredPlayers.map(async (p) => {
+            const realId = await (pendingGuestCreations.current.get(p.id) ?? Promise.resolve(p.id));
+            return [p.id, realId] as const;
+          })
+        );
+        const idMap = new Map(idEntries);
+        const remap = (id: string) => idMap.get(id) || id;
+
+        // Group local matches by round, keeping only rounds where every court has both
+        // scores — an in-progress round with any unscored court is dropped rather than
+        // blocking "End Session" or inventing a void step.
+        const roundNumbers = Array.from(new Set(matches.map((m) => m.roundNumber))).sort((a, b) => a - b);
+        const rounds = roundNumbers
+          .map((roundNumber) => {
+            const roundMatches = matches.filter((m) => m.roundNumber === roundNumber);
+            const fullyScored = roundMatches.length > 0 && roundMatches.every((m) => m.scoreA !== null && m.scoreB !== null);
+            if (!fullyScored) return null;
+            return {
+              roundNumber,
+              courts: roundMatches.map((m) => ({
+                courtNumber: m.courtNumber,
+                teamA: m.teamA.filter(Boolean).map(remap),
+                teamB: m.teamB.filter(Boolean).map(remap),
+                scoreA: m.scoreA as number,
+                scoreB: m.scoreB as number,
+              })),
+              sitOuts: (roundSitOuts.get(roundNumber) || []).map(remap),
+            };
+          })
+          .filter((r): r is NonNullable<typeof r> => r !== null);
+
+        if (rounds.length === 0) {
+          setIsUploadingOffline(false);
+          setUploadOfflineError('No fully-scored rounds to upload — score at least one full round before ending the session.');
+          setShowPodium(true);
+          return;
+        }
+
+        const isFixedSum = isFixedSumWizardConfig(config.scoringSystem, config.pointTarget);
+
+        const result = await uploadOfflineSessionAction({
+          communityId,
+          communitySlug,
+          name: config.activityName,
+          format: config.gameType.includes('MEXICANO') ? 'MEXICANO' : 'AMERICANO',
+          sport: config.sport,
+          scoringType: isFixedSum ? 'POINTS' : 'GAMES',
+          pointsMode: isFixedSum ? 'FIXED_TOTAL' : 'FIRST_TO_TARGET',
+          maxScoreTarget: configN,
+          courtCount: config.courtCount,
+          byeScoringMethod: config.byeScoringMethod,
+          attendeeIds: registeredPlayers.map((p) => remap(p.id)),
+          rounds,
+        });
+
+        setIsUploadingOffline(false);
+
+        if (result.ok) {
+          setUploadedSessionId(result.data.sessionId);
+          if (typeof window !== 'undefined') localStorage.removeItem(quickMatchStorageKey);
+        } else {
+          setUploadOfflineError(result.message || 'Failed to upload this session.');
+        }
+      } catch (err: any) {
+        setIsUploadingOffline(false);
+        setUploadOfflineError(err?.message || 'Failed to upload this session.');
+      }
     }
 
     setShowPodium(true);
@@ -1208,6 +1318,35 @@ export default function WizardForm({
               <>
                 <Check className="h-4 w-4 shrink-0" />
                 <span>Saved to My Quick Matches on your profile.</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {!isGuestDemoMode && config.sessionMode === 'OFFLINE' && (
+          <div
+            className={`flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-medium ${
+              uploadOfflineError
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : isUploadingOffline
+                ? 'bg-zinc-50 border-zinc-200 text-zinc-600'
+                : 'bg-green-50 border-green-200 text-green-700'
+            }`}
+          >
+            {isUploadingOffline ? (
+              <>
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                <span>Uploading this session to the community — applying Elo, bye points, and Community Points...</span>
+              </>
+            ) : uploadOfflineError ? (
+              <>
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{uploadOfflineError} Your results are still shown below, but this session has not been saved to the community yet.</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 shrink-0" />
+                <span>Uploaded to the community — Elo, bye points, and Community Points have been applied.</span>
               </>
             )}
           </div>
@@ -1252,11 +1391,17 @@ export default function WizardForm({
           ) : (
             <button
               type="button"
-              onClick={() => router.push(`/c/${communitySlug}`)}
+              onClick={() =>
+                router.push(
+                  uploadedSessionId
+                    ? `/c/${communitySlug}/sessions/${uploadedSessionId}`
+                    : `/c/${communitySlug}`
+                )
+              }
               className="flex-1 py-3.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm flex items-center justify-center gap-2"
             >
               <Users className="h-4 w-4" />
-              <span>Back to Community</span>
+              <span>{uploadedSessionId ? 'View Uploaded Session' : 'Back to Community'}</span>
             </button>
           )}
         </div>
@@ -1627,6 +1772,67 @@ export default function WizardForm({
                 </button>
               </div>
             </div>
+
+            {/* Session Mode — community sessions only; Quick Match has no server to be
+                online/offline about. Online = today's realtime, multi-host behavior. Offline =
+                score locally on this device (fast, no per-match network round-trip), uploading
+                everything only once, when the session ends. */}
+            {!isGuestDemoMode && (
+              <div className="space-y-2 pt-2 border-t border-zinc-100">
+                <div>
+                  <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                    Session Mode
+                  </label>
+                  <p className="text-[11px] text-zinc-400 font-light mt-0.5">
+                    How this session syncs with the server while you play
+                  </p>
+                </div>
+                <div className="flex items-stretch gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfig((prev) => ({ ...prev, sessionMode: 'ONLINE' }))}
+                    className={`flex-1 py-3 px-3 rounded-xl text-left border-2 transition-all cursor-pointer ${
+                      config.sessionMode === 'ONLINE'
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-zinc-200 bg-white hover:border-zinc-300'
+                    }`}
+                  >
+                    <p className={`text-xs font-extrabold uppercase ${
+                      config.sessionMode === 'ONLINE' ? 'text-orange-600' : 'text-zinc-600'
+                    }`}>
+                      Online
+                    </p>
+                    <p className="text-[10px] text-zinc-400 font-light mt-0.5 leading-snug">
+                      Real-time — every host sees updates instantly. Best with multiple hosts.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfig((prev) => ({ ...prev, sessionMode: 'OFFLINE' }))}
+                    className={`flex-1 py-3 px-3 rounded-xl text-left border-2 transition-all cursor-pointer ${
+                      config.sessionMode === 'OFFLINE'
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-zinc-200 bg-white hover:border-zinc-300'
+                    }`}
+                  >
+                    <p className={`text-xs font-extrabold uppercase ${
+                      config.sessionMode === 'OFFLINE' ? 'text-orange-600' : 'text-zinc-600'
+                    }`}>
+                      Offline
+                    </p>
+                    <p className="text-[10px] text-zinc-400 font-light mt-0.5 leading-snug">
+                      Score on this device only, upload everything when you end the session.
+                    </p>
+                  </button>
+                </div>
+                {config.sessionMode === 'OFFLINE' && (
+                  <p className="text-[10px] text-amber-600 font-medium flex items-start gap-1 pt-0.5">
+                    <span>⚠</span>
+                    <span>Only this device can score — other hosts won't see live updates, and nothing is saved to the community until you end the session.</span>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Confirm Button */}
@@ -1889,7 +2095,11 @@ export default function WizardForm({
             ) : (
               <>
                 <Trophy className="h-4 w-4" />
-                {isGuestDemoMode ? 'Generate Matches & Open Session' : 'Start Session & Open Live Board'}
+                {isGuestDemoMode
+                  ? 'Generate Matches & Open Session'
+                  : config.sessionMode === 'OFFLINE'
+                  ? 'Generate Matches & Play Offline'
+                  : 'Start Session & Open Live Board'}
               </>
             )}
           </button>
@@ -2078,8 +2288,21 @@ export default function WizardForm({
                 End Match Session? ⚡
               </h3>
               <p className="text-xs text-zinc-400 font-light leading-relaxed">
-                Are you sure you want to end this Quick Match session? The match will be finalized, and the final results will be displayed on the podium.
+                {!isGuestDemoMode && config.sessionMode === 'OFFLINE'
+                  ? 'Every fully-scored round will be uploaded to the community — Elo, bye points, and Community Points applied. This cannot be undone.'
+                  : 'Are you sure you want to end this Quick Match session? The match will be finalized, and the final results will be displayed on the podium.'}
               </p>
+              {!isGuestDemoMode && config.sessionMode === 'OFFLINE' && (() => {
+                const latestRound = matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0);
+                const latestRoundMatches = matches.filter((m) => m.roundNumber === latestRound);
+                const hasUnscored = latestRoundMatches.some((m) => m.scoreA === null || m.scoreB === null);
+                if (!hasUnscored) return null;
+                return (
+                  <p className="text-[11px] text-amber-400 font-bold leading-relaxed pt-1">
+                    ⚠ Round {latestRound} isn&apos;t fully scored and won&apos;t be uploaded.
+                  </p>
+                );
+              })()}
             </div>
 
             <div className="flex gap-3 pt-2">

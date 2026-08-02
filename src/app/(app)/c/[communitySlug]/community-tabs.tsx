@@ -611,6 +611,11 @@ export default function CommunityTabs({
                             <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
                               {s.format} · {s.sport}
                             </span>
+                            {s.session_mode === 'OFFLINE' && (
+                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200">
+                                Offline
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-3 mt-1.5 text-[11px] text-zinc-500 font-semibold">
                             <span>{new Date(s.created_at).toLocaleDateString()}</span>
