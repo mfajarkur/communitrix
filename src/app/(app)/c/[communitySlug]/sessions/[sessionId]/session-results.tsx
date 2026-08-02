@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { ArrowLeft, Trophy, Users, Crown } from 'lucide-react';
-import { getDisplayName } from '@/lib/utils/profile';
+import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import LeaderboardPrintSection from '@/app/(app)/communities/quick-match/[id]/leaderboard-print-section';
 import type { PosterStanding } from '@/components/leaderboard-poster';
+import ScoreButtonPair from '@/components/session-live/score-button-pair';
 
 interface MatchPlayer {
   profile_id: string;
   team: 'A' | 'B';
   slot: number;
-  profile: { full_name?: string | null; display_name?: string | null };
+  profile: { full_name?: string | null; display_name?: string | null; avatar_url?: string | null };
 }
 
 interface Match {
@@ -42,8 +43,25 @@ type Props = {
 // still reflecting this session's ELO-affecting results (ELO itself was already applied
 // live, per match, while the session was active).
 export default function SessionResults({ communitySlug, session, rounds, matches, standings }: Props) {
-  const teamLabel = (players: MatchPlayer[]) =>
-    players.map((mp) => getDisplayName(mp.profile)).join(' / ');
+  const renderTeam = (players: MatchPlayer[], side: 'A' | 'B', isWinner: boolean) => (
+    <div className={`flex-1 space-y-1.5 flex flex-col ${side === 'A' ? 'items-start' : 'items-end'}`}>
+      {players.map((mp) => (
+        <div
+          key={mp.profile_id}
+          className={`flex items-center gap-1.5 min-w-0 ${side === 'B' ? 'flex-row-reverse' : ''}`}
+        >
+          <img
+            src={getAvatarUrl({ id: mp.profile_id, avatar_url: mp.profile.avatar_url, full_name: mp.profile.full_name })}
+            alt=""
+            className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
+          />
+          <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
+            {getDisplayName(mp.profile)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
@@ -153,40 +171,46 @@ export default function SessionResults({ communitySlug, session, rounds, matches
       <div className="space-y-4">
         <h2 className="text-sm font-black uppercase tracking-wide text-zinc-900">Match History</h2>
         {rounds.map((round) => (
-          <div key={round.id} className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-zinc-100 bg-zinc-50">
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-600">Round {round.round_number}</h3>
-            </div>
-            <div className="divide-y divide-zinc-100">
+          <div key={round.id} className="space-y-3">
+            <h3 className="text-xs font-black uppercase tracking-wider text-zinc-500 px-1">Round {round.round_number}</h3>
+            <div className="space-y-4">
               {matches
                 .filter((m) => m.round_number === round.round_number)
                 .sort((a, b) => a.court_number - b.court_number)
                 .map((m) => {
                   const teamA = m.match_players.filter((mp) => mp.team === 'A');
                   const teamB = m.match_players.filter((mp) => mp.team === 'B');
-                  const aWins = m.winner_side === 'A';
-                  const bWins = m.winner_side === 'B';
+                  const isCompleted = m.status === 'COMPLETED';
                   return (
-                    <div key={m.id} className="px-5 py-3 flex items-center justify-between gap-4">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 shrink-0">
-                        Court {m.court_number}
-                      </span>
-                      <div className="flex items-center gap-3 flex-1 justify-center min-w-0">
-                        <span className={`text-xs font-bold truncate ${aWins ? 'text-emerald-600' : 'text-zinc-700'}`}>
-                          {teamLabel(teamA)}
-                        </span>
-                        <span className="text-xs font-mono font-black text-zinc-900 shrink-0">
-                          {m.team_a_score ?? '-'} : {m.team_b_score ?? '-'}
-                        </span>
-                        <span className={`text-xs font-bold truncate ${bWins ? 'text-emerald-600' : 'text-zinc-700'}`}>
-                          {teamLabel(teamB)}
+                    <div
+                      key={m.id}
+                      className="relative rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+                        <span className="font-bold text-base text-[#111827]">Court {m.court_number}</span>
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-500">
+                          {isCompleted ? 'Completed' : m.status}
                         </span>
                       </div>
-                      {m.status !== 'COMPLETED' && (
-                        <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400 shrink-0">
-                          {m.status}
-                        </span>
-                      )}
+                      <div className="relative px-4 pt-7 pb-4">
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
+                          <ScoreButtonPair
+                            scoreA={m.team_a_score}
+                            scoreB={m.team_b_score}
+                            isCompleted
+                            winnerSide={m.winner_side}
+                            onTapA={() => {}}
+                            onTapB={() => {}}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {renderTeam(teamA, 'A', isCompleted && m.winner_side === 'A')}
+                          <span className="shrink-0 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 text-[9px] font-bold flex items-center justify-center uppercase">
+                            vs
+                          </span>
+                          {renderTeam(teamB, 'B', isCompleted && m.winner_side === 'B')}
+                        </div>
+                      </div>
                     </div>
                   );
                 })}

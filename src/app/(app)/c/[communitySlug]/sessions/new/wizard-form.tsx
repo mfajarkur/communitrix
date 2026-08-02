@@ -2170,43 +2170,74 @@ export default function WizardForm({
                 );
               }
 
-              return currentRoundMatches.map((m, idx) => {
+              return currentRoundMatches.map((m) => {
                 const teamANamesJoined = config.gameType.includes('TEAM_')
                   ? (playerMap.get(m.teamA[0])?.name || 'Team')
                   : m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
                 const teamBNamesJoined = config.gameType.includes('TEAM_')
                   ? (playerMap.get(m.teamB[0])?.name || 'Team')
                   : m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
+                const winnerSide: 'A' | 'B' | null =
+                  m.scoreA !== null && m.scoreB !== null
+                    ? m.scoreA > m.scoreB
+                      ? 'A'
+                      : m.scoreB > m.scoreA
+                      ? 'B'
+                      : null
+                    : null;
+
+                const renderTeam = (ids: string[], side: 'A' | 'B') => {
+                  const isWinner = m.isCompleted && winnerSide === side;
+                  return (
+                    <div className={`flex-1 space-y-1.5 flex flex-col ${side === 'A' ? 'items-start' : 'items-end'}`}>
+                      {ids.filter(Boolean).map((id, pIdx) => {
+                        const p = playerMap.get(id);
+                        return (
+                          <div
+                            key={`${id}-${pIdx}`}
+                            className={`flex items-center gap-1.5 min-w-0 ${side === 'B' ? 'flex-row-reverse' : ''}`}
+                          >
+                            <img
+                              src={getAvatarUrl({ id, avatar_url: p?.avatarUrl, full_name: p?.name })}
+                              alt=""
+                              className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
+                            />
+                            <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
+                              {p?.name || 'Player'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                };
 
                 return (
                   <div
                     key={m.id}
-                    className="p-5 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm"
+                    className={`relative rounded-2xl border bg-white shadow-sm transition-all overflow-hidden ${
+                      m.isCompleted ? 'border-zinc-200' : 'border-zinc-200 border-l-4 border-l-orange-500'
+                    }`}
                   >
-                    <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                      <span className="font-black text-xs text-[#111827] uppercase tracking-wider">
-                        Court {m.courtNumber}
-                      </span>
-                      <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 border border-orange-500/20">
-                        Match {idx + 1}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+                      <span className="font-bold text-base text-[#111827]">Court {m.courtNumber}</span>
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                          m.isCompleted ? 'bg-zinc-100 text-zinc-500' : 'bg-orange-100 text-orange-600'
+                        }`}
+                      >
+                        {m.isCompleted ? 'Completed' : 'In Progress'}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-3 text-center">
-                      {/* Team A (stacked vertically, no Team A label) */}
-                      <div className="sm:col-span-2 space-y-0.5 text-center sm:text-right">
-                        {m.teamA.filter(Boolean).map((id, pIdx) => (
-                          <p key={`${id}-${pIdx}`} className="text-xs font-bold text-zinc-900 truncate">
-                            {playerMap.get(id)?.name || 'Player'}
-                          </p>
-                        ))}
-                      </div>
-
-                      {/* Interactive Score Picker Buttons */}
-                      <div className="sm:col-span-1">
+                    <div className="relative px-4 pt-7 pb-4">
+                      {/* Score badge floats over the header/content seam */}
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
                         <ScoreButtonPair
                           scoreA={m.scoreA}
                           scoreB={m.scoreB}
+                          isCompleted={m.isCompleted}
+                          winnerSide={winnerSide}
                           onTapA={() =>
                             setActivePicker({ matchId: m.id, team: 'A', teamName: teamANamesJoined, currentScore: m.scoreA })
                           }
@@ -2216,13 +2247,12 @@ export default function WizardForm({
                         />
                       </div>
 
-                      {/* Team B (stacked vertically, no Team B label) */}
-                      <div className="sm:col-span-2 space-y-0.5 text-center sm:text-left">
-                        {m.teamB.filter(Boolean).map((id, pIdx) => (
-                          <p key={`${id}-${pIdx}`} className="text-xs font-bold text-zinc-900 truncate">
-                            {playerMap.get(id)?.name || 'Player'}
-                          </p>
-                        ))}
+                      <div className="flex items-center gap-2">
+                        {renderTeam(m.teamA, 'A')}
+                        <span className="shrink-0 h-6 w-6 rounded-full bg-white border border-zinc-200 text-zinc-400 text-[9px] font-bold flex items-center justify-center uppercase">
+                          vs
+                        </span>
+                        {renderTeam(m.teamB, 'B')}
                       </div>
                     </div>
                   </div>
