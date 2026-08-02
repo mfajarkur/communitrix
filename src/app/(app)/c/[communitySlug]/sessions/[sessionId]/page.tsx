@@ -61,9 +61,13 @@ export default async function SessionLiveBoardPage({
         profile_id,
         team,
         slot,
+        elo_before,
+        elo_delta,
+        elo_after,
         profile:profiles (
           full_name,
-          display_name
+          display_name,
+          avatar_url
         )
       )
     `)

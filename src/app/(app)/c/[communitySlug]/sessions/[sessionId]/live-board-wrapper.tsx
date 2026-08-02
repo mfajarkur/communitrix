@@ -9,9 +9,9 @@ import {
   submitMatchScoreAction,
 } from '@/server/actions/round.actions';
 import { finalizeSessionAction } from '@/server/actions/session.actions';
-import { HelpCircle, Loader2 } from 'lucide-react';
+import { HelpCircle, Loader2, Trophy, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { getDisplayName } from '@/lib/utils/profile';
+import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
 import type { PosterStanding } from '@/components/leaderboard-poster';
 import RoundCarousel from '@/components/session-live/round-carousel';
@@ -25,9 +25,13 @@ interface MatchPlayer {
   profile_id: string;
   team: 'A' | 'B';
   slot: number;
+  elo_before: number | null;
+  elo_delta: number | null;
+  elo_after: number | null;
   profile: {
     full_name?: string | null;
     display_name?: string | null;
+    avatar_url?: string | null;
   };
 }
 
@@ -110,6 +114,7 @@ export default function LiveBoardWrapper({
     currentScore: number | null;
   } | null>(null);
   const [submittingMatchId, setSubmittingMatchId] = useState<string | null>(null);
+  const [expandedEloMatchId, setExpandedEloMatchId] = useState<string | null>(null);
 
   const isPointsSystem = isFixedSumSessionConfig(sessionConfig.scoringType, sessionConfig.pointsMode);
   const targetN = sessionConfig.maxScoreTarget || 24;
@@ -353,38 +358,103 @@ export default function LiveBoardWrapper({
                 const teamBName = teamB.map((mp) => getDisplayName(mp.profile)).join(' / ');
                 const draft = getDraft(m.id);
                 const isSubmittingThis = submittingMatchId === m.id;
+                const hasEloData = m.match_players.some((mp) => mp.elo_delta !== null && mp.elo_delta !== undefined);
+                const isEloExpanded = expandedEloMatchId === m.id;
+
+                const renderTeam = (players: MatchPlayer[], side: 'A' | 'B') => {
+                  const isWinner = isCompleted && m.winner_side === side;
+                  return (
+                    <div
+                      className={`sm:col-span-2 space-y-1.5 flex flex-col items-center ${
+                        side === 'A' ? 'sm:items-end' : 'sm:items-start'
+                      }`}
+                    >
+                      {players.map((mp) => (
+                        <div
+                          key={mp.profile_id}
+                          className={`flex items-center gap-2 ${side === 'A' ? 'sm:flex-row-reverse' : ''}`}
+                        >
+                          <img
+                            src={getAvatarUrl({ id: mp.profile_id, avatar_url: mp.profile.avatar_url, full_name: mp.profile.full_name })}
+                            alt=""
+                            className={`h-8 w-8 rounded-full object-cover shrink-0 border ${
+                              isWinner ? 'border-orange-400 ring-2 ring-orange-400/30' : 'border-zinc-200'
+                            }`}
+                          />
+                          <p className={`text-xs font-bold truncate max-w-[110px] flex items-center gap-1 ${
+                            side === 'A' ? 'sm:flex-row-reverse' : ''
+                          } ${isWinner ? 'text-orange-600' : 'text-zinc-900'}`}>
+                            {isWinner && <Trophy className="h-3 w-3 text-amber-500 shrink-0" />}
+                            <span className="truncate">{getDisplayName(mp.profile)}</span>
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                };
+
+                const eloRow = (mp: MatchPlayer) => {
+                  const delta = mp.elo_delta ?? 0;
+                  const isPositive = delta >= 0;
+                  return (
+                    <div key={mp.profile_id} className="flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={getAvatarUrl({ id: mp.profile_id, avatar_url: mp.profile.avatar_url, full_name: mp.profile.full_name })}
+                          alt=""
+                          className="h-6 w-6 rounded-full object-cover shrink-0 border border-zinc-200"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-bold text-zinc-800 truncate">{getDisplayName(mp.profile)}</p>
+                          {mp.elo_before !== null && mp.elo_after !== null && (
+                            <p className="text-[10px] text-zinc-400 font-mono tabular-nums">
+                              {Math.round(mp.elo_before)} → {Math.round(mp.elo_after)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`font-black shrink-0 tabular-nums ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {isPositive ? '+' : ''}
+                        {delta.toFixed(1)}
+                      </span>
+                    </div>
+                  );
+                };
 
                 return (
-                  <div key={m.id} className="p-5 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm">
+                  <div
+                    key={m.id}
+                    className={`p-5 rounded-2xl border bg-white space-y-4 shadow-sm transition-all ${
+                      isCompleted ? 'border-zinc-200' : 'border-orange-200/70 ring-1 ring-orange-100'
+                    }`}
+                  >
                     <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                      <span className="font-black text-xs text-[#111827] uppercase tracking-wider">
+                      <span className="inline-flex items-center gap-1.5 font-black text-xs text-[#111827] uppercase tracking-wider">
+                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-zinc-100 text-zinc-500 text-[10px]">
+                          {m.court_number}
+                        </span>
                         Court {m.court_number}
                       </span>
                       <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${
                           isCompleted ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-500/10 text-orange-600'
                         }`}
                       >
+                        {!isCompleted && <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />}
                         {m.status}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-3 text-center">
-                      <div className="sm:col-span-2 space-y-0.5 text-center sm:text-right">
-                        {teamA.map((mp) => (
-                          <p key={mp.profile_id} className="text-xs font-bold text-zinc-900 truncate">
-                            {getDisplayName(mp.profile)}
-                          </p>
-                        ))}
-                      </div>
+                      {renderTeam(teamA, 'A')}
 
                       {isCompleted ? (
-                        <div className="sm:col-span-1 text-center font-black tabular-nums tracking-tight px-3 py-1 bg-zinc-50 rounded-xl flex items-center justify-center gap-3">
-                          <span className={`text-xl ${m.winner_side === 'A' ? 'text-orange-500' : 'text-zinc-400'}`}>
+                        <div className="sm:col-span-1 text-center font-black tabular-nums tracking-tight px-3 py-1.5 bg-zinc-50 rounded-xl flex items-center justify-center gap-3">
+                          <span className={`text-2xl ${m.winner_side === 'A' ? 'text-orange-500' : 'text-zinc-400'}`}>
                             {m.team_a_score ?? 0}
                           </span>
                           <span className="text-zinc-300 text-xs">—</span>
-                          <span className={`text-xl ${m.winner_side === 'B' ? 'text-orange-500' : 'text-zinc-400'}`}>
+                          <span className={`text-2xl ${m.winner_side === 'B' ? 'text-orange-500' : 'text-zinc-400'}`}>
                             {m.team_b_score ?? 0}
                           </span>
                         </div>
@@ -404,14 +474,35 @@ export default function LiveBoardWrapper({
                         </div>
                       )}
 
-                      <div className="sm:col-span-2 space-y-0.5 text-center sm:text-left">
-                        {teamB.map((mp) => (
-                          <p key={mp.profile_id} className="text-xs font-bold text-zinc-900 truncate">
-                            {getDisplayName(mp.profile)}
-                          </p>
-                        ))}
-                      </div>
+                      {renderTeam(teamB, 'B')}
                     </div>
+
+                    {isCompleted && hasEloData && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedEloMatchId(isEloExpanded ? null : m.id)}
+                          className="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-orange-600 py-2 rounded-lg hover:bg-orange-50/50 transition-all cursor-pointer"
+                        >
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          <span>{isEloExpanded ? 'Hide' : 'Show'} ELO Changes</span>
+                          {isEloExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        </button>
+
+                        {isEloExpanded && (
+                          <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-150">
+                            <div className="space-y-2.5">
+                              <span className="text-[10px] font-bold text-zinc-400 uppercase">Team A</span>
+                              {teamA.map(eloRow)}
+                            </div>
+                            <div className="space-y-2.5">
+                              <span className="text-[10px] font-bold text-zinc-400 uppercase">Team B</span>
+                              {teamB.map(eloRow)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {isHostOrAdmin && isCompleted && (
                       <Link
