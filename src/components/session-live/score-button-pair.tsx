@@ -6,38 +6,45 @@ type Props = {
   onTapA: () => void;
   onTapB: () => void;
   disabled?: boolean;
+  // Once a match is completed, the pair renders as a static (non-interactive) result — the
+  // winning side's box in orange, the losing side's muted gray — instead of the neutral
+  // "tap to score" look. winnerSide is null for a draw (both boxes stay neutral/dark).
+  isCompleted?: boolean;
+  winnerSide?: 'A' | 'B' | null;
 };
 
-// The pair of 12x12 tap-to-score buttons + colon, used inside a match card. Shared by Quick
+// The pair of tap-to-score boxes + "vs" divider look, used inside a match card. Shared by Quick
 // Match and the community Live Board — see round-carousel.tsx for why this is extracted.
-export default function ScoreButtonPair({ scoreA, scoreB, onTapA, onTapB, disabled }: Props) {
+export default function ScoreButtonPair({ scoreA, scoreB, onTapA, onTapB, disabled, isCompleted, winnerSide }: Props) {
+  const boxClass = (side: 'A' | 'B') => {
+    if (isCompleted) {
+      return winnerSide === side
+        ? 'bg-orange-500 text-white'
+        : 'bg-zinc-200 text-zinc-500';
+    }
+    return 'bg-zinc-900 text-white';
+  };
+
+  const interactive = !disabled && !isCompleted;
+
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex items-center justify-center gap-3">
       <button
         type="button"
-        disabled={disabled}
+        disabled={!interactive}
         onClick={onTapA}
-        className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all shadow-2xs ${
-          disabled ? 'cursor-default' : 'cursor-pointer'
-        } ${
-          scoreA !== null
-            ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-            : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+        className={`h-14 w-16 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-sm ${boxClass('A')} ${
+          interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'
         }`}
       >
         {scoreA ?? '-'}
       </button>
-      <span className="text-zinc-400 font-bold">:</span>
       <button
         type="button"
-        disabled={disabled}
+        disabled={!interactive}
         onClick={onTapB}
-        className={`w-12 h-12 flex items-center justify-center text-lg font-black rounded-xl border transition-all shadow-2xs ${
-          disabled ? 'cursor-default' : 'cursor-pointer'
-        } ${
-          scoreB !== null
-            ? 'bg-orange-500 text-white border-orange-600 shadow-sm'
-            : 'bg-zinc-50 hover:bg-orange-500/10 text-zinc-400 hover:text-orange-600 border-zinc-300'
+        className={`h-14 w-16 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-sm ${boxClass('B')} ${
+          interactive ? 'cursor-pointer active:scale-95' : 'cursor-default'
         }`}
       >
         {scoreB ?? '-'}

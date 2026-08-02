@@ -9,7 +9,7 @@ import {
   submitMatchScoreAction,
 } from '@/server/actions/round.actions';
 import { finalizeSessionAction } from '@/server/actions/session.actions';
-import { HelpCircle, Loader2, Trophy, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
+import { HelpCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
@@ -364,29 +364,20 @@ export default function LiveBoardWrapper({
                 const renderTeam = (players: MatchPlayer[], side: 'A' | 'B') => {
                   const isWinner = isCompleted && m.winner_side === side;
                   return (
-                    <div
-                      className={`sm:col-span-2 space-y-1.5 flex flex-col items-center ${
-                        side === 'A' ? 'sm:items-end' : 'sm:items-start'
-                      }`}
-                    >
+                    <div className={`flex-1 space-y-1.5 flex flex-col ${side === 'A' ? 'items-start' : 'items-end'}`}>
                       {players.map((mp) => (
                         <div
                           key={mp.profile_id}
-                          className={`flex items-center gap-2 ${side === 'A' ? 'sm:flex-row-reverse' : ''}`}
+                          className={`flex items-center gap-1.5 min-w-0 ${side === 'B' ? 'flex-row-reverse' : ''}`}
                         >
                           <img
                             src={getAvatarUrl({ id: mp.profile_id, avatar_url: mp.profile.avatar_url, full_name: mp.profile.full_name })}
                             alt=""
-                            className={`h-8 w-8 rounded-full object-cover shrink-0 border ${
-                              isWinner ? 'border-orange-400 ring-2 ring-orange-400/30' : 'border-zinc-200'
-                            }`}
+                            className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
                           />
-                          <p className={`text-xs font-bold truncate max-w-[110px] flex items-center gap-1 ${
-                            side === 'A' ? 'sm:flex-row-reverse' : ''
-                          } ${isWinner ? 'text-orange-600' : 'text-zinc-900'}`}>
-                            {isWinner && <Trophy className="h-3 w-3 text-amber-500 shrink-0" />}
-                            <span className="truncate">{getDisplayName(mp.profile)}</span>
-                          </p>
+                          <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
+                            {getDisplayName(mp.profile)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -424,56 +415,40 @@ export default function LiveBoardWrapper({
                 return (
                   <div
                     key={m.id}
-                    className={`p-5 rounded-2xl border bg-white space-y-4 shadow-sm transition-all ${
-                      isCompleted ? 'border-zinc-200' : 'border-orange-200/70 ring-1 ring-orange-100'
+                    className={`p-4 rounded-2xl border bg-white space-y-3 shadow-sm transition-all ${
+                      isCompleted ? 'border-zinc-200' : 'border-zinc-200 border-l-4 border-l-orange-500'
                     }`}
                   >
-                    <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-                      <span className="inline-flex items-center gap-1.5 font-black text-xs text-[#111827] uppercase tracking-wider">
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-zinc-100 text-zinc-500 text-[10px]">
-                          {m.court_number}
-                        </span>
-                        Court {m.court_number}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-[#111827]">Court {m.court_number}</span>
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider ${
-                          isCompleted ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-500/10 text-orange-600'
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                          isCompleted ? 'bg-zinc-100 text-zinc-500' : 'bg-orange-100 text-orange-600'
                         }`}
                       >
-                        {!isCompleted && <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />}
-                        {m.status}
+                        {isCompleted ? 'Completed' : 'In Progress'}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-5 items-center gap-3 text-center">
+                    <ScoreButtonPair
+                      scoreA={isCompleted ? m.team_a_score : draft.scoreA}
+                      scoreB={isCompleted ? m.team_b_score : draft.scoreB}
+                      isCompleted={isCompleted}
+                      winnerSide={m.winner_side}
+                      disabled={!isHostOrAdmin || isSubmittingThis}
+                      onTapA={() =>
+                        setActivePicker({ matchId: m.id, team: 'A', teamName: teamAName, currentScore: draft.scoreA })
+                      }
+                      onTapB={() =>
+                        setActivePicker({ matchId: m.id, team: 'B', teamName: teamBName, currentScore: draft.scoreB })
+                      }
+                    />
+
+                    <div className="flex items-center gap-2">
                       {renderTeam(teamA, 'A')}
-
-                      {isCompleted ? (
-                        <div className="sm:col-span-1 text-center font-black tabular-nums tracking-tight px-3 py-1.5 bg-zinc-50 rounded-xl flex items-center justify-center gap-3">
-                          <span className={`text-2xl ${m.winner_side === 'A' ? 'text-orange-500' : 'text-zinc-400'}`}>
-                            {m.team_a_score ?? 0}
-                          </span>
-                          <span className="text-zinc-300 text-xs">—</span>
-                          <span className={`text-2xl ${m.winner_side === 'B' ? 'text-orange-500' : 'text-zinc-400'}`}>
-                            {m.team_b_score ?? 0}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="sm:col-span-1">
-                          <ScoreButtonPair
-                            scoreA={draft.scoreA}
-                            scoreB={draft.scoreB}
-                            disabled={!isHostOrAdmin || isSubmittingThis}
-                            onTapA={() =>
-                              setActivePicker({ matchId: m.id, team: 'A', teamName: teamAName, currentScore: draft.scoreA })
-                            }
-                            onTapB={() =>
-                              setActivePicker({ matchId: m.id, team: 'B', teamName: teamBName, currentScore: draft.scoreB })
-                            }
-                          />
-                        </div>
-                      )}
-
+                      <span className="shrink-0 h-6 w-6 rounded-full bg-zinc-100 text-zinc-400 text-[9px] font-bold flex items-center justify-center uppercase">
+                        vs
+                      </span>
                       {renderTeam(teamB, 'B')}
                     </div>
 
@@ -482,9 +457,8 @@ export default function LiveBoardWrapper({
                         <button
                           type="button"
                           onClick={() => setExpandedEloMatchId(isEloExpanded ? null : m.id)}
-                          className="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-orange-600 py-2 rounded-lg hover:bg-orange-50/50 transition-all cursor-pointer"
+                          className="w-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-orange-600 py-1.5 cursor-pointer"
                         >
-                          <TrendingUp className="h-3.5 w-3.5" />
                           <span>{isEloExpanded ? 'Hide' : 'Show'} ELO Changes</span>
                           {isEloExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
