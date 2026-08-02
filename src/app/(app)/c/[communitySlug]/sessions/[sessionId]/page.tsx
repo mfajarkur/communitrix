@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { requireProfile } from '@/server/guards';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import LiveBoardWrapper from './live-board-wrapper';
 import SessionResults from './session-results';
 import { getDisplayName } from '@/lib/utils/profile';
@@ -187,7 +189,14 @@ export default async function SessionLiveBoardPage({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <Link
+        href={`/c/${communitySlug}`}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Community
+      </Link>
+
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-150 pb-5">
         <div>
