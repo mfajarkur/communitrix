@@ -104,7 +104,9 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                   <td className="py-3 pl-5 font-black text-zinc-900">
                     {s.rank === 1 ? <Crown className="h-4 w-4 text-amber-500 inline" /> : `#${s.rank}`}
                   </td>
-                  <td className="py-3 font-extrabold text-zinc-900">{s.name}</td>
+                  <td className="py-3 font-extrabold text-zinc-900">
+                    <span className="block max-w-[90px] truncate">{s.name}</span>
+                  </td>
                   <td className="py-3 text-center font-bold text-zinc-700">
                     {s.realMatchesPlayed ?? s.wins + s.losses + s.ties}
                   </td>

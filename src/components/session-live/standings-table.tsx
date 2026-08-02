@@ -62,7 +62,7 @@ export default function StandingsTable({ standings }: Props) {
                     <div className="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase shrink-0">
                       {s.name.slice(0, 2)}
                     </div>
-                    <div className="truncate max-w-[130px] sm:max-w-none">
+                    <div className="truncate max-w-[90px]">
                       <p className="font-bold text-zinc-900 truncate">{s.name}</p>
                       {s.isGuest && (
                         <span className="text-[9px] uppercase font-extrabold bg-amber-100 text-amber-800 px-1 rounded">

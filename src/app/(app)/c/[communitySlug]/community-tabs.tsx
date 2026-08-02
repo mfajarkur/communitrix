@@ -1042,7 +1042,7 @@ export default function CommunityTabs({
                                      alt={getDisplayName(r.profile)}
                                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
                                    />
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 max-w-[90px]">
                                     <p className="text-xs font-extrabold text-[#111827] truncate flex items-center gap-1.5">
                                       {getDisplayName(r.profile)}
                                       {r.profile.is_guest && (
