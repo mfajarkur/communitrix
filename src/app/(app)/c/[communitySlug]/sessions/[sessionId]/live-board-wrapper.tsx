@@ -19,6 +19,7 @@ import LiveLeaderboardTabs from '@/components/session-live/live-leaderboard-tabs
 import GenerateRoundButton from '@/components/session-live/generate-round-button';
 import ScoreButtonPair from '@/components/session-live/score-button-pair';
 import StandingsTable from '@/components/session-live/standings-table';
+import { isFixedSumSessionConfig } from '@/lib/matchmaking/scoring-format';
 
 interface MatchPlayer {
   profile_id: string;
@@ -110,7 +111,7 @@ export default function LiveBoardWrapper({
   } | null>(null);
   const [submittingMatchId, setSubmittingMatchId] = useState<string | null>(null);
 
-  const isPointsSystem = sessionConfig.scoringType === 'POINTS' || sessionConfig.pointsMode === 'FIXED_TOTAL';
+  const isPointsSystem = isFixedSumSessionConfig(sessionConfig.scoringType, sessionConfig.pointsMode);
   const targetN = sessionConfig.maxScoreTarget || 24;
 
   const totalRounds = rounds.length;

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import ScorePickerModal from '@/components/score-picker-modal';
+import { isFixedSumSessionConfig } from '@/lib/matchmaking/scoring-format';
 
 interface ScorerPlayer {
   id: string;
@@ -93,7 +94,7 @@ export default function ScorerForm({
   }, [matchId]);
 
   // 2. Save draft when score modifications occur (auto-calculates complementary score N-x when POINTS mode)
-  const isPointsSystem = sessionConfig.scoringType === 'POINTS' || sessionConfig.pointsMode === 'FIXED_TOTAL';
+  const isPointsSystem = isFixedSumSessionConfig(sessionConfig.scoringType, sessionConfig.pointsMode);
   const targetN = sessionConfig.maxScoreTarget || 24;
 
   const updateScoreA = (valA: number) => {

@@ -33,6 +33,7 @@ import { generateAmericanoRound } from '@/lib/matchmaking/americano';
 import { generateMexicanoRound } from '@/lib/matchmaking/mexicano';
 import { Attendee, PastPairing, MatchHistory, StandingRow } from '@/lib/matchmaking/types';
 import { sortStandings, StandingsMetric } from '@/lib/matchmaking/standings';
+import { isFixedSumWizardConfig } from '@/lib/matchmaking/scoring-format';
 import ScorePickerModal from '@/components/score-picker-modal';
 
 // ==========================================
@@ -740,12 +741,10 @@ export default function WizardForm({
         registeredPlayers.map((p) => pendingGuestCreations.current.get(p.id) ?? Promise.resolve(p.id))
       );
 
-      // "Total of N" (GENERAL) is a fixed-sum format just like the POINTS system — both should
-      // auto-complement the other team's score. Only "First to N" (a race) is truly open-ended
-      // and needs a manual entry. The DB only allows points_mode='FIXED_TOTAL' when
-      // scoring_type='POINTS' (see sessions_points_mode_valid), so "Total of N" is stored as
-      // POINTS/FIXED_TOTAL even though it was picked from the GENERAL tab in the UI.
-      const isFixedSum = config.scoringSystem === 'POINTS' || config.pointTarget.toLowerCase().includes('total of');
+      // The DB only allows points_mode='FIXED_TOTAL' when scoring_type='POINTS' (see
+      // sessions_points_mode_valid), so "Total of N" is stored as POINTS/FIXED_TOTAL even though
+      // it was picked from the GENERAL tab in the UI.
+      const isFixedSum = isFixedSumWizardConfig(config.scoringSystem, config.pointTarget);
 
       const result = await startSessionAction({
         communityId,
@@ -927,8 +926,7 @@ export default function WizardForm({
     scoreB: number | null,
     updatedTeam?: 'A' | 'B'
   ) => {
-    const isPointsMode = config.scoringSystem === 'POINTS';
-    const isTotalOf = config.pointTarget.toLowerCase().includes('total of');
+    const isFixedSum = isFixedSumWizardConfig(config.scoringSystem, config.pointTarget);
     const targetN = configN;
 
     setMatches((prev) =>
@@ -939,7 +937,7 @@ export default function WizardForm({
         let finalB = scoreB;
 
         if (targetN > 0) {
-          if (isPointsMode || isTotalOf) {
+          if (isFixedSum) {
             // POINTS or "Total of N": Total score MUST equal targetN (Score A + Score B = targetN)
             if (updatedTeam === 'A' && scoreA !== null) {
               finalA = Math.min(targetN, Math.max(0, scoreA));
@@ -2106,11 +2104,10 @@ export default function WizardForm({
       {/* Interactive Score Picker Modal */}
       {activePicker && (() => {
         const activeMatch = matches.find((m) => m.id === activePicker.matchId);
-        const isPointsMode = config.scoringSystem === 'POINTS';
-        const isTotalOf = config.pointTarget.toLowerCase().includes('total of');
-        
+        const isFixedSum = isFixedSumWizardConfig(config.scoringSystem, config.pointTarget);
+
         let maxAllowed = configN;
-        if (!isPointsMode && !isTotalOf && activeMatch) {
+        if (!isFixedSum && activeMatch) {
           // For First to N / General mode: max score allowed for this team = configN - (other team's score || 0)
           const otherScore = activePicker.team === 'A' ? activeMatch.scoreB : activeMatch.scoreA;
           if (otherScore !== null && otherScore !== undefined) {
