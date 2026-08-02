@@ -12,6 +12,7 @@ import LiveLeaderboardTabs from '@/components/session-live/live-leaderboard-tabs
 import GenerateRoundButton from '@/components/session-live/generate-round-button';
 import ScoreButtonPair from '@/components/session-live/score-button-pair';
 import StandingsTable from '@/components/session-live/standings-table';
+import { getAvatarUrl } from '@/lib/utils/profile';
 import {
   Trophy,
   Users,
@@ -25,6 +26,7 @@ import {
   Flame,
   Award,
   Sparkles,
+  Search,
   RotateCcw,
 } from 'lucide-react';
 import { generateAmericanoRound } from '@/lib/matchmaking/americano';
@@ -220,6 +222,7 @@ export default function WizardForm({
 
   // Community member list for selection
   const [availableCommunityPlayers, setAvailableCommunityPlayers] = useState<Player[]>(initialPlayers);
+  const [communityMemberSearch, setCommunityMemberSearch] = useState('');
 
   // ------------------------------------------
   // STEP 4: MATCH GENERATION & SCORE PICKER STATE
@@ -834,7 +837,7 @@ export default function WizardForm({
 
     const activeStandings = standings.map((s) => ({
       profileId: s.playerId,
-      matchesPlayed: s.realMatchesPlayed + s.byesCount,
+      matchesPlayed: (s.realMatchesPlayed ?? 0) + (s.byesCount ?? 0),
       sessionPointsFor: s.totalPoints,
       sessionPointsAgainst: s.pointsLost,
       sessionWins: s.wins,
@@ -1096,7 +1099,7 @@ export default function WizardForm({
     // Sort using sortStandings to keep visual standings 100% aligned with matchmaking
     const standingsRows: StandingRow[] = list.map((item) => ({
       profileId: item.playerId,
-      matchesPlayed: item.realMatchesPlayed + item.byesCount,
+      matchesPlayed: (item.realMatchesPlayed ?? 0) + (item.byesCount ?? 0),
       sessionPointsFor: item.totalPoints,
       sessionPointsAgainst: item.pointsLost,
       sessionWins: item.wins,
@@ -1816,26 +1819,51 @@ export default function WizardForm({
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
                   Or Select From Community Members ({availableCommunityPlayers.length})
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-                  {availableCommunityPlayers.map((p) => {
-                    const isSelected = registeredPlayers.some((reg) => reg.id === p.id);
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handleToggleCommunityPlayer(p)}
-                        className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-                          isSelected
-                            ? 'border-orange-500 bg-orange-500/10 text-orange-950'
-                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
-                        }`}
-                      >
-                        <span className="truncate">{p.fullName}</span>
-                        {isSelected && <Check className="h-4 w-4 text-orange-500 shrink-0 ml-1" />}
-                      </button>
-                    );
-                  })}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={communityMemberSearch}
+                    onChange={(e) => setCommunityMemberSearch(e.target.value)}
+                    placeholder="Search members..."
+                    className="w-full pl-8 pr-2.5 py-2 rounded-xl border border-zinc-200 bg-white text-xs font-medium text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
+                  />
                 </div>
+                {(() => {
+                  const filteredMembers = availableCommunityPlayers.filter((p) =>
+                    p.fullName.toLowerCase().includes(communityMemberSearch.trim().toLowerCase())
+                  );
+                  if (filteredMembers.length === 0) {
+                    return <p className="text-xs text-zinc-400 text-center py-3">No members match your search.</p>;
+                  }
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                      {filteredMembers.map((p) => {
+                        const isSelected = registeredPlayers.some((reg) => reg.id === p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => handleToggleCommunityPlayer(p)}
+                            className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                              isSelected
+                                ? 'border-orange-500 bg-orange-500/10 text-orange-950'
+                                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                            }`}
+                          >
+                            <img
+                              src={getAvatarUrl({ id: p.id, avatar_url: p.avatarUrl, full_name: p.fullName })}
+                              alt=""
+                              className="h-6 w-6 rounded-full object-cover shrink-0 border border-zinc-200"
+                            />
+                            <span className="truncate flex-1">{p.fullName}</span>
+                            {isSelected && <Check className="h-4 w-4 text-orange-500 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>

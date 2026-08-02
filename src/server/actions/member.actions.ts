@@ -118,7 +118,7 @@ export async function updateMemberRoleAction(input: {
       revalidatePath(`/c/${input.communitySlug}`);
     }
 
-    return { ok: true };
+    return { ok: true, data: null };
   } catch (error: any) {
     if (error.message?.includes('redirect')) throw error;
     return {
@@ -191,7 +191,7 @@ export async function removeMemberAction(input: {
       revalidatePath(`/c/${input.communitySlug}`);
     }
 
-    return { ok: true };
+    return { ok: true, data: null };
   } catch (error: any) {
     if (error.message?.includes('redirect')) throw error;
     return {
