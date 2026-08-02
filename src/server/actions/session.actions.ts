@@ -15,6 +15,7 @@ export interface StartSessionInput {
   courtCount: number;
   roundsPlanned: number | null;
   attendeeIds: string[];
+  byeScoringMethod: 'PLAYER_AVERAGE' | 'HALF_N';
 }
 
 export async function startSessionAction(
@@ -71,6 +72,7 @@ export async function startSessionAction(
       p_rounds_planned: input.roundsPlanned,
       p_court_count: input.courtCount,
       p_attendee_ids: input.attendeeIds,
+      p_bye_scoring_method: input.byeScoringMethod,
     });
 
     if (error) {

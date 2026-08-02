@@ -757,6 +757,7 @@ export default function WizardForm({
         courtCount: config.courtCount,
         roundsPlanned: null, // open-ended — Live Board generates rounds until a Host ends the session
         attendeeIds,
+        byeScoringMethod: config.byeScoringMethod,
       });
 
       if (!result.ok) {

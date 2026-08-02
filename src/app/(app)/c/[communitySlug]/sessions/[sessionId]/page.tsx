@@ -17,7 +17,7 @@ export default async function SessionLiveBoardPage({
   // 1. Fetch Session Info
   const { data: session, error: sErr } = await supabase
     .from('sessions')
-    .select('id, session_name, sport, format, status, court_count, rounds_planned, community_id, scoring_type, points_mode, max_score_target')
+    .select('id, session_name, sport, format, status, court_count, rounds_planned, community_id, scoring_type, points_mode, max_score_target, bye_scoring_method')
     .eq('id', sessionId)
     .single();
 
@@ -104,13 +104,39 @@ export default async function SessionLiveBoardPage({
 
   // 6. Standings — same shape LeaderboardPoster/LeaderboardPrintSection expect (PosterStanding),
   // computed once here so both the live board and the results recap share identical numbers.
+  //
+  // Bye points: a player behind on matches played (because they sat out a round while others
+  // played) gets a placeholder score per missed round — same formula Quick Match already
+  // computes locally (see wizard-form.tsx's `standings` useMemo / docs/bye-point-brief.md) —
+  // so their leaderboard position isn't unfairly dragged down by rounds they didn't get to
+  // play. PLAYER_AVERAGE only needs the player's mean score per real match, which is just
+  // session_points_for / realMatchesPlayed — no need to fetch each individual match score.
+  const N = session.max_score_target;
+  const halfN = Math.round(N / 2);
+  const byeMethod = session.bye_scoring_method;
+  const maxRealMatchesPlayed = participatingPlayers.reduce(
+    (max: number, p: any) => Math.max(max, p.session_wins + p.session_losses + p.session_draws),
+    0
+  );
+
   const standings = participatingPlayers
     .map((p: any) => {
       const wins = p.session_wins;
       const losses = p.session_losses;
       const ties = p.session_draws;
-      const totalPoints = p.session_points_for;
-      const diff = p.session_points_for - p.session_points_against;
+      const realMatchesPlayed = wins + losses + ties;
+      const matchesBehind = maxRealMatchesPlayed - realMatchesPlayed;
+
+      const rawByeScore =
+        byeMethod === 'HALF_N' || realMatchesPlayed === 0
+          ? halfN
+          : Math.round(p.session_points_for / realMatchesPlayed);
+      const byeScore = Math.max(0, Math.min(N, rawByeScore));
+      const byePoints = matchesBehind > 0 ? matchesBehind * byeScore : 0;
+      const byeIsPlaceholder = matchesBehind > 0 && realMatchesPlayed === 0;
+
+      const totalPoints = p.session_points_for + byePoints;
+      const diff = totalPoints - p.session_points_against;
       return {
         playerId: p.profile_id,
         name: getDisplayName(p.profile),
@@ -119,7 +145,10 @@ export default async function SessionLiveBoardPage({
         ties,
         totalPoints,
         diff,
-        realMatchesPlayed: wins + losses + ties,
+        realMatchesPlayed,
+        byePoints,
+        byesCount: Math.max(0, matchesBehind),
+        byeIsPlaceholder,
       };
     })
     .sort((a, b) => {

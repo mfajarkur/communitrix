@@ -13,6 +13,9 @@ export type PosterStanding = {
   ties: number;
   diff?: number;
   realMatchesPlayed?: number;
+  byePoints?: number;
+  byesCount?: number;
+  byeIsPlaceholder?: boolean;
 };
 
 type Props = {
