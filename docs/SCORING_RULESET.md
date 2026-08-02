@@ -97,9 +97,17 @@ The community management system enforces a strict 3-tier permission model:
 
 ## 5. Elo & Skill Rating Adjustments
 
+Formula version 2 (`carry_rule_enabled = true` in `rating_formula_versions`) is the currently-active version — every match created since is scored with 5.1 and 5.1a below. Matches created before formula version 2 shipped keep scoring under the raw-average, flat-split formula forever (even on replay after a void/amend), per `matches.formula_version`.
+
 ### 5.1 Effective Team Rating (`GAP_PENALTY_FRACTION = 0.25`)
 To prevent lopsided team pairing expectations where a high-Elo player is paired with a lower-Elo player, expected score calculations adjust team ratings using internal gap dampening:
 $$\text{Effective Elo} = \text{Team Avg Elo} - 0.25 \times |\text{Elo}_{\text{Player 1}} - \text{Elo}_{\text{Player 2}}|$$
+
+### 5.1a Carry Rule — per-partner delta split (`GAP_REFERENCE = 150`)
+Instead of both partners on a team receiving the identical team-level delta, it's split between them based on their own internal Elo gap — the lower-rated partner keeps more of a win and loses less of a loss:
+$$\text{skew} = \min\left(\frac{|\text{Elo}_{\text{high}} - \text{Elo}_{\text{low}}|}{150},\ 1.0\right)$$
+$$\text{lowerShare} = \begin{cases} 0.5 + 0.1 \times \text{skew} & \text{team won} \\ 1 - (0.5 + 0.15 \times \text{skew}) & \text{team lost or drew} \end{cases}$$
+The lower-rated partner receives `teamDelta × lowerShare`; the higher-rated partner receives the remainder (`teamDelta - lowerDelta`, not independently rounded, so the pair always sums exactly to `teamDelta` and the zero-sum invariant across all 4 players holds regardless of rounding). Singles matches are unaffected — there's no partner to split with.
 
 ### 5.2 Skill Rating & Review Triggers (Admin Judgment)
 - Skill Rating is an official admin judgment value ($1.00$ to $7.00$).
@@ -132,5 +140,6 @@ Community Points (CP) are participation rewards computed upon session finalizati
 TheCommunitrix matchmaking and rating engine under `src/lib/` and `supabase/migrations/` implements these rules:
 - `src/lib/matchmaking/americano.ts`: Combinatorial schedule generator for Americano.
 - `src/lib/matchmaking/mexicano.ts`: Dynamic proximity-clustered rank generator with temporal $1+4 \text{ vs } 2+3$ pairing.
-- `src/lib/elo/calculate.ts`: TypeScript Elo engine with Effective Team Rating.
-- `supabase/migrations/0018_elo_adjustments_and_cp.sql`: Consolidated `calculate_match_delta`, `submit_match_score`, `start_new_cp_season`, and CP awarding `finalize_session`.
+- `src/lib/elo/calculate.ts`: TypeScript Elo engine with Effective Team Rating and Carry Rule (formula_version >= 2).
+- `supabase/migrations/0028_carry_rule_and_effective_team_rating.sql`: `formula_version`/`rating_formula_versions`, `split_team_delta`, and the matching updates to `submit_match_score`, `persist_round`, and `replay_ratings` — the live implementation.
+- `supabase/migrations/0018_elo_adjustments_and_cp.sql`: confirmed **not applied to the live database at all** — none of its tables/columns/functions exist (`calculate_match_delta`, the original `formula_version`/`rating_formula_versions`, `skill_rating_official`, `community_points`, `community_point_seasons`, `start_new_cp_season`). `src/server/actions/session.actions.ts`'s `startNewCpSeasonAction` calls the latter and is therefore currently broken in production — flagged here, not fixed as part of this change. See `communitrix-elo-adjustment-brief.md` section 0.

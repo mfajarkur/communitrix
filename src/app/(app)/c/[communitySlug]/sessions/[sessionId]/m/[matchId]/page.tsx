@@ -23,6 +23,7 @@ export default async function MatchScorerPage({
       team_b_score,
       session_id,
       community_id,
+      formula_version,
       match_players (
         profile_id,
         team,
@@ -130,6 +131,7 @@ export default async function MatchScorerPage({
             matchType: session.match_type,
             format: session.format,
             attendeeCount: attendeeCount || 4,
+            formulaVersion: match.formula_version,
           }}
         />
       </div>

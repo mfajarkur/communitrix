@@ -45,6 +45,7 @@ interface ScorerFormProps {
     matchType: 'SINGLES' | 'DOUBLES';
     format: 'AMERICANO' | 'MEXICANO';
     attendeeCount: number;
+    formulaVersion: number;
   };
   initialScoreA?: number;
   initialScoreB?: number;
@@ -199,6 +200,7 @@ export default function ScorerForm({
     courtCount: sessionConfig.courtCount,
     playersPerMatch: playersPerMatch as 2 | 4,
     attendeeCount: sessionConfig.attendeeCount,
+    formulaVersion: sessionConfig.formulaVersion,
   };
 
   let eloResults = { teamADeltas: [] as any[], teamBDeltas: [] as any[] };

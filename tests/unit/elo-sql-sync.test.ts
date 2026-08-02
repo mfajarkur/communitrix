@@ -214,6 +214,11 @@ describeOrSkip('TypeScript and PL/pgSQL ELO Logic Synchronization Tests', () => 
         courtCount: 1,
         playersPerMatch: 4 as const,
         attendeeCount: 4, // N = 4, slots = 4 -> expected matches = 8
+        // persist_round always assigns the currently-active formula_version (max version in
+        // rating_formula_versions) to newly created matches — must match here so the TS/SQL
+        // comparison below is apples-to-apples. All 4 players share ratingBefore=1000, so the
+        // Carry Rule split (formula_version 2) is a clean, tie-broken 50/50 either way.
+        formulaVersion: 2,
       };
 
       const tsResult = calculateElo(eloInput);
