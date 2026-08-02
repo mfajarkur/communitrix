@@ -212,7 +212,17 @@ export default function LiveBoardWrapper({
     }
   };
 
-  // 1. Setup Supabase Realtime subscription for instant updates (PRD Phase 6)
+  // 1. Setup Supabase Realtime subscription for instant updates (PRD Phase 6).
+  //
+  // postgres_changes doesn't replay missed events after a dropped connection — a host whose
+  // phone loses signal mid-session and reconnects a minute later won't get the score updates
+  // another host submitted during that gap, just whatever changes happen after. The realtime-js
+  // client auto-reconnects the websocket on its own, but resubscribing after a drop fires this
+  // same 'SUBSCRIBED' status as the very first connect, so treating every 'SUBSCRIBED' as "catch
+  // up now" closes that gap without needing to track connection state ourselves. The 'online'
+  // and visibility listeners below are a second safety net for cases (mobile browsers
+  // suspending JS in the background, flaky mobile networks) where the socket doesn't reliably
+  // signal the drop/reconnect on its own.
   useEffect(() => {
     const channel = supabase
       .channel(`session-board:${sessionId}`)
@@ -226,10 +236,20 @@ export default function LiveBoardWrapper({
         { event: '*', schema: 'public', table: 'rounds', filter: `session_id=eq.${sessionId}` },
         () => router.refresh()
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') router.refresh();
+      });
+
+    const refreshOnReturn = () => {
+      if (document.visibilityState === 'visible') router.refresh();
+    };
+    window.addEventListener('online', refreshOnReturn);
+    document.addEventListener('visibilitychange', refreshOnReturn);
 
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('online', refreshOnReturn);
+      document.removeEventListener('visibilitychange', refreshOnReturn);
     };
   }, [sessionId, supabase, router]);
 
