@@ -131,7 +131,7 @@ Community Points (CP) are participation rewards computed upon session finalizati
   - Rank 2: **50 CP**
   - Rank 3: **25 CP**
   - Rank $4 \dots N$: Flat **10 CP**.
-- Reset Policy: Configurable per community (`never` or `seasonal`). Admin can initiate new seasons via `start_new_cp_season`.
+- Reset Policy: Configurable per community (`never` or `seasonal`). Admin can initiate new seasons via `start_new_cp_season` — the RPC works as of `0029_community_points.sql`, but no UI control calls it yet.
 
 ---
 
@@ -142,4 +142,5 @@ TheCommunitrix matchmaking and rating engine under `src/lib/` and `supabase/migr
 - `src/lib/matchmaking/mexicano.ts`: Dynamic proximity-clustered rank generator with temporal $1+4 \text{ vs } 2+3$ pairing.
 - `src/lib/elo/calculate.ts`: TypeScript Elo engine with Effective Team Rating and Carry Rule (formula_version >= 2).
 - `supabase/migrations/0028_carry_rule_and_effective_team_rating.sql`: `formula_version`/`rating_formula_versions`, `split_team_delta`, and the matching updates to `submit_match_score`, `persist_round`, and `replay_ratings` — the live implementation.
-- `supabase/migrations/0018_elo_adjustments_and_cp.sql`: confirmed **not applied to the live database at all** — none of its tables/columns/functions exist (`calculate_match_delta`, the original `formula_version`/`rating_formula_versions`, `skill_rating_official`, `community_points`, `community_point_seasons`, `start_new_cp_season`). `src/server/actions/session.actions.ts`'s `startNewCpSeasonAction` calls the latter and is therefore currently broken in production — flagged here, not fixed as part of this change. See `communitrix-elo-adjustment-brief.md` section 0.
+- `supabase/migrations/0029_community_points.sql`: `community_points`, `community_point_seasons`, `communities.cp_reset_policy`, `calculate_cp_points`, `start_new_cp_season`, and the CP-awarding block in `finalize_session` — the live implementation.
+- `supabase/migrations/0018_elo_adjustments_and_cp.sql`: confirmed **not applied to the live database at all** — none of its tables/columns/functions ever existed (`calculate_match_delta`, the original `formula_version`/`rating_formula_versions`, `skill_rating_official`, and the original `community_points`/`community_point_seasons`/`start_new_cp_season`, since superseded by `0028`/`0029` above). Skill Rating (section 5.2's `skill_rating_official` etc.) is the one remaining piece of 0018 with no live implementation. See `communitrix-elo-adjustment-brief.md` section 0.
