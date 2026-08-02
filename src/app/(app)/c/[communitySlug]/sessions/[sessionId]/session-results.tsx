@@ -123,24 +123,21 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                     </span>
                   </td>
                   <td className="py-2 text-right pr-4 font-black text-zinc-900 whitespace-nowrap">
-                    {s.byePoints && s.byePoints > 0 ? (
+                    {s.totalPoints}
+                    {s.byePoints && s.byePoints > 0 && (
                       <span
                         title={
                           s.byeIsPlaceholder
                             ? 'Temporary placeholder score (no actual matches played yet)'
                             : 'Dynamic bye points based on player average'
                         }
-                        className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md mr-1.5 border ${
-                          s.byeIsPlaceholder
-                            ? 'text-zinc-500 bg-zinc-100 border-zinc-300'
-                            : 'text-amber-700 bg-amber-100 border-amber-300'
+                        className={`text-[10px] font-bold ml-1 ${
+                          s.byeIsPlaceholder ? 'text-zinc-400' : 'text-amber-600'
                         }`}
                       >
-                        {s.byeIsPlaceholder ? '~' : '+'}
-                        {s.byePoints} Bye
+                        ({s.byeIsPlaceholder ? '~' : '+'}{s.byePoints})
                       </span>
-                    ) : null}
-                    {s.totalPoints}
+                    )}
                   </td>
                 </tr>
               ))}
@@ -148,7 +145,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
           </table>
         </div>
         <div className="text-center text-[9px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
-          M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points
+          M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points · (+N) = bye points included
         </div>
       </div>
 
