@@ -6,6 +6,41 @@ import CommunityTabs from './community-tabs';
 
 export const dynamic = 'force-dynamic';
 
+// The Supabase client here isn't parameterized with generated Database types (none exist in
+// this project — see src/lib/supabase/{client,server}.ts), so postgrest-js can't tell a to-one
+// embedded relation (community_members -> profiles) from a to-many one and infers `profile` as
+// an array. These mirror the actual shape of the `profile:profiles(...)` embeds selected below.
+interface MemberProfileRow {
+  id: string;
+  full_name: string | null;
+  display_name: string | null;
+  username: string | null;
+  gender: string | null;
+  is_guest: boolean;
+  avatar_url: string | null;
+}
+interface ActiveMemberRow {
+  role: string;
+  is_active: boolean;
+  joined_at: string;
+  profile: MemberProfileRow | null;
+}
+interface RankingRow {
+  id: string;
+  profile_id: string;
+  sport: string;
+  elo_rating: number;
+  elo_peak: number;
+  total_matches: number;
+  total_wins: number;
+  total_losses: number;
+  total_draws: number;
+  points_for: number;
+  points_against: number;
+  is_provisional: boolean;
+  profile: MemberProfileRow | null;
+}
+
 export default async function CommunityDashboardPage({
   params,
 }: {
@@ -63,7 +98,7 @@ export default async function CommunityDashboardPage({
     .eq('is_active', true)
     .order('joined_at', { ascending: true });
 
-  const activeMembers = members || [];
+  const activeMembers = (members || []) as unknown as ActiveMemberRow[];
 
   // 4. Fetch all player rankings for this community (PADEL and TENNIS)
   const { data: allRankings } = await adminClient
@@ -94,14 +129,14 @@ export default async function CommunityDashboardPage({
     .eq('community_id', community.id)
     .order('elo_rating', { ascending: false });
 
-  const rawRankings = allRankings || [];
+  const rawRankings = (allRankings || []) as unknown as RankingRow[];
 
   const buildLeaderboard = (sportName: string) => {
     const sportRankings = rawRankings.filter((r) => r.sport === sportName);
     const map = new Map(sportRankings.map((r) => [r.profile_id || r.profile?.id, r]));
 
     return activeMembers
-      .filter((m) => m.profile)
+      .filter((m): m is ActiveMemberRow & { profile: MemberProfileRow } => m.profile !== null)
       .map((m) => {
         const existing = map.get(m.profile.id);
         if (existing) {
