@@ -19,12 +19,9 @@ import {
   ChevronRight,
   Share2,
   Copy,
-  Edit3,
   UserCheck,
-  Flame,
   Award,
   Sparkles,
-  Building2,
   CalendarDays,
   User,
   LogOut,
@@ -35,8 +32,6 @@ import BannerImageEditor from './banner-image-editor';
 import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
-import { updateCommunityInfoAction } from '@/server/actions/community.actions';
-import { startNewCpSeasonAction } from '@/server/actions/session.actions';
 
 interface CommunityTabsProps {
   community?: any;
@@ -93,23 +88,6 @@ export default function CommunityTabs({
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const [wikiSearchQuery, setWikiSearchQuery] = useState('');
 
-  // Admin Home Info Edit state
-  const [isEditHomeOpen, setIsEditHomeOpen] = useState(false);
-  const communityDescription =
-    community?.description ||
-    community?.settings?.description ||
-    'Official community hub for sports matches, ELO rankings, and tournament sessions.';
-
-  const [editDescription, setEditDescription] = useState(
-    community?.description || community?.settings?.description || ''
-  );
-  const [editEstablishedDate, setEditEstablishedDate] = useState(community?.established_date || '');
-  const [editSport, setEditSport] = useState(defaultSport);
-  const [editCpResetPolicy, setEditCpResetPolicy] = useState<'never' | 'seasonal'>(
-    community?.cp_reset_policy === 'seasonal' ? 'seasonal' : 'never'
-  );
-  const [isSavingHome, setIsSavingHome] = useState(false);
-  const [isStartingSeason, setIsStartingSeason] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
   useEffect(() => {
@@ -137,54 +115,6 @@ export default function CommunityTabs({
       navigator.clipboard.writeText(community.code);
       setCopiedCode(true);
       setTimeout(() => setCopiedCode(false), 2000);
-    }
-  };
-
-  const handleSaveHomeInfo = async () => {
-    setIsSavingHome(true);
-    try {
-      const res = await updateCommunityInfoAction({
-        communityId,
-        communitySlug,
-        description: editDescription,
-        defaultSport: editSport,
-        cpResetPolicy: editCpResetPolicy,
-      });
-      if (res.ok) {
-        setIsEditHomeOpen(false);
-        window.location.reload();
-      } else {
-        alert(res.message || 'Failed to save community info');
-      }
-    } catch (err: any) {
-      alert(err?.message || 'Error saving community info');
-    } finally {
-      setIsSavingHome(false);
-    }
-  };
-
-  // Ends the current CP season (if any) and starts a fresh one — only meaningful once
-  // cp_reset_policy is 'seasonal', since 'never' communities never look up a season at all.
-  const handleStartNewSeason = async () => {
-    if (
-      !confirm(
-        'Start a new Community Points season? This ends the current season — CP already awarded stays on the record, but the leaderboard for the new season starts from zero.'
-      )
-    ) {
-      return;
-    }
-    setIsStartingSeason(true);
-    try {
-      const res = await startNewCpSeasonAction(communityId, communitySlug);
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        alert(res.message || 'Failed to start a new CP season');
-      }
-    } catch (err: any) {
-      alert(err?.message || 'Error starting a new CP season');
-    } finally {
-      setIsStartingSeason(false);
     }
   };
 
@@ -276,52 +206,6 @@ export default function CommunityTabs({
           {/* TAB 1: HOME KOMUNITAS */}
           {activeTab === 'home' && (
             <div className="space-y-6">
-              {/* Community Description & Overview Card */}
-              <div className="p-5 rounded-3xl bg-zinc-50 border border-zinc-100 shadow-xs space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                      About Community
-                    </span>
-                    <h2 className="text-xl font-black text-zinc-900 tracking-tight mt-1">
-                      {communityName}
-                    </h2>
-                    <p className="text-xs text-zinc-500 font-medium leading-relaxed max-w-2xl">
-                      {communityDescription}
-                    </p>
-                  </div>
-
-                  {isAdmin && (
-                    <button
-                      onClick={() => setIsEditHomeOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                      <span>Edit Info</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 font-semibold pt-3 border-t border-zinc-200/70">
-                  <div className="flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5 text-orange-500" />
-                    <span>Est. {new Date(community?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-orange-500" />
-                    <span>{memberCount} Members</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-orange-500" />
-                    <span>{sessions.length} Sessions</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Flame className="h-3.5 w-3.5 text-orange-500" />
-                    <span>{totalMatchesCount} Matches Scored</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Community STAR Section */}
               {(() => {
                 const getCommunityStars = (sportRankings: any[]) => {
@@ -1358,104 +1242,6 @@ export default function CommunityTabs({
 
         </div>
       </nav>
-
-      {/* EDIT COMMUNITY INFO MODAL (Admin Only) */}
-      {isEditHomeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-zinc-100 text-[#111827]">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="font-extrabold text-base text-zinc-900 flex items-center gap-2">
-                <Edit3 className="h-5 w-5 text-orange-500" />
-                Edit Community Info
-              </h3>
-              <button
-                onClick={() => setIsEditHomeOpen(false)}
-                className="text-zinc-400 hover:text-zinc-600 p-1 rounded-full hover:bg-zinc-100 transition-all cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-zinc-700 block mb-1">Community Description</label>
-                <textarea
-                  rows={3}
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Describe your community..."
-                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-zinc-700 block mb-1">Default Sport</label>
-                <select
-                  value={editSport}
-                  onChange={(e) => setEditSport(e.target.value)}
-                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none font-bold"
-                >
-                  <option value="PADEL">PADEL</option>
-                  <option value="TENNIS">TENNIS</option>
-                </select>
-              </div>
-
-              <div className="pt-1 border-t border-zinc-100">
-                <label className="font-bold text-zinc-700 block mb-1">Community Points Reset Policy</label>
-                <select
-                  value={editCpResetPolicy}
-                  onChange={(e) => setEditCpResetPolicy(e.target.value as 'never' | 'seasonal')}
-                  className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none font-bold"
-                >
-                  <option value="never">Never — CP accumulates for the community's lifetime</option>
-                  <option value="seasonal">Seasonal — CP resets when a new season starts</option>
-                </select>
-                <p className="text-[10px] text-zinc-400 font-medium mt-1">
-                  {editCpResetPolicy === 'seasonal'
-                    ? 'Members earn CP within the current season only. Start a new season below to reset the leaderboard.'
-                    : 'Members earn CP for as long as they stay in this community — no reset.'}
-                </p>
-
-                {/* Gated on the already-saved policy, not the dropdown's pending selection —
-                    starting a season reloads the page, which would silently discard an
-                    unsaved policy change before it's persisted. */}
-                {community?.cp_reset_policy === 'seasonal' && (
-                  <button
-                    type="button"
-                    onClick={handleStartNewSeason}
-                    disabled={isStartingSeason}
-                    className="w-full mt-2.5 py-2 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-xs font-bold text-orange-700 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
-                  >
-                    {isStartingSeason ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trophy className="h-3.5 w-3.5" />}
-                    Start New CP Season
-                  </button>
-                )}
-                {editCpResetPolicy === 'seasonal' && community?.cp_reset_policy !== 'seasonal' && (
-                  <p className="text-[10px] text-amber-600 font-bold mt-1.5">
-                    Save this change first — the "Start New Season" button appears here once Seasonal is active.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={() => setIsEditHomeOpen(false)}
-                className="flex-1 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 hover:bg-zinc-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveHomeInfo}
-                disabled={isSavingHome}
-                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white shadow-md flex items-center justify-center gap-1.5"
-              >
-                {isSavingHome ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Claim Guest Modal */}
       {guestToClaim && (

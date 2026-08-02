@@ -2,8 +2,9 @@ import { requireProfile } from '@/server/guards';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Shield, User, Trophy, LogOut } from 'lucide-react';
+import { Shield, User, Trophy, LogOut, Calendar, Flame } from 'lucide-react';
 import BannerImageEditor from './banner-image-editor';
+import EditCommunityInfoButton from './edit-community-info-button';
 import { signOutAction } from '../../profile-actions';
 
 export default async function CommunityLayout({
@@ -65,6 +66,25 @@ export default async function CommunityLayout({
   const isHostOrAdmin = member.role === 'ADMIN' || member.role === 'HOST';
   const bannerImage = community.logo_url || '/community_banner_placeholder.png';
 
+  // Header stats — count-only queries (head: true) so this stays cheap; page.tsx fetches the
+  // full rows it needs separately for the tab content, this banner only needs the totals.
+  const [{ count: memberCount }, { count: sessionsCount }, { count: matchesCount }] = await Promise.all([
+    supabase
+      .from('community_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('community_id', community.id)
+      .eq('is_active', true),
+    supabase
+      .from('sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('community_id', community.id),
+    supabase
+      .from('matches')
+      .select('*', { count: 'exact', head: true })
+      .eq('community_id', community.id)
+      .eq('status', 'COMPLETED'),
+  ]);
+
   return (
     <div className="space-y-6 bg-white">
       {/* Top Header Banner Card */}
@@ -96,6 +116,13 @@ export default async function CommunityLayout({
               Log Out
             </button>
           </form>
+          {member.role === 'ADMIN' && (
+            <EditCommunityInfoButton
+              communityId={community.id}
+              communitySlug={communitySlug}
+              community={community}
+            />
+          )}
         </div>
 
         {/* Edit Banner Button for Admin Only */}
@@ -133,6 +160,21 @@ export default async function CommunityLayout({
                 CODE: {community.code}
               </p>
             )}
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px] text-white/90 font-semibold pt-1.5">
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              {memberCount ?? 0} Members
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" />
+              {sessionsCount ?? 0} Sessions
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5" />
+              {matchesCount ?? 0} Matches Scored
+            </span>
           </div>
         </div>
       </div>
