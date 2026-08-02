@@ -13,7 +13,6 @@ import { HelpCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { getDisplayName } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
-import LeaderboardPrintSection from '@/app/(app)/communities/quick-match/[id]/leaderboard-print-section';
 import type { PosterStanding } from '@/components/leaderboard-poster';
 import RoundCarousel from '@/components/session-live/round-carousel';
 import LiveLeaderboardTabs from '@/components/session-live/live-leaderboard-tabs';
@@ -426,13 +425,6 @@ export default function LiveBoardWrapper({
               Ratings/ELO apply live per completed match
             </p>
           </div>
-
-          <LeaderboardPrintSection
-            activityName={sessionMeta.name}
-            gameType={sessionMeta.format}
-            sport={sessionMeta.sport}
-            standings={standings}
-          />
 
           <StandingsTable standings={standings} />
         </div>
