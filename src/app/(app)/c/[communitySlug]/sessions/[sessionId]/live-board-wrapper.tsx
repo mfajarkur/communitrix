@@ -9,7 +9,7 @@ import {
   submitMatchScoreAction,
 } from '@/server/actions/round.actions';
 import { finalizeSessionAction } from '@/server/actions/session.actions';
-import { HelpCircle, Loader2, Send } from 'lucide-react';
+import { HelpCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { getDisplayName } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
@@ -149,35 +149,38 @@ export default function LiveBoardWrapper({
 
   const getDraft = (matchId: string): ScoreDraft => scoreDrafts.get(matchId) || { scoreA: null, scoreB: null };
 
+  // Tapping a score auto-submits the instant both teams' scores are set — same feel as Quick
+  // Match (tap and done, no separate confirm step). In POINTS/FIXED_TOTAL scoring, picking
+  // one team's score already auto-fills the other via the complement below, so a single tap
+  // is often enough. The "Send Score" button this replaced added a network round-trip's
+  // worth of extra friction on top of an already-required server call.
   const handleDraftScoreSelect = (matchId: string, team: 'A' | 'B', score: number) => {
+    const current = scoreDrafts.get(matchId) || { scoreA: null, scoreB: null };
+    let { scoreA, scoreB } = current;
+    if (team === 'A') {
+      scoreA = Math.max(0, score);
+      if (isPointsSystem && targetN > 0) scoreB = Math.max(0, targetN - scoreA);
+    } else {
+      scoreB = Math.max(0, score);
+      if (isPointsSystem && targetN > 0) scoreA = Math.max(0, targetN - scoreB);
+    }
+
     setScoreDrafts((prev) => {
       const next = new Map(prev);
-      const current = next.get(matchId) || { scoreA: null, scoreB: null };
-      let { scoreA, scoreB } = current;
-      if (team === 'A') {
-        scoreA = Math.max(0, score);
-        if (isPointsSystem && targetN > 0) scoreB = Math.max(0, targetN - scoreA);
-      } else {
-        scoreB = Math.max(0, score);
-        if (isPointsSystem && targetN > 0) scoreA = Math.max(0, targetN - scoreB);
-      }
       next.set(matchId, { scoreA, scoreB });
       return next;
     });
+
+    if (scoreA !== null && scoreB !== null) {
+      submitScore(matchId, scoreA, scoreB);
+    }
   };
 
-  const handleSendScore = async (matchId: string) => {
-    const draft = scoreDrafts.get(matchId);
-    if (!draft || draft.scoreA === null || draft.scoreB === null) return;
+  const submitScore = async (matchId: string, scoreA: number, scoreB: number) => {
     setSubmittingMatchId(matchId);
     setError(null);
 
-    const result = await submitMatchScoreAction({
-      matchId,
-      scoreA: draft.scoreA,
-      scoreB: draft.scoreB,
-      communitySlug,
-    });
+    const result = await submitMatchScoreAction({ matchId, scoreA, scoreB, communitySlug });
 
     setSubmittingMatchId(null);
 
@@ -330,7 +333,6 @@ export default function LiveBoardWrapper({
                 const teamBName = teamB.map((mp) => getDisplayName(mp.profile)).join(' / ');
                 const draft = getDraft(m.id);
                 const isSubmittingThis = submittingMatchId === m.id;
-                const canSend = isHostOrAdmin && !isCompleted && draft.scoreA !== null && draft.scoreB !== null;
 
                 return (
                   <div key={m.id} className="p-5 rounded-2xl border border-zinc-200 bg-white space-y-4 shadow-sm">
@@ -400,16 +402,11 @@ export default function LiveBoardWrapper({
                       </Link>
                     )}
 
-                    {canSend && (
-                      <button
-                        type="button"
-                        onClick={() => handleSendScore(m.id)}
-                        disabled={isSubmittingThis}
-                        className="w-full text-center text-xs font-black uppercase tracking-wider py-2.5 bg-orange-500 hover:bg-orange-600 rounded-xl transition-all text-white flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-sm"
-                      >
-                        {isSubmittingThis ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                        <span>Send Score</span>
-                      </button>
+                    {isSubmittingThis && (
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-orange-500">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Saving...</span>
+                      </div>
                     )}
                   </div>
                 );
