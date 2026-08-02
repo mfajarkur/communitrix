@@ -740,13 +740,20 @@ export default function WizardForm({
         registeredPlayers.map((p) => pendingGuestCreations.current.get(p.id) ?? Promise.resolve(p.id))
       );
 
+      // "Total of N" (GENERAL) is a fixed-sum format just like the POINTS system — both should
+      // auto-complement the other team's score. Only "First to N" (a race) is truly open-ended
+      // and needs a manual entry. The DB only allows points_mode='FIXED_TOTAL' when
+      // scoring_type='POINTS' (see sessions_points_mode_valid), so "Total of N" is stored as
+      // POINTS/FIXED_TOTAL even though it was picked from the GENERAL tab in the UI.
+      const isFixedSum = config.scoringSystem === 'POINTS' || config.pointTarget.toLowerCase().includes('total of');
+
       const result = await startSessionAction({
         communityId,
         name: config.activityName,
         format: config.gameType.includes('MEXICANO') ? 'MEXICANO' : 'AMERICANO',
         sport: config.sport,
-        scoringType: config.scoringSystem === 'POINTS' ? 'POINTS' : 'GAMES',
-        pointsMode: 'FIRST_TO_TARGET',
+        scoringType: isFixedSum ? 'POINTS' : 'GAMES',
+        pointsMode: isFixedSum ? 'FIXED_TOTAL' : 'FIRST_TO_TARGET',
         maxScoreTarget: configN,
         courtCount: config.courtCount,
         roundsPlanned: null, // open-ended — Live Board generates rounds until a Host ends the session
