@@ -401,19 +401,30 @@ export default function LiveBoardWrapper({
                 return (
                   <div
                     key={m.id}
-                    className={`relative rounded-2xl border bg-white shadow-sm transition-all overflow-hidden ${
-                      isCompleted ? 'border-zinc-200' : 'border-zinc-200 border-l-4 border-l-orange-500'
+                    className={`relative rounded-2xl border transition-all overflow-hidden ${
+                      isSubmittingThis
+                        ? 'border-orange-500 ring-2 ring-orange-400/50 bg-orange-50/40 animate-pulse shadow-md'
+                        : isCompleted
+                        ? 'border-zinc-200 bg-white shadow-sm'
+                        : 'border-zinc-200 border-l-4 border-l-orange-500 bg-white shadow-sm'
                     }`}
                   >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
                       <span className="font-bold text-base text-[#111827]">Court {m.court_number}</span>
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                          isCompleted ? 'bg-zinc-100 text-zinc-500' : 'bg-orange-100 text-orange-600'
-                        }`}
-                      >
-                        {isCompleted ? 'Completed' : 'In Progress'}
-                      </span>
+                      {isSubmittingThis ? (
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-orange-500 text-white animate-pulse flex items-center gap-1.5 shadow-sm">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Updating Score & ELO...
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                            isCompleted ? 'bg-zinc-100 text-zinc-500' : 'bg-orange-100 text-orange-600'
+                          }`}
+                        >
+                          {isCompleted ? 'Completed' : 'In Progress'}
+                        </span>
+                      )}
                     </div>
 
                     <div className="relative px-4 pt-7 pb-4">
@@ -424,7 +435,8 @@ export default function LiveBoardWrapper({
                           scoreB={isCompleted ? m.team_b_score : draft.scoreB}
                           isCompleted={isCompleted}
                           winnerSide={m.winner_side}
-                          disabled={!isHostOrAdmin || isSubmittingThis}
+                          disabled={!isHostOrAdmin}
+                          isSubmitting={isSubmittingThis}
                           onTapA={() =>
                             setActivePicker({ matchId: m.id, team: 'A', teamName: teamAName, currentScore: draft.scoreA })
                           }
@@ -478,9 +490,9 @@ export default function LiveBoardWrapper({
                       )}
 
                       {isSubmittingThis && (
-                        <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-orange-500 mt-2">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          <span>Saving...</span>
+                        <div className="flex items-center justify-center gap-2 text-xs font-extrabold uppercase tracking-wider text-orange-600 bg-orange-100/90 py-2.5 px-3 rounded-xl border border-orange-200 mt-3 animate-pulse">
+                          <Loader2 className="h-4 w-4 animate-spin text-orange-600" />
+                          <span>Updating system & calculating ELO...</span>
                         </div>
                       )}
                     </div>
