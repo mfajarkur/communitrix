@@ -59,6 +59,7 @@ export default async function SessionLiveBoardPage({
       team_b_score,
       status,
       winner_side,
+      formula_version,
       match_players (
         profile_id,
         team,
@@ -66,6 +67,7 @@ export default async function SessionLiveBoardPage({
         elo_before,
         elo_delta,
         elo_after,
+        k_factor,
         profile:profiles (
           full_name,
           display_name,

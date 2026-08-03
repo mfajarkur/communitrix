@@ -20,6 +20,7 @@ import GenerateRoundButton from '@/components/session-live/generate-round-button
 import ScoreButtonPair from '@/components/session-live/score-button-pair';
 import StandingsTable from '@/components/session-live/standings-table';
 import { isFixedSumSessionConfig } from '@/lib/matchmaking/scoring-format';
+import { explainEloMatch } from '@/lib/elo/calculate';
 
 interface MatchPlayer {
   profile_id: string;
@@ -28,6 +29,7 @@ interface MatchPlayer {
   elo_before: number | null;
   elo_delta: number | null;
   elo_after: number | null;
+  k_factor: number | null;
   profile: {
     full_name?: string | null;
     display_name?: string | null;
@@ -44,6 +46,7 @@ interface Match {
   team_b_score: number | null;
   status: string;
   winner_side: 'A' | 'B' | null;
+  formula_version: number;
   match_players: MatchPlayer[];
 }
 
@@ -354,6 +357,24 @@ export default function LiveBoardWrapper({
                 const hasEloData = m.match_players.some((mp) => mp.elo_delta !== null && mp.elo_delta !== undefined);
                 const isEloExpanded = expandedEloMatchId === m.id;
 
+                // Reconstructs the win-expectation / MoV / gap-penalty steps behind the already-
+                // persisted delta, for the "Show ELO Changes" detail panel below — see
+                // explainEloMatch's own comment for why this is a read-only recomputation rather
+                // than newly-fetched data.
+                const eloExplain =
+                  hasEloData && m.team_a_score !== null && m.team_b_score !== null && teamA.length > 0 && teamB.length > 0
+                    ? explainEloMatch({
+                        teamARatings: teamA.map((mp) => mp.elo_before ?? 1000),
+                        teamBRatings: teamB.map((mp) => mp.elo_before ?? 1000),
+                        scoreA: m.team_a_score,
+                        scoreB: m.team_b_score,
+                        scoringType: sessionConfig.scoringType,
+                        pointsMode: sessionConfig.pointsMode,
+                        maxScoreTarget: sessionConfig.maxScoreTarget,
+                        formulaVersion: m.formula_version,
+                      })
+                    : null;
+
                 const renderTeam = (players: MatchPlayer[], side: 'A' | 'B') => {
                   const isWinner = isCompleted && m.winner_side === side;
                   return (
@@ -393,6 +414,7 @@ export default function LiveBoardWrapper({
                           {mp.elo_before !== null && mp.elo_after !== null && (
                             <p className="text-[10px] text-zinc-400 font-mono tabular-nums">
                               {Math.round(mp.elo_before)} → {Math.round(mp.elo_after)}
+                              {mp.k_factor !== null && ` · K ${mp.k_factor.toFixed(1)}`}
                             </p>
                           )}
                         </div>
@@ -473,14 +495,59 @@ export default function LiveBoardWrapper({
                           </button>
 
                           {isEloExpanded && (
-                            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-150">
-                              <div className="space-y-2.5">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase">Team A</span>
-                                {teamA.map(eloRow)}
-                              </div>
-                              <div className="space-y-2.5">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase">Team B</span>
-                                {teamB.map(eloRow)}
+                            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 space-y-4 animate-in fade-in duration-150">
+                              {eloExplain && (
+                                <div className="space-y-2.5 pb-3.5 border-b border-zinc-200/70">
+                                  <span className="text-[10px] font-bold text-zinc-400 uppercase">Calculation Breakdown</span>
+                                  <div className="grid grid-cols-2 gap-3 text-[11px]">
+                                    <div>
+                                      <p className="text-zinc-500 font-semibold">Team A Rating</p>
+                                      <p className="font-mono font-black text-zinc-800 tabular-nums">
+                                        {Math.round(eloExplain.avgRatingA)}
+                                        {m.formula_version >= 2 && eloExplain.gapA > 0 && (
+                                          <span className="text-zinc-400 font-medium">
+                                            {' '}→ {Math.round(eloExplain.effRatingA)} (gap −{Math.round(0.25 * eloExplain.gapA)})
+                                          </span>
+                                        )}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-zinc-500 font-semibold">Team B Rating</p>
+                                      <p className="font-mono font-black text-zinc-800 tabular-nums">
+                                        {Math.round(eloExplain.avgRatingB)}
+                                        {m.formula_version >= 2 && eloExplain.gapB > 0 && (
+                                          <span className="text-zinc-400 font-medium">
+                                            {' '}→ {Math.round(eloExplain.effRatingB)} (gap −{Math.round(0.25 * eloExplain.gapB)})
+                                          </span>
+                                        )}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-zinc-500 font-semibold">Win Expectation</p>
+                                      <p className="font-mono font-black text-zinc-800 tabular-nums">
+                                        A {Math.round(eloExplain.expectedScoreA * 100)}% · B {Math.round(eloExplain.expectedScoreB * 100)}%
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-zinc-500 font-semibold">Margin of Victory</p>
+                                      <p className="font-mono font-black text-zinc-800 tabular-nums">×{eloExplain.mov.toFixed(2)}</p>
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+                                    Delta = K-Factor × MoV × (Actual Result − Win Expectation). Actual result for Team A:{' '}
+                                    {eloExplain.outcomeA === 'WIN' ? 'Win (1.0)' : eloExplain.outcomeA === 'LOSS' ? 'Loss (0.0)' : 'Draw (0.5)'}.
+                                  </p>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2.5">
+                                  <span className="text-[10px] font-bold text-zinc-400 uppercase">Team A</span>
+                                  {teamA.map(eloRow)}
+                                </div>
+                                <div className="space-y-2.5">
+                                  <span className="text-[10px] font-bold text-zinc-400 uppercase">Team B</span>
+                                  {teamB.map(eloRow)}
+                                </div>
                               </div>
                             </div>
                           )}

@@ -43,6 +43,67 @@ export interface EloMatchResult {
   kEff: number;
 }
 
+export interface EloExplainInput {
+  teamARatings: number[];
+  teamBRatings: number[];
+  scoreA: number;
+  scoreB: number;
+  scoringType: 'POINTS' | 'GAMES';
+  pointsMode: 'FIRST_TO_TARGET' | 'FIXED_TOTAL' | 'TIMED';
+  maxScoreTarget: number;
+  formulaVersion?: number;
+}
+
+export interface EloExplainResult {
+  avgRatingA: number;
+  avgRatingB: number;
+  gapA: number;
+  gapB: number;
+  effRatingA: number;
+  effRatingB: number;
+  expectedScoreA: number;
+  expectedScoreB: number;
+  mov: number;
+  outcomeA: 'WIN' | 'LOSS' | 'DRAW';
+}
+
+// Read-only reconstruction of the "how did we get this number" steps behind an already-scored
+// match's Elo delta, for the Live Board's "Show ELO Changes" detail panel. Deliberately doesn't
+// recompute the delta itself (that's already persisted per player) — only the intermediate
+// values (effective team rating, win expectation, MoV) that fed into it. Mirrors
+// calculateElo's steps 3-6 above and the matching PL/pgSQL in submit_match_score /
+// replay_ratings (supabase/migrations/0028_carry_rule_and_effective_team_rating.sql) — the
+// 0.25 gap-penalty fraction here must stay in sync with both.
+export function explainEloMatch(input: EloExplainInput): EloExplainResult {
+  const { teamARatings, teamBRatings, scoreA, scoreB, scoringType, pointsMode, maxScoreTarget, formulaVersion = 1 } = input;
+
+  const avgRatingA = teamARatings.reduce((sum, r) => sum + r, 0) / teamARatings.length;
+  const avgRatingB = teamBRatings.reduce((sum, r) => sum + r, 0) / teamBRatings.length;
+
+  const gapA = teamARatings.length === 2 ? Math.abs(teamARatings[0] - teamARatings[1]) : 0;
+  const gapB = teamBRatings.length === 2 ? Math.abs(teamBRatings[0] - teamBRatings[1]) : 0;
+
+  const effRatingA = formulaVersion >= 2 ? avgRatingA - 0.25 * gapA : avgRatingA;
+  const effRatingB = formulaVersion >= 2 ? avgRatingB - 0.25 * gapB : avgRatingB;
+
+  const expectedScoreA = 1 / (1 + Math.pow(10, (effRatingB - effRatingA) / 400));
+  const mov = calculateMoV(scoreA, scoreB, scoringType, pointsMode, maxScoreTarget);
+  const outcomeA = scoreA > scoreB ? 'WIN' : scoreB > scoreA ? 'LOSS' : 'DRAW';
+
+  return {
+    avgRatingA,
+    avgRatingB,
+    gapA,
+    gapB,
+    effRatingA,
+    effRatingB,
+    expectedScoreA,
+    expectedScoreB: 1 - expectedScoreA,
+    mov,
+    outcomeA,
+  };
+}
+
 export function calculateElo(input: EloMatchInput): EloMatchResult {
   const {
     teamA,
