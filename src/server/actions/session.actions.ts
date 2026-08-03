@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { requireCommunityHost, requireCommunityAdmin } from '../guards';
 import { ActionResult } from '../result';
 
@@ -297,10 +298,10 @@ export async function finalizeSessionAction(
       };
     }
 
-    const { revalidatePath } = require('next/cache');
     const communitySlug = (session as any).community?.slug;
     if (communitySlug) {
       revalidatePath(`/c/${communitySlug}/sessions/${sessionId}`);
+      revalidatePath(`/c/${communitySlug}`);
     }
 
     return {

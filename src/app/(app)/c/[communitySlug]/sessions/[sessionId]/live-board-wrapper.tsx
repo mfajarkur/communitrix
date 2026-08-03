@@ -181,6 +181,14 @@ export default function LiveBoardWrapper({
     }
   };
 
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshBoard = () => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      router.refresh();
+    }, 250);
+  };
+
   const submitScore = async (matchId: string, scoreA: number, scoreB: number) => {
     setSubmittingMatchId(matchId);
     setError(null);
@@ -197,7 +205,7 @@ export default function LiveBoardWrapper({
         if (result.data?.alreadyScored) {
           setError('Someone else already submitted a score for this match — showing their result instead.');
         }
-        router.refresh();
+        refreshBoard();
       } else {
         setError(result.message || 'Failed to submit score.');
       }
@@ -213,55 +221,49 @@ export default function LiveBoardWrapper({
     if (!confirm('Are you sure you want to end this match session? This will finalize all ratings.')) return;
     setIsFinalizing(true);
     setError(null);
-    const result = await finalizeSessionAction(sessionId);
-    setIsFinalizing(false);
-    if (result.ok) {
-      router.refresh();
-    } else {
-      setError(result.message);
+    try {
+      const result = await finalizeSessionAction(sessionId);
+      if (result.ok) {
+        window.location.reload();
+      } else {
+        setIsFinalizing(false);
+        setError(result.message || 'Failed to finalize session.');
+      }
+    } catch (err: any) {
+      setIsFinalizing(false);
+      setError(err?.message || 'An unexpected error occurred while finalizing session.');
     }
   };
 
-  // 1. Setup Supabase Realtime subscription for instant updates (PRD Phase 6).
-  //
-  // postgres_changes doesn't replay missed events after a dropped connection — a host whose
-  // phone loses signal mid-session and reconnects a minute later won't get the score updates
-  // another host submitted during that gap, just whatever changes happen after. The realtime-js
-  // client auto-reconnects the websocket on its own, but resubscribing after a drop fires this
-  // same 'SUBSCRIBED' status as the very first connect, so treating every 'SUBSCRIBED' as "catch
-  // up now" closes that gap without needing to track connection state ourselves. The 'online'
-  // and visibility listeners below are a second safety net for cases (mobile browsers
-  // suspending JS in the background, flaky mobile networks) where the socket doesn't reliably
-  // signal the drop/reconnect on its own.
+  // Setup Supabase Realtime subscription for instant updates with debounced refreshBoard
   useEffect(() => {
     const channel = supabase
       .channel(`session-board:${sessionId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'matches', filter: `session_id=eq.${sessionId}` },
-        () => router.refresh()
+        () => refreshBoard()
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rounds', filter: `session_id=eq.${sessionId}` },
-        () => router.refresh()
+        () => refreshBoard()
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') router.refresh();
-      });
+      .subscribe();
 
     const refreshOnReturn = () => {
-      if (document.visibilityState === 'visible') router.refresh();
+      if (document.visibilityState === 'visible') refreshBoard();
     };
     window.addEventListener('online', refreshOnReturn);
     document.addEventListener('visibilitychange', refreshOnReturn);
 
     return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
       supabase.removeChannel(channel);
       window.removeEventListener('online', refreshOnReturn);
       document.removeEventListener('visibilitychange', refreshOnReturn);
     };
-  }, [sessionId, supabase, router]);
+  }, [sessionId, supabase]);
 
   const handleGenerateClick = async () => {
     // Generate + persist in one step, matching Quick Match: a single click produces the
