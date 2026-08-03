@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { requireCommunityHost } from '@/server/guards';
 import { notFound } from 'next/navigation';
@@ -55,6 +57,13 @@ export default async function NewSessionPage({
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 px-4 py-8">
+      <Link
+        href={`/c/${communitySlug}?tab=sessions`}
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Sessions
+      </Link>
+
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white">New Match Session</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">

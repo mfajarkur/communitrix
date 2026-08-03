@@ -193,6 +193,11 @@ export default function WizardForm({
   const [showDemoCompleteModal, setShowDemoCompleteModal] = useState(false);
   const [showConfirmEndModal, setShowConfirmEndModal] = useState(false);
   const [showPodium, setShowPodium] = useState(false);
+  // Set true when a local draft past step 1 is silently restored on mount (community mode
+  // only — see the restore effect below) — surfaced as a dismissible banner so "New Session"
+  // never silently drops a host back into an old in-progress attempt with no visible cue and
+  // no way out.
+  const [restoredDraftNotice, setRestoredDraftNotice] = useState(false);
 
   // Tracks the personal_quick_matches row id once the session has been created in the DB
   // (as soon as the first round is generated), so a lost connection or a dead phone doesn't
@@ -349,6 +354,10 @@ export default function WizardForm({
       try {
         const parsed = JSON.parse(saved);
         if (saveToProfile && (!parsed.step || parsed.step >= 4)) return; // never restore a generated match locally in profile mode
+        // Community mode has no equivalent step-4 guard (Offline sessions legitimately need to
+        // resume mid-play), so flag it here instead — surfaced as a dismissible "resuming a
+        // draft" banner so this is never silently mistaken for a fresh "New Session" click.
+        if (!isGuestDemoMode && parsed.step && parsed.step > 1) setRestoredDraftNotice(true);
         if (parsed.step) setStep(parsed.step);
         if (parsed.config) setConfig(parsed.config);
         if (parsed.registeredPlayers) setRegisteredPlayers(parsed.registeredPlayers);
@@ -369,6 +378,31 @@ export default function WizardForm({
       }
     }
   }, [isGuestDemoMode, saveToProfile, quickMatchStorageKey, initialState]);
+
+  // Explicit escape hatch for the restored-draft banner above — discards the local draft and
+  // resets every piece of wizard state back to a blank Step 1, so "New Session" can actually
+  // mean new.
+  const handleDiscardDraftAndStartNew = () => {
+    if (typeof window !== 'undefined') localStorage.removeItem(quickMatchStorageKey);
+    setStep(1);
+    setConfig({
+      sport: 'PADEL',
+      gameType: 'AMERICANO',
+      activityName: `Match Session - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      courtCount: 1,
+      scoringSystem: 'POINTS',
+      pointTarget: '16 Points',
+      leaderboardRankedBy: 'POINT',
+      byeScoringMethod: 'PLAYER_AVERAGE',
+      sessionMode: 'ONLINE',
+      matchType: 'DOUBLES',
+    });
+    setRegisteredPlayers([]);
+    setMatches([]);
+    setRoundSitOuts(new Map());
+    setSelectedRound(1);
+    setRestoredDraftNotice(false);
+  };
 
   // 2. Auto-save Quick Match session state on every change. In profile mode this only matters
   // for steps 1-3 (see above) — once matches exist, the DB sync below takes over and this
@@ -1477,6 +1511,25 @@ export default function WizardForm({
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Resumed-draft notice — community mode only. Without this, silently jumping back into
+          an old in-progress attempt (possibly all the way to Step 4, matches already on court)
+          looks indistinguishable from having clicked "New Session" and landed somewhere wrong. */}
+      {restoredDraftNotice && !isGuestDemoMode && (
+        <div className="flex items-center gap-2.5 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs font-medium text-amber-800">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+          <span className="flex-1">
+            Resuming an unfinished session draft from a previous visit.
+          </span>
+          <button
+            type="button"
+            onClick={handleDiscardDraftAndStartNew}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+          >
+            Start New Session Instead
+          </button>
         </div>
       )}
 
