@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Home,
   Calendar,
@@ -91,6 +92,8 @@ export default function CommunityTabs({
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
+  const router = useRouter();
+  const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
   const [sessionStatusFilter, setSessionStatusFilter] = useState<'open' | 'ended'>('open');
   const [sessionSportFilter, setSessionSportFilter] = useState<'ALL' | 'PADEL' | 'TENNIS'>('ALL');
 
@@ -717,14 +720,25 @@ export default function CommunityTabs({
                               ? s.session_players.filter((sp: any) => sp.status === 'ACTIVE').length
                               : 0;
 
+                            const isLoadingThis = loadingSessionId === s.id;
+
                             return (
                               <Link
                                 key={s.id}
                                 href={`/c/${communitySlug}/sessions/${s.id}`}
-                                className="group rounded-2xl border border-orange-100 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-orange-300 transition-all flex flex-row items-stretch cursor-pointer"
+                                onClick={() => setLoadingSessionId(s.id)}
+                                className={`group rounded-2xl border transition-all flex flex-row items-stretch cursor-pointer select-none active:scale-[0.98] ${
+                                  isLoadingThis
+                                    ? 'border-orange-500 ring-2 ring-orange-400/40 bg-orange-50/40 shadow-inner'
+                                    : 'border-orange-100 bg-white hover:shadow-md hover:border-orange-300'
+                                }`}
                               >
                                 {/* Kotak Kiri: Jam dan Jenis Game (Shading Orange Transparan) */}
-                                <div className="bg-orange-50/80 border-r border-orange-100/80 p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[100px] sm:min-w-[125px] shrink-0 text-center">
+                                <div
+                                  className={`border-r p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[100px] sm:min-w-[125px] shrink-0 text-center transition-colors ${
+                                    isLoadingThis ? 'bg-orange-100/80 border-orange-200' : 'bg-orange-50/80 border-orange-100/80'
+                                  }`}
+                                >
                                   <span className="text-sm sm:text-base font-black text-orange-950 tracking-tight">
                                     {timeStr}
                                   </span>
@@ -750,7 +764,14 @@ export default function CommunityTabs({
                                       {joinedCount > 0 && <span className="shrink-0">• {s.court_count} Courts</span>}
                                     </span>
 
-                                    <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                                    {isLoadingThis ? (
+                                      <span className="inline-flex items-center gap-1 text-xs font-extrabold text-orange-600 animate-pulse shrink-0 ml-2">
+                                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                                        Opening...
+                                      </span>
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                                    )}
                                   </div>
                                 </div>
                               </Link>
