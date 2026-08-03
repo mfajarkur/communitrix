@@ -685,7 +685,7 @@ Each must be an explicit failing-then-passing test:
 | `void_match` | `(p_match_id uuid, p_reason text) → void` | Admin-only. Reverses Elo if applied, marks `VOIDED`, excludes from standings. |
 | `withdraw_session_player` | `(p_session_id uuid, p_profile_id uuid, p_policy text) → void` | `p_policy ∈ {VOID_ROUND, KEEP_PARTIAL}`. See §11 E3. |
 | `replay_ratings` | `(p_community_id uuid, p_sport sport_type, p_from timestamptz) → int` | Resets rankings to the state before `p_from`, then re-applies every `COMPLETED` match in `(completed_at, id)` order. Returns matches replayed. Advisory-locked per (community, sport). |
-| `finalize_session` | `(p_session_id uuid) → sessions` | Rejects if any match is not `COMPLETED`/`VOIDED`. Sets `COMPLETED`, freezes standings. |
+| `finalize_session` | `(p_session_id uuid) → sessions` | A host can end a session at any time — any match still not `COMPLETED`/`VOIDED` is auto-voided (never contributed to Elo/CP, so no `replay_ratings` needed) rather than blocking finalize. Sets `COMPLETED`, freezes standings. (0033) |
 | `recalculate_session_standings` | `(p_session_id uuid) → void` | Rebuilds `session_players` aggregates from `matches`. Repair tool; also called by amend/void. |
 
 All RPCs begin with an authorization guard (`if not is_community_admin(...) then raise exception 'FORBIDDEN' end if;`) — `SECURITY DEFINER` bypasses RLS, so the check must be explicit and is the only thing standing between a member and admin powers.

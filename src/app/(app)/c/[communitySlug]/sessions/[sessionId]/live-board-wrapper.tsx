@@ -221,7 +221,15 @@ export default function LiveBoardWrapper({
   };
 
   const handleFinalizeClick = async () => {
-    if (!confirm('Are you sure you want to end this match session? This will finalize all ratings.')) return;
+    // Ending a session no longer requires every court to be scored first — finalize_session
+    // (0033) auto-voids anything still unfinished instead of rejecting. Warn the host up front
+    // so voided courts aren't a silent surprise.
+    const unfinishedCount = matches.filter((m) => m.status !== 'COMPLETED' && m.status !== 'VOIDED').length;
+    const confirmMessage =
+      unfinishedCount > 0
+        ? `${unfinishedCount} match${unfinishedCount === 1 ? ' is' : 'es are'} still unscored and will be voided (won't count toward ratings or standings). End this session anyway?`
+        : 'Are you sure you want to end this match session? This will finalize all ratings.';
+    if (!confirm(confirmMessage)) return;
     setIsFinalizing(true);
     setError(null);
     try {
