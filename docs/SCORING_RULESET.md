@@ -109,10 +109,10 @@ $$\text{skew} = \min\left(\frac{|\text{Elo}_{\text{high}} - \text{Elo}_{\text{lo
 $$\text{lowerShare} = \begin{cases} 0.5 + 0.1 \times \text{skew} & \text{team won} \\ 1 - (0.5 + 0.15 \times \text{skew}) & \text{team lost or drew} \end{cases}$$
 The lower-rated partner receives `teamDelta × lowerShare`; the higher-rated partner receives the remainder (`teamDelta - lowerDelta`, not independently rounded, so the pair always sums exactly to `teamDelta` and the zero-sum invariant across all 4 players holds regardless of rounding). Singles matches are unaffected — there's no partner to split with.
 
-### 5.2 Skill Rating & Review Triggers (Admin Judgment)
-- Skill Rating is an official admin judgment value ($1.00$ to $7.00$).
-- Elo drift is monitored per player: when $|\text{Elo}_{\text{current}} - \text{Elo}_{\text{last assessed}}| \ge 100$, `review_flagged` is set to `true` to notify community admins for a rating review.
-- Carry Pattern overperformance (extreme gap $> 150$) over $\ge 5$ matches triggers an admin review flag.
+### 5.2 Skill Rating — NOT IMPLEMENTED (display-only estimate exists instead)
+The admin-judgment Skill Rating system described in `communitrix-elo-adjustment-brief.md` Patch 6 (an admin-assigned $1.00$–$7.00$ value, plus `review_flagged`/`review_flagged_at` drift and carry-overperformance review triggers) was **never built** — confirmed directly against the live database (`player_rankings` has no `review_flagged`, `review_flagged_at`, or `skill_rating_official` column at all). It remains a proposal only; see the brief's own top-of-file correction and section 7.
+
+What actually ships instead: the "Skill Rating" shown on community leaderboards (`community-tabs.tsx`) is a **client-side derived display value**, computed on the fly from the player's current `elo_rating` — `1.0 + max(0, (elo_rating - 800) / 250)` — with no admin input, no stored column, and no review-flagging of any kind. Treat it as a cosmetic Elo-to-1–7-scale conversion, not a separate rating system.
 
 ---
 
