@@ -734,16 +734,20 @@ export default function CommunityTabs({
                                     : 'border-orange-100 bg-white hover:shadow-md hover:border-orange-300'
                                 }`}
                               >
-                                {/* Kotak Kiri: Jam dan Jenis Game (Shading Orange Transparan) */}
+                                {/* Kotak Kiri: Jam dan Jenis Game (Shading Orange Transparan, abu-abu jika sudah Ended) */}
                                 <div
                                   className={`border-r p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[100px] sm:min-w-[125px] shrink-0 text-center transition-colors ${
-                                    isLoadingThis ? 'bg-orange-100/80 border-orange-200' : 'bg-orange-50/80 border-orange-100/80'
+                                    isSessionEnded
+                                      ? 'bg-zinc-100 border-zinc-200'
+                                      : isLoadingThis
+                                      ? 'bg-orange-100/80 border-orange-200'
+                                      : 'bg-orange-50/80 border-orange-100/80'
                                   }`}
                                 >
-                                  <span className="text-sm sm:text-base font-black text-orange-950 tracking-tight">
+                                  <span className={`text-sm sm:text-base font-black tracking-tight ${isSessionEnded ? 'text-zinc-600' : 'text-orange-950'}`}>
                                     {timeStr}
                                   </span>
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold tracking-wider text-orange-600/90 uppercase mt-0.5">
+                                  <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold tracking-wider uppercase mt-0.5 ${isSessionEnded ? 'text-zinc-500' : 'text-orange-600/90'}`}>
                                     <span
                                       className={`h-1.5 w-1.5 rounded-full shrink-0 ${
                                         isSessionEnded ? 'bg-zinc-400' : 'bg-green-500 animate-pulse'
