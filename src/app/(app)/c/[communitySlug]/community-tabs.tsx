@@ -78,6 +78,7 @@ export default function CommunityTabs({
   const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
     defaultSport === 'TENNIS' ? 'TENNIS' : 'PADEL'
   );
+  const [leaderboardSortBy, setLeaderboardSortBy] = useState<'elo' | 'cp' | 'skill' | 'winrate' | 'wins' | 'diff'>('elo');
   const [starSportTab, setStarSportTab] = useState<'PADEL' | 'TENNIS'>('PADEL');
   const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -924,8 +925,28 @@ export default function CommunityTabs({
 
           {/* TAB 4: LEADERBOARD GLOBAL */}
           {activeTab === 'leaderboard' && (() => {
-            const currentLeaderboard =
-              rankingsBySport[selectedLeaderboardSport] || rankings || [];
+            const getSortValue = (r: any) => {
+              switch (leaderboardSortBy) {
+                case 'elo':
+                  return Number(r.elo_rating);
+                case 'cp':
+                  return Math.round(cpMap[r.profile.id] || 0);
+                case 'skill':
+                  return Number(1.0 + Math.max(0, (Number(r.elo_rating) - 800) / 250));
+                case 'winrate':
+                  return r.total_matches > 0 ? r.total_wins / r.total_matches : 0;
+                case 'wins':
+                  return r.total_wins;
+                case 'diff':
+                  return r.points_for - r.points_against;
+                default:
+                  return Number(r.elo_rating);
+              }
+            };
+
+            const currentLeaderboard = [...(rankingsBySport[selectedLeaderboardSport] || rankings || [])].sort(
+              (a, b) => getSortValue(b) - getSortValue(a)
+            );
 
             return (
               <div className="space-y-6">
@@ -964,6 +985,26 @@ export default function CommunityTabs({
                   </div>
                 </div>
 
+                {/* Sort By */}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="leaderboard-sort" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    Sort by
+                  </label>
+                  <select
+                    id="leaderboard-sort"
+                    value={leaderboardSortBy}
+                    onChange={(e) => setLeaderboardSortBy(e.target.value as typeof leaderboardSortBy)}
+                    className="text-xs font-bold rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer"
+                  >
+                    <option value="elo">Elo Rating</option>
+                    <option value="cp">Community Points</option>
+                    <option value="skill">Skill Rating</option>
+                    <option value="winrate">Win Rate</option>
+                    <option value="wins">Wins</option>
+                    <option value="diff">Diff</option>
+                  </select>
+                </div>
+
                 <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
                   {currentLeaderboard.length === 0 ? (
                     <div className="text-center py-16 text-zinc-400 space-y-2">
@@ -977,11 +1018,11 @@ export default function CommunityTabs({
                           <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                             <th className="p-3 w-12 text-center">Rank</th>
                             <th className="p-3">Name</th>
+                            <th className="p-3 text-center">Elo</th>
+                            <th className="p-3 text-center">CP</th>
                             <th className="p-3 text-center">W-L-T</th>
                             <th className="p-3 text-center">WR%</th>
                             <th className="p-3 text-center">Diff</th>
-                            <th className="p-3 text-center">Elo</th>
-                            <th className="p-3 text-center">CP</th>
                             <th className="p-3 text-center">Skill</th>
                           </tr>
                         </thead>
@@ -1047,6 +1088,16 @@ export default function CommunityTabs({
                                 </Link>
                               </td>
 
+                              <td className="p-3 text-center align-middle font-mono font-black text-xs text-orange-600">
+                                {Number(r.elo_rating).toFixed(0)}
+                              </td>
+
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                                <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
+                                  {playerCp}
+                                </span>
+                              </td>
+
                               <td className="p-3 text-center align-middle font-mono font-bold text-xs text-zinc-700">
                                 {r.total_wins}-{r.total_losses}-{r.total_draws}
                               </td>
@@ -1056,16 +1107,6 @@ export default function CommunityTabs({
                               <td className="p-3 text-center align-middle font-mono font-bold text-xs">
                                 <span className={pDiff > 0 ? 'text-emerald-600' : pDiff < 0 ? 'text-rose-600' : 'text-zinc-500'}>
                                   {pDiff > 0 ? `+${pDiff}` : pDiff}
-                                </span>
-                              </td>
-
-                              <td className="p-3 text-center align-middle font-mono font-black text-xs text-orange-600">
-                                {Number(r.elo_rating).toFixed(0)}
-                              </td>
-
-                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
-                                <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
-                                  {playerCp}
                                 </span>
                               </td>
 
