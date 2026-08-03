@@ -2026,6 +2026,68 @@ export default function WizardForm({
                       required
                     />
                   </div>
+
+                  {/* Quick-fill from real community members — tapping a member fills whichever
+                      team slot is still empty (Player 1 first, then Player 2), instead of forcing
+                      the host to remember/retype an exact name. Same search+grid pattern used
+                      below for regular (non-team) mode. */}
+                  {!isGuestDemoMode && availableCommunityPlayers.length > 0 && (
+                    <div className="space-y-2 pt-1">
+                      <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">
+                        Or Tap a Member to Fill {!player1NameInput.trim() ? 'Player 1' : !player2NameInput.trim() ? 'Player 2' : 'a Slot'}
+                      </span>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                        <input
+                          type="text"
+                          value={communityMemberSearch}
+                          onChange={(e) => setCommunityMemberSearch(e.target.value)}
+                          placeholder="Search members..."
+                          className="w-full pl-8 pr-2.5 py-2 rounded-xl border border-zinc-200 bg-white text-xs font-medium text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
+                        />
+                      </div>
+                      {(() => {
+                        const filteredMembers = availableCommunityPlayers.filter((p) =>
+                          p.fullName.toLowerCase().includes(communityMemberSearch.trim().toLowerCase())
+                        );
+                        if (filteredMembers.length === 0) {
+                          return <p className="text-xs text-zinc-400 text-center py-3">No members match your search.</p>;
+                        }
+                        return (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                            {filteredMembers.map((p) => {
+                              const isPicked = player1NameInput.trim() === p.fullName || player2NameInput.trim() === p.fullName;
+                              return (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  disabled={isPicked || (!!player1NameInput.trim() && !!player2NameInput.trim())}
+                                  onClick={() => {
+                                    if (!player1NameInput.trim()) setPlayer1NameInput(p.fullName);
+                                    else if (!player2NameInput.trim()) setPlayer2NameInput(p.fullName);
+                                  }}
+                                  className={`p-2.5 rounded-xl border text-left text-xs font-bold transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    isPicked
+                                      ? 'border-orange-500 bg-orange-500/10 text-orange-950'
+                                      : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                                  }`}
+                                >
+                                  <img
+                                    src={getAvatarUrl({ id: p.id, avatar_url: p.avatarUrl, full_name: p.fullName })}
+                                    alt=""
+                                    className="h-6 w-6 rounded-full object-cover shrink-0 border border-zinc-200"
+                                  />
+                                  <span className="truncate flex-1">{p.fullName}</span>
+                                  {isPicked && <Check className="h-4 w-4 text-orange-500 shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     disabled={!player1NameInput.trim() || !player2NameInput.trim() || isAddingGuest}
