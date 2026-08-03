@@ -164,45 +164,39 @@ export default async function CommunitiesPage() {
         </div>
       )}
 
-      {/* Quick Match: play without a community — results saved to this profile only, no ELO impact */}
-      <div className="space-y-4 pt-2">
-        <Link
-          href="/communities/quick-match"
-          className="group relative overflow-hidden rounded-2xl flex items-center justify-between gap-4 p-5 sm:p-6 bg-zinc-950 border border-orange-500/20 shadow-sm hover:shadow-md transition-all"
-        >
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="shrink-0 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
-              <Zap className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-black text-white truncate">Quick Match</h3>
-              <p className="text-xs text-white/50 mt-0.5">Play now without a community — saved to your profile only.</p>
-            </div>
+      {/* Quick Matches Section */}
+      <div className="space-y-6 pt-4 border-t border-zinc-100">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+              Quick Matches
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Personal match history, separate from any community.
+            </p>
           </div>
-          <ChevronRight className="h-5 w-5 text-white/40 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-        </Link>
 
+          <Link
+            href="/communities/quick-match"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            New Quick Match
+          </Link>
+        </div>
+
+        <QuickMatchHistory matches={quickMatches} />
+      </div>
+
+      {/* Small Wiki & Rulebook Button at the very bottom */}
+      <div className="pt-6 border-t border-zinc-100 flex items-center justify-center pb-4">
         <Link
           href="/wiki"
-          className="group relative overflow-hidden rounded-2xl flex items-center justify-between gap-4 p-5 sm:p-6 bg-zinc-950 border border-orange-500/20 shadow-sm hover:shadow-md transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-600 text-xs font-semibold transition-all shadow-xs cursor-pointer"
         >
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="shrink-0 flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
-              <BookOpen className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-black text-white truncate">Wiki & Rulebook</h3>
-              <p className="text-xs text-white/50 mt-0.5">ELO, tournament formats, sit-out rules, and roles — same for every community.</p>
-            </div>
-          </div>
-          <ChevronRight className="h-5 w-5 text-white/40 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          <BookOpen className="h-3.5 w-3.5 text-zinc-400" />
+          Wiki & Rulebook
         </Link>
-
-        <div>
-          <h2 className="text-sm font-extrabold tracking-tight text-[#111827]">My Quick Matches</h2>
-          <p className="text-xs text-zinc-500 mt-0.5 mb-3">Your personal match history, separate from any community.</p>
-          <QuickMatchHistory matches={quickMatches} />
-        </div>
       </div>
     </div>
   );
