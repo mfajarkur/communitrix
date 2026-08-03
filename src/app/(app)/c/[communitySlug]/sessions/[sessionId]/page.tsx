@@ -197,25 +197,11 @@ export default async function SessionLiveBoardPage({
         <ArrowLeft className="h-4 w-4" /> Back to Community
       </Link>
 
-      {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-150 pb-5">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-orange-500">
-            Live Session Dashboard
-          </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#111827] mt-1">
-            {session.session_name}
-          </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Format: <span className="font-bold uppercase">{session.format}</span> • Sport:{' '}
-            <span className="font-bold uppercase">{session.sport}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-250 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50">
-            {session.status === 'ACTIVE' ? 'Active Playing' : session.status}
-          </span>
-        </div>
+      {/* Clean, simple header matching Quick Match */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111827]">
+          {session.session_name}
+        </h1>
       </div>
 
       <LiveBoardWrapper

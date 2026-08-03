@@ -318,20 +318,6 @@ export default function LiveBoardWrapper({
             onSelectRound={setSelectedRound}
           />
 
-          {/* Generate / End Session — same full-width orange button pattern as Quick Match's
-              "+ Generate Next Round" button, instead of a separate boxed control panel. */}
-          {isHostOrAdmin && (
-            <GenerateRoundButton
-              nextRoundNumber={nextRoundNumber}
-              onGenerate={handleGenerateClick}
-              isGenerating={isGenerating}
-              disabled={!canGenerateNextRound || isFinalizing}
-              onEndSession={handleFinalizeClick}
-              isEndingSession={isFinalizing}
-              showEndSession={totalRounds > 0}
-            />
-          )}
-
           {/* Sitting Out / Bye Players Banner for Selected Round */}
           {sitOuts.length > 0 && (
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-medium flex items-center gap-2">
@@ -501,6 +487,16 @@ export default function LiveBoardWrapper({
                   </div>
                 );
               })}
+          {/* Generate Next Round Button — placed at bottom of match list */}
+          {isHostOrAdmin && (
+            <div className="pt-2">
+              <GenerateRoundButton
+                nextRoundNumber={nextRoundNumber}
+                onGenerate={handleGenerateClick}
+                isGenerating={isGenerating}
+                disabled={!canGenerateNextRound || isFinalizing}
+                showEndSession={false}
+              />
             </div>
           )}
         </div>
@@ -518,6 +514,21 @@ export default function LiveBoardWrapper({
           </div>
 
           <StandingsTable standings={standings} />
+
+          {/* End Session Button — only shown in Leaderboard tab */}
+          {isHostOrAdmin && totalRounds > 0 && (
+            <div className="pt-4 border-t border-zinc-100">
+              <button
+                type="button"
+                onClick={handleFinalizeClick}
+                disabled={isFinalizing || isGenerating}
+                className="w-full py-3 rounded-xl border border-red-200 hover:bg-red-50 text-xs font-bold text-red-600 transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-white shadow-sm disabled:opacity-50"
+              >
+                {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                <span>End Session & Finalize Ratings</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
