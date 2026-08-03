@@ -91,7 +91,8 @@ export default function CommunityTabs({
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
-  const [sessionFilter, setSessionFilter] = useState<'open' | 'live' | 'past' | 'all'>('open');
+  const [sessionStatusFilter, setSessionStatusFilter] = useState<'open' | 'ended'>('open');
+  const [sessionSportFilter, setSessionSportFilter] = useState<'ALL' | 'PADEL' | 'TENNIS'>('ALL');
 
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -541,25 +542,21 @@ export default function CommunityTabs({
           {activeTab === 'sessions' && (() => {
             // Count metrics for filter tabs
             const openSessionsCount = sessions.filter(
-              (s: any) => s.status === 'ACTIVE' || s.status === 'DRAFT' || s.status === 'SCHEDULED' || s.status === 'PAUSED'
+              (s: any) => s.status !== 'COMPLETED' && s.status !== 'CANCELLED' && s.status !== 'ENDED'
             ).length;
-            const liveSessionsCount = sessions.filter((s: any) => s.status === 'ACTIVE').length;
-            const pastSessionsCount = sessions.filter(
+            const endedSessionsCount = sessions.filter(
               (s: any) => s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED'
             ).length;
 
-            // Filter logic
+            // Filter logic (status + sport)
             const filteredSessions = sessions.filter((s: any) => {
-              if (sessionFilter === 'open') {
-                return s.status === 'ACTIVE' || s.status === 'DRAFT' || s.status === 'SCHEDULED' || s.status === 'PAUSED';
-              }
-              if (sessionFilter === 'live') {
-                return s.status === 'ACTIVE';
-              }
-              if (sessionFilter === 'past') {
-                return s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED';
-              }
-              return true; // 'all'
+              const isEnded = s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED';
+              if (sessionStatusFilter === 'open' && isEnded) return false;
+              if (sessionStatusFilter === 'ended' && !isEnded) return false;
+
+              if (sessionSportFilter !== 'ALL' && s.sport !== sessionSportFilter) return false;
+
+              return true;
             });
 
             // Sort by date descending (newest timestamp first)
@@ -616,13 +613,14 @@ export default function CommunityTabs({
                   )}
                 </div>
 
-                {/* Filter Pills Bar (Open, Live, Past, All) */}
-                <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {/* Filter Bar: Status Pills (Open / Ended) & Sport Tabs (All / Padel / Tennis) */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
+                  {/* Status Pills */}
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setSessionFilter('open')}
+                      onClick={() => setSessionStatusFilter('open')}
                       className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                        sessionFilter === 'open'
+                        sessionStatusFilter === 'open'
                           ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
                           : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
                       }`}
@@ -631,52 +629,49 @@ export default function CommunityTabs({
                     </button>
 
                     <button
-                      onClick={() => setSessionFilter('live')}
+                      onClick={() => setSessionStatusFilter('ended')}
                       className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                        sessionFilter === 'live'
+                        sessionStatusFilter === 'ended'
                           ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
                           : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
                       }`}
                     >
-                      {liveSessionsCount > 0 && (
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                      )}
-                      Live • {liveSessionsCount}
-                    </button>
-
-                    <button
-                      onClick={() => setSessionFilter('past')}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                        sessionFilter === 'past'
-                          ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
-                          : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
-                      }`}
-                    >
-                      Past • {pastSessionsCount}
-                    </button>
-
-                    <button
-                      onClick={() => setSessionFilter('all')}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                        sessionFilter === 'all'
-                          ? 'bg-zinc-900 text-white shadow-xs font-extrabold'
-                          : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
-                      }`}
-                    >
-                      All • {sessions.length}
+                      Ended • {endedSessionsCount}
                     </button>
                   </div>
 
-                  <div className="shrink-0 pl-2">
-                    <div
-                      title="Filter Sessions"
-                      className="p-2 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                  {/* Sport Filter Tabs */}
+                  <div className="flex items-center gap-1 bg-zinc-100 p-1 rounded-full border border-zinc-200/60">
+                    <button
+                      onClick={() => setSessionSportFilter('ALL')}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        sessionSportFilter === 'ALL'
+                          ? 'bg-white text-zinc-900 shadow-xs font-black'
+                          : 'text-zinc-500 hover:text-zinc-900'
+                      }`}
                     >
-                      <Filter className="h-4 w-4" />
-                    </div>
+                      All
+                    </button>
+                    <button
+                      onClick={() => setSessionSportFilter('PADEL')}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        sessionSportFilter === 'PADEL'
+                          ? 'bg-white text-zinc-900 shadow-xs font-black'
+                          : 'text-zinc-500 hover:text-zinc-900'
+                      }`}
+                    >
+                      Padel
+                    </button>
+                    <button
+                      onClick={() => setSessionSportFilter('TENNIS')}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        sessionSportFilter === 'TENNIS'
+                          ? 'bg-white text-zinc-900 shadow-xs font-black'
+                          : 'text-zinc-500 hover:text-zinc-900'
+                      }`}
+                    >
+                      Tennis
+                    </button>
                   </div>
                 </div>
 
@@ -699,7 +694,7 @@ export default function CommunityTabs({
                   <div className="text-center py-12 text-zinc-400 space-y-2 bg-zinc-50 rounded-2xl border border-zinc-100">
                     <Calendar className="h-8 w-8 mx-auto opacity-30 text-zinc-500" />
                     <p className="text-sm font-semibold text-zinc-600">
-                      No {sessionFilter === 'all' ? '' : sessionFilter} sessions found.
+                      No {sessionStatusFilter} {sessionSportFilter !== 'ALL' ? sessionSportFilter.toLowerCase() : ''} sessions found.
                     </p>
                   </div>
                 ) : (
@@ -722,62 +717,40 @@ export default function CommunityTabs({
                               ? s.session_players.filter((sp: any) => sp.status === 'ACTIVE').length
                               : 0;
 
-                            const isLive = s.status === 'ACTIVE';
-                            const isCompleted = s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED';
-
                             return (
                               <Link
                                 key={s.id}
                                 href={`/c/${communitySlug}/sessions/${s.id}`}
-                                className="group rounded-2xl border border-zinc-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-orange-300 transition-all flex flex-col sm:flex-row items-stretch cursor-pointer"
+                                className="group rounded-2xl border border-zinc-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-orange-300 transition-all flex flex-row items-stretch cursor-pointer"
                               >
-                                {/* Left Column: Time & Status Badge */}
-                                <div className="bg-zinc-50/90 border-b sm:border-b-0 sm:border-r border-zinc-100 p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[110px] sm:min-w-[130px] shrink-0 text-center">
+                                {/* Kotak Kiri: Jam dan Jenis Game saja */}
+                                <div className="bg-zinc-50/90 border-r border-zinc-100 p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[100px] sm:min-w-[125px] shrink-0 text-center">
                                   <span className="text-sm sm:text-base font-black text-zinc-900 tracking-tight">
                                     {timeStr}
                                   </span>
                                   <span className="text-[10px] font-extrabold tracking-wider text-zinc-400 uppercase mt-0.5">
                                     {s.format || s.sport}
                                   </span>
-
-                                  {isLive ? (
-                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
-                                      <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                                      HOSTED
-                                    </span>
-                                  ) : isCompleted ? (
-                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-zinc-200 text-zinc-600">
-                                      ENDED
-                                    </span>
-                                  ) : (
-                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
-                                      OPEN
-                                    </span>
-                                  )}
                                 </div>
 
-                                {/* Right Column: Details & Stats */}
+                                {/* Kotak Kanan: Nama Sesi, Jumlah Peserta Join, Berapa Court */}
                                 <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between min-w-0 bg-white">
                                   <div>
                                     <h4 className="text-base sm:text-lg font-black text-zinc-900 group-hover:text-orange-600 transition-colors truncate">
                                       {s.session_name}
                                     </h4>
-                                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium mt-1 truncate">
-                                      <MapPin className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-                                      <span className="truncate">{s.location || communityName}</span>
-                                    </div>
                                   </div>
 
-                                  <div className="flex items-center justify-between mt-3 text-xs text-zinc-500 font-semibold pt-2 border-t border-zinc-100/60">
-                                    <span className="flex items-center gap-1.5">
-                                      <Users className="h-3.5 w-3.5 text-zinc-400" />
-                                      <span>
+                                  <div className="flex items-center justify-between mt-2.5 text-xs text-zinc-500 font-semibold pt-1 border-t border-zinc-100/60">
+                                    <span className="flex items-center gap-1.5 truncate">
+                                      <Users className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                                      <span className="truncate">
                                         {joinedCount > 0 ? `${joinedCount} Joined` : `${s.court_count} Courts`}
                                       </span>
-                                      {joinedCount > 0 && <span>• {s.court_count} Courts</span>}
+                                      {joinedCount > 0 && <span className="shrink-0">• {s.court_count} Courts</span>}
                                     </span>
 
-                                    <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
+                                    <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
                                   </div>
                                 </div>
                               </Link>
