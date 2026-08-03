@@ -23,9 +23,12 @@ import {
   CalendarDays,
   User,
   LogOut,
+  Flame,
+  ArrowLeft,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import BannerImageEditor from './banner-image-editor';
+import EditCommunityInfoButton from './edit-community-info-button';
 import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
@@ -192,9 +195,111 @@ export default function CommunityTabs({
 
   const topPlayer = rankings && rankings.length > 0 ? rankings[0] : null;
 
+  const role = isAdmin ? 'ADMIN' : isHostOrAdmin ? 'HOST' : 'MEMBER';
+  const bannerImage = community?.logo_url || '/community_banner_placeholder.png';
+  const tabTitles: Record<'sessions' | 'members' | 'leaderboard', string> = {
+    sessions: 'Sessions',
+    members: 'Members',
+    leaderboard: 'Leaderboard',
+  };
+
   return (
     <>
       <div className="space-y-6 bg-white min-h-[500px]">
+
+        {/* Community badge — Home only. Other tabs get a plain title + back button instead
+            (below) so the community banner doesn't repeat on every tab. */}
+        {activeTab === 'home' && (
+          <div className="relative overflow-hidden rounded-3xl h-44 sm:h-52 bg-zinc-950 flex flex-col justify-end p-5 text-white shadow-md border border-zinc-100">
+            <img
+              src={bannerImage}
+              alt={communityName}
+              className="absolute inset-0 w-full h-full object-cover opacity-60 select-none pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-orange-600/90 via-orange-600/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-950/40 via-transparent to-transparent" />
+
+            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+              <Link
+                href="/communities"
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-white/95 hover:text-white transition-all bg-black/30 hover:bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm"
+              >
+                ← Back to My Profile
+              </Link>
+              {isAdmin && (
+                <EditCommunityInfoButton
+                  communityId={communityId}
+                  communitySlug={communitySlug}
+                  community={community}
+                />
+              )}
+            </div>
+
+            {isAdmin && (
+              <BannerImageEditor communityId={communityId} communitySlug={communitySlug} />
+            )}
+
+            <div className="relative z-10 space-y-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black leading-tight text-white tracking-tight drop-shadow-sm font-sans">
+                  {communityName}
+                </h1>
+                <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase border border-white/20 shadow-sm ${
+                  role === 'ADMIN'
+                    ? 'bg-orange-500 text-white'
+                    : role === 'HOST'
+                    ? 'bg-white text-orange-600'
+                    : 'bg-white/80 text-zinc-800'
+                }`}>
+                  {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
+                  {role}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-white/90 font-medium pt-0.5">
+                <p>
+                  Default Sport: <span className="font-extrabold uppercase">{defaultSport}</span>
+                </p>
+                {community?.code && (
+                  <p className="bg-white/15 px-2 py-0.5 rounded font-mono text-[9px] tracking-wider uppercase border border-white/10 shadow-sm">
+                    CODE: {community.code}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 text-[11px] text-white/90 font-semibold pt-1.5">
+                <span className="inline-flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {memberCount} Members
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {sessions.length} Sessions
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Flame className="h-3.5 w-3.5" />
+                  {totalMatchesCount} Matches Scored
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sessions / Members / Leaderboard: plain title + back button, no badge — consistent
+            typography across all three so switching tabs doesn't feel like a different app. */}
+        {activeTab !== 'home' && (
+          <div className="space-y-1 pt-1">
+            <button
+              onClick={() => handleTabChange('home')}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back
+            </button>
+            <h1 className="text-xl font-black tracking-tight text-zinc-900">
+              {tabTitles[activeTab]}
+            </h1>
+          </div>
+        )}
 
         {/* TAB CONTENTS */}
         <div className="min-h-[400px]">
