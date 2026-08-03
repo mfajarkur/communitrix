@@ -714,10 +714,10 @@ export default function CommunityTabs({
                                     <img
                                       src={p.avatar_url}
                                       alt={pName}
-                                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
+                                      className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs"
                                     />
                                   ) : (
-                                    <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black text-base uppercase shadow-xs">
+                                    <div className="flex h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black text-base uppercase shadow-xs">
                                       {pName.slice(0, 2)}
                                     </div>
                                   )}
@@ -772,7 +772,7 @@ export default function CommunityTabs({
                                     <img
                                       src={getAvatarUrl(p)}
                                       alt={pName}
-                                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
+                                      className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
                                     />
                                     <div className="absolute top-0 right-0 bg-amber-500 rounded-full p-1 text-white shadow-sm border-2 border-white">
                                       <UserCheck className="h-3 w-3" />
@@ -815,10 +815,10 @@ export default function CommunityTabs({
                                     <img
                                       src={p.avatar_url}
                                       alt={pName}
-                                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-white shadow-xs"
+                                      className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs"
                                     />
                                   ) : (
-                                    <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 font-extrabold text-base uppercase shadow-xs">
+                                    <div className="flex h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-full bg-zinc-200 text-zinc-700 font-extrabold text-base uppercase shadow-xs">
                                       {pName.slice(0, 2)}
                                     </div>
                                   )}
