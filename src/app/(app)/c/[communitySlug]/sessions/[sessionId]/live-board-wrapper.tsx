@@ -484,9 +484,11 @@ export default function LiveBoardWrapper({
                         </div>
                       )}
                     </div>
-                  </div>
                 );
               })}
+            </div>
+          )}
+
           {/* Generate Next Round Button — placed at bottom of match list */}
           {isHostOrAdmin && (
             <div className="pt-2">
