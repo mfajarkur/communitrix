@@ -977,9 +977,14 @@ export default function CommunityTabs({
                           <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                             <th className="p-3 w-12 text-center">Rank</th>
                             <th className="p-3">Name</th>
-                            <th className="p-3 text-center">Elo Rating</th>
+                            <th className="p-3 text-center">W</th>
+                            <th className="p-3 text-center">L</th>
+                            <th className="p-3 text-center">D</th>
+                            <th className="p-3 text-center">WR%</th>
+                            <th className="p-3 text-center">Diff</th>
+                            <th className="p-3 text-center">Elo</th>
                             <th className="p-3 text-center">CP</th>
-                            <th className="p-3 text-center">Skill Rating</th>
+                            <th className="p-3 text-center">Skill</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
@@ -1020,51 +1025,61 @@ export default function CommunityTabs({
                               <td className="p-3 align-middle">
                                 <Link
                                   href={`/c/${communitySlug}/players/${r.profile.id}`}
-                                  className="flex items-center gap-2.5 hover:underline"
+                                  className="flex items-center gap-3 hover:underline"
                                 >
                                   <img
                                      src={getAvatarUrl(r.profile)}
                                      alt={getDisplayName(r.profile)}
-                                     className="h-8 w-8 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
+                                     className="h-10 w-10 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
                                    />
-                                  <div className="min-w-0 max-w-[90px]">
-                                    <p className="text-xs font-extrabold text-[#111827] truncate flex items-center gap-1.5">
-                                      {getDisplayName(r.profile)}
-                                      {r.profile.is_guest && (
-                                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
-                                          Guest
-                                        </span>
-                                      )}
-                                      {r.is_provisional && (
-                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 text-[8px] font-bold uppercase border border-orange-500/20">
-                                          <Star className="h-2 w-2 fill-current" />
-                                          Prov
-                                        </span>
-                                      )}
-                                    </p>
-                                    <p className="text-[10px] text-zinc-400 font-bold mt-0.5">
-                                      {r.total_wins}W–{r.total_losses}L ({winRate}% WR) • {pDiff > 0 ? `+${pDiff}` : pDiff} Diff
-                                    </p>
-                                  </div>
+                                  <p className="text-xs font-extrabold text-[#111827] truncate max-w-[90px] flex items-center gap-1.5">
+                                    {getDisplayName(r.profile)}
+                                    {r.profile.is_guest && (
+                                      <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
+                                        Guest
+                                      </span>
+                                    )}
+                                    {r.is_provisional && (
+                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 text-[8px] font-bold uppercase border border-orange-500/20">
+                                        <Star className="h-2 w-2 fill-current" />
+                                        Prov
+                                      </span>
+                                    )}
+                                  </p>
                                 </Link>
+                              </td>
+
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                                {r.total_wins}
+                              </td>
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                                {r.total_losses}
+                              </td>
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                                {r.total_draws}
+                              </td>
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                                {winRate}%
+                              </td>
+                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                                <span className={pDiff > 0 ? 'text-emerald-600' : pDiff < 0 ? 'text-rose-600' : 'text-zinc-500'}>
+                                  {pDiff > 0 ? `+${pDiff}` : pDiff}
+                                </span>
                               </td>
 
                               <td className="p-3 text-center align-middle font-mono font-black text-xs text-orange-600">
                                 {Number(r.elo_rating).toFixed(0)}
-                                <span className="block text-[9px] text-zinc-400 font-bold">
-                                  Peak: {Number(r.elo_peak).toFixed(0)}
-                                </span>
                               </td>
 
                               <td className="p-3 text-center align-middle font-mono font-bold text-xs">
                                 <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
-                                  {playerCp} CP
+                                  {playerCp}
                                 </span>
                               </td>
 
                               <td className="p-3 text-center align-middle font-mono font-bold text-xs">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200 font-black text-[11px] shadow-2xs">
-                                  ⭐ {skillRating}
+                                  {skillRating}
                                 </span>
                               </td>
                             </tr>
