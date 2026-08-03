@@ -30,10 +30,10 @@ export default async function QuickMatchDetailPage({
   return (
     <div className="space-y-6">
       <Link
-        href="/communities"
+        href="/activities/quick-match"
         className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to My Profile
+        <ArrowLeft className="h-4 w-4" /> Back to Quick Matches
       </Link>
 
       {/* Header */}
@@ -65,7 +65,7 @@ export default async function QuickMatchDetailPage({
         {match.status === 'OPEN' && (
           <div className="pt-2">
             <Link
-              href={`/communities/quick-match?resume=${match.id}`}
+              href={`/activities/quick-match/new?resume=${match.id}`}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-xs font-black uppercase tracking-widest transition-all shadow-sm"
             >
               <Play className="h-4 w-4" />

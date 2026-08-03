@@ -21,6 +21,7 @@ import ScoreButtonPair from '@/components/session-live/score-button-pair';
 import StandingsTable from '@/components/session-live/standings-table';
 import { isFixedSumSessionConfig } from '@/lib/matchmaking/scoring-format';
 import { explainEloMatch } from '@/lib/elo/calculate';
+import { useStatusRibbon } from '@/components/status-ribbon/status-ribbon-provider';
 
 interface MatchPlayer {
   profile_id: string;
@@ -102,6 +103,7 @@ export default function LiveBoardWrapper({
 }: LiveBoardWrapperProps) {
   const router = useRouter();
   const supabase = createClient();
+  const { showStatus, clearStatus } = useStatusRibbon();
 
   const [viewMode, setViewMode] = useState<'MATCHES' | 'LEADERBOARD'>('MATCHES');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -195,6 +197,7 @@ export default function LiveBoardWrapper({
   const submitScore = async (matchId: string, scoreA: number, scoreB: number) => {
     setSubmittingMatchId(matchId);
     setError(null);
+    const statusId = showStatus('Updating score…');
 
     try {
       const result = await submitMatchScoreAction({ matchId, scoreA, scoreB, communitySlug });
@@ -217,6 +220,7 @@ export default function LiveBoardWrapper({
       setError(err?.message || 'An unexpected error occurred while saving the score.');
     } finally {
       setSubmittingMatchId(null);
+      clearStatus(statusId);
     }
   };
 
@@ -232,16 +236,19 @@ export default function LiveBoardWrapper({
     if (!confirm(confirmMessage)) return;
     setIsFinalizing(true);
     setError(null);
+    const statusId = showStatus('Finalizing session…');
     try {
       const result = await finalizeSessionAction(sessionId);
       if (result.ok) {
         window.location.reload();
       } else {
         setIsFinalizing(false);
+        clearStatus(statusId);
         setError(result.message || 'Failed to finalize session.');
       }
     } catch (err: any) {
       setIsFinalizing(false);
+      clearStatus(statusId);
       setError(err?.message || 'An unexpected error occurred while finalizing session.');
     }
   };

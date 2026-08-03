@@ -25,7 +25,6 @@ import {
   User,
   LogOut,
   Flame,
-  ArrowLeft,
   Filter,
   MapPin,
   Clock,
@@ -207,109 +206,67 @@ export default function CommunityTabs({
 
   const role = isAdmin ? 'ADMIN' : isHostOrAdmin ? 'HOST' : 'MEMBER';
   const bannerImage = community?.logo_url || '/community_banner_placeholder.png';
-  const tabTitles: Record<'sessions' | 'members' | 'leaderboard', string> = {
-    sessions: 'Sessions',
-    members: 'Members',
-    leaderboard: 'Leaderboard',
-  };
-
   return (
     <>
-      <div className="space-y-6 bg-white min-h-[500px]">
+      {/* Compact header — unconditional, shown on every tab, replacing the old
+          Home-only tall hero banner and the old per-tab "plain title + back"
+          pattern. The global bottom nav now owns "where am I / how do I leave
+          entirely", so this only needs to say which community and give one
+          quick way back to the list. */}
+      <div className="flex items-center gap-2 pb-3">
+        <Link
+          href="/communities"
+          className="shrink-0 text-xs font-bold text-zinc-500 hover:text-orange-600 transition-colors"
+        >
+          ← Communities
+        </Link>
+        <span className="text-zinc-300">/</span>
+        <img
+          src={bannerImage}
+          alt={communityName}
+          className="h-[30px] w-[30px] rounded-lg object-cover shrink-0 border border-zinc-100"
+        />
+        <h1 className="text-sm font-black tracking-tight text-zinc-900 truncate">{communityName}</h1>
+        <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-black tracking-wider uppercase shrink-0 ${
+          role === 'ADMIN'
+            ? 'bg-orange-500 text-white'
+            : role === 'HOST'
+            ? 'bg-orange-50 text-orange-600 border border-orange-200'
+            : 'bg-zinc-100 text-zinc-600'
+        }`}>
+          {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
+          {role}
+        </span>
+      </div>
 
-        {/* Community badge — Home only. Other tabs get a plain title + back button instead
-            (below) so the community banner doesn't repeat on every tab. */}
-        {activeTab === 'home' && (
-          <div className="relative overflow-hidden rounded-3xl h-44 sm:h-52 bg-zinc-950 flex flex-col justify-end p-5 text-white shadow-md border border-zinc-100">
-            <img
-              src={bannerImage}
-              alt={communityName}
-              className="absolute inset-0 w-full h-full object-cover opacity-60 select-none pointer-events-none"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-orange-600/90 via-orange-600/30 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-950/40 via-transparent to-transparent" />
-
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-              <Link
-                href="/communities"
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-white/95 hover:text-white transition-all bg-black/30 hover:bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm"
-              >
-                ← Back to My Profile
-              </Link>
-              {isAdmin && (
-                <EditCommunityInfoButton
-                  communityId={communityId}
-                  communitySlug={communitySlug}
-                  community={community}
-                />
-              )}
-            </div>
-
-            {isAdmin && (
-              <BannerImageEditor communityId={communityId} communitySlug={communitySlug} />
-            )}
-
-            <div className="relative z-10 space-y-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black leading-tight text-white tracking-tight drop-shadow-sm font-sans">
-                  {communityName}
-                </h1>
-                <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase border border-white/20 shadow-sm ${
-                  role === 'ADMIN'
-                    ? 'bg-orange-500 text-white'
-                    : role === 'HOST'
-                    ? 'bg-white text-orange-600'
-                    : 'bg-white/80 text-zinc-800'
-                }`}>
-                  {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
-                  {role}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-white/90 font-medium pt-0.5">
-                <p>
-                  Default Sport: <span className="font-extrabold uppercase">{defaultSport}</span>
-                </p>
-                {community?.code && (
-                  <p className="bg-white/15 px-2 py-0.5 rounded font-mono text-[9px] tracking-wider uppercase border border-white/10 shadow-sm">
-                    CODE: {community.code}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 text-[11px] text-white/90 font-semibold pt-1.5">
-                <span className="inline-flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5" />
-                  {memberCount} Members
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {sessions.length} Sessions
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Flame className="h-3.5 w-3.5" />
-                  {totalMatchesCount} Matches Scored
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Sessions / Members / Leaderboard: plain title + back button, no badge — consistent
-            typography across all three so switching tabs doesn't feel like a different app. */}
-        {activeTab !== 'home' && (
-          <div className="space-y-1 pt-1">
+      {/* Top tab strip — moved here from a fixed bottom bar so only the global
+          Profile/Community/Activities nav ever occupies the bottom of the screen. */}
+      <nav className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-zinc-100 mb-4 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 py-1.5">
+        <div className="flex items-center justify-around max-w-md sm:max-w-xl mx-auto">
+          {([
+            { tab: 'home' as const, label: 'Home', Icon: Home },
+            { tab: 'sessions' as const, label: 'Sessions', Icon: Calendar },
+            { tab: 'members' as const, label: 'Members', Icon: Users },
+            { tab: 'leaderboard' as const, label: 'Rank', Icon: Trophy },
+          ]).map(({ tab, label, Icon }) => (
             <button
-              onClick={() => handleTabChange('home')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors cursor-pointer"
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer relative ${
+                activeTab === tab ? 'text-orange-500 font-extrabold' : 'text-zinc-400 hover:text-zinc-600 font-medium'
+              }`}
             >
-              <ArrowLeft className="h-4 w-4" /> Back
+              <Icon className={`h-5 w-5 ${activeTab === tab ? 'text-orange-500 scale-110' : ''} transition-transform`} />
+              <span className="text-[10px] mt-1 tracking-tight">{label}</span>
+              {activeTab === tab && (
+                <span className="absolute -bottom-1.5 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
+              )}
             </button>
-            <h1 className="text-xl font-black tracking-tight text-zinc-900">
-              {tabTitles[activeTab]}
-            </h1>
-          </div>
-        )}
+          ))}
+        </div>
+      </nav>
+
+      <div className="space-y-6 bg-white min-h-[500px]">
 
         {/* TAB CONTENTS */}
         <div className="min-h-[400px]">
@@ -317,6 +274,49 @@ export default function CommunityTabs({
           {/* TAB 1: HOME KOMUNITAS */}
           {activeTab === 'home' && (
             <div className="space-y-6">
+              {/* About card — banner image + info editing (admin only), sport/join code,
+                  quick stats. Name/role/breadcrumb now live in the compact header above
+                  instead of repeating here, but everything else from the old hero banner
+                  still lives here rather than disappearing. */}
+              <div className="relative overflow-hidden rounded-2xl bg-zinc-950 p-4 text-white shadow-sm border border-zinc-100 space-y-3">
+                {isAdmin && (
+                  <div className="flex items-center justify-between gap-2">
+                    <BannerImageEditor communityId={communityId} communitySlug={communitySlug} />
+                    <EditCommunityInfoButton
+                      communityId={communityId}
+                      communitySlug={communitySlug}
+                      community={community}
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-[11px] text-white/90 font-medium">
+                  <p>
+                    Default Sport: <span className="font-extrabold uppercase">{defaultSport}</span>
+                  </p>
+                  {community?.code && (
+                    <p className="bg-white/15 px-2 py-0.5 rounded font-mono text-[9px] tracking-wider uppercase border border-white/10 shadow-sm">
+                      CODE: {community.code}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 text-[11px] text-white/90 font-semibold">
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5" />
+                    {memberCount} Members
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {sessions.length} Sessions
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Flame className="h-3.5 w-3.5" />
+                    {totalMatchesCount} Matches Scored
+                  </span>
+                </div>
+              </div>
+
               {/* Community STAR Section */}
               {(() => {
                 const getCommunityStars = (sportRankings: any[]) => {
@@ -797,7 +797,7 @@ export default function CommunityTabs({
                 {isHostOrAdmin && (
                   <Link
                     href={`/c/${communitySlug}/sessions/new`}
-                    className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    className="fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
                     title="Create New Session"
                   >
                     <Plus className="h-7 w-7" />
@@ -1337,77 +1337,6 @@ export default function CommunityTabs({
 
         </div>
       </div>
-
-      {/* FIXED BOTTOM NAVIGATION BAR */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-t border-zinc-800/80 backdrop-blur-xl shadow-2xl px-2 py-2 select-none">
-        <div className="max-w-md sm:max-w-xl mx-auto flex items-center justify-around">
-
-          {/* TAB 1: HOME */}
-          <button
-            onClick={() => handleTabChange('home')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
-              activeTab === 'home'
-                ? 'text-orange-500 font-extrabold'
-                : 'text-zinc-400 hover:text-zinc-200 font-medium'
-            }`}
-          >
-            {activeTab === 'home' && (
-              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
-            )}
-            <Home className={`h-5 w-5 ${activeTab === 'home' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
-            <span className="text-[10px] mt-1 tracking-tight">Home</span>
-          </button>
-
-          {/* TAB 2: SESSIONS */}
-          <button
-            onClick={() => handleTabChange('sessions')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
-              activeTab === 'sessions'
-                ? 'text-orange-500 font-extrabold'
-                : 'text-zinc-400 hover:text-zinc-200 font-medium'
-            }`}
-          >
-            {activeTab === 'sessions' && (
-              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
-            )}
-            <Calendar className={`h-5 w-5 ${activeTab === 'sessions' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
-            <span className="text-[10px] mt-1 tracking-tight">Sessions</span>
-          </button>
-
-          {/* TAB 3: MEMBERS */}
-          <button
-            onClick={() => handleTabChange('members')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
-              activeTab === 'members'
-                ? 'text-orange-500 font-extrabold'
-                : 'text-zinc-400 hover:text-zinc-200 font-medium'
-            }`}
-          >
-            {activeTab === 'members' && (
-              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
-            )}
-            <Users className={`h-5 w-5 ${activeTab === 'members' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
-            <span className="text-[10px] mt-1 tracking-tight">Members</span>
-          </button>
-
-          {/* TAB 4: LEADERBOARD */}
-          <button
-            onClick={() => handleTabChange('leaderboard')}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all cursor-pointer relative ${
-              activeTab === 'leaderboard'
-                ? 'text-orange-500 font-extrabold'
-                : 'text-zinc-400 hover:text-zinc-200 font-medium'
-            }`}
-          >
-            {activeTab === 'leaderboard' && (
-              <span className="absolute -top-2 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
-            )}
-            <Trophy className={`h-5 w-5 ${activeTab === 'leaderboard' ? 'text-orange-500 scale-110' : ''} transition-transform`} />
-            <span className="text-[10px] mt-1 tracking-tight">Rank</span>
-          </button>
-
-        </div>
-      </nav>
 
       {/* Claim Guest Modal */}
       {guestToClaim && (

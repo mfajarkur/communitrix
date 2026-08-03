@@ -7,6 +7,28 @@ import { type ActionResult } from '@/server/result';
 import { revalidatePath } from 'next/cache';
 import { detectImageType } from '@/lib/utils/image';
 
+export type CommunityUsage = { created: number; joined: number };
+
+// Client-side UX sugar for the caps enforced server-side in create_community/
+// join_community (migration 0035) — lets the UI show "X/3 created" chips and
+// pre-empt an upgrade prompt before navigating, without being the actual
+// trust boundary.
+export async function getMyCommunityUsage(): Promise<CommunityUsage> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const [{ count: created }, { count: joined }] = await Promise.all([
+    supabase.from('communities').select('id', { count: 'exact', head: true }).eq('created_by', profile.id),
+    supabase
+      .from('community_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('profile_id', profile.id)
+      .eq('is_active', true),
+  ]);
+
+  return { created: created ?? 0, joined: joined ?? 0 };
+}
+
 export async function createCommunityAction(input: {
   name: string;
   slug: string;
@@ -49,6 +71,13 @@ export async function createCommunityAction(input: {
           ok: false,
           code: 'CONFLICT',
           message: 'A community with this slug or join code already exists. Please choose a different slug.',
+        };
+      }
+      if (error.message?.includes('creation limit reached')) {
+        return {
+          ok: false,
+          code: 'FORBIDDEN',
+          message: error.message,
         };
       }
       return {
@@ -105,6 +134,13 @@ export async function joinCommunityAction(input: {
           ok: false,
           code: 'FORBIDDEN',
           message: 'This community has disabled joining via code.',
+        };
+      }
+      if (error.message?.includes('join limit reached')) {
+        return {
+          ok: false,
+          code: 'FORBIDDEN',
+          message: error.message,
         };
       }
       return {

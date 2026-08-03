@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { ArrowLeft, Zap, AlertCircle } from 'lucide-react';
 import { requireProfile } from '@/server/guards';
-import { getMyProfileWithCommunities } from '../../profile-actions';
+import { getMyProfileWithCommunities } from '../../../profile-actions';
 import { getQuickMatchById } from '@/server/actions/personal-match.actions';
-import WizardForm, { type GameConfiguration } from '../../c/[communitySlug]/sessions/new/wizard-form';
+import WizardForm, { type GameConfiguration } from '../../../c/[communitySlug]/sessions/new/wizard-form';
 
 export default async function PersonalQuickMatchPage({
   searchParams,
@@ -43,10 +43,10 @@ export default async function PersonalQuickMatchPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Link
-          href="/communities"
+          href="/activities/quick-match"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to My Profile
+          <ArrowLeft className="h-4 w-4" /> Back to Quick Matches
         </Link>
         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[10px] font-black uppercase tracking-wider">
           <Zap className="h-3 w-3" />

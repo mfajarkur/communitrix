@@ -2,8 +2,60 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { requireCommunityHost, requireCommunityAdmin } from '../guards';
+import { requireCommunityHost, requireCommunityAdmin, requireProfile } from '../guards';
 import { ActionResult } from '../result';
+
+export type MySessionSummary = {
+  id: string;
+  name: string;
+  sport: 'PADEL' | 'TENNIS';
+  isLive: boolean;
+  date: string;
+  communityName: string;
+  communitySlug: string;
+};
+
+// Cross-community "My Session" list for the Activities tab — every other
+// sessions query in this file is scoped to one community; this one
+// deliberately isn't. CANCELLED and DRAFT sessions are excluded (not
+// relevant to a player's own history), matching the join_community soft-
+// delete style of "only show what the caller would recognize as theirs".
+export async function getMySessions(): Promise<MySessionSummary[]> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from('session_players')
+    .select(`
+      session:sessions (
+        id,
+        session_name,
+        sport,
+        status,
+        started_at,
+        completed_at,
+        created_at,
+        community:communities ( slug, name )
+      )
+    `)
+    .eq('profile_id', profile.id);
+
+  const rows = ((data || []) as any[])
+    .map((row) => row.session)
+    .filter((s) => s && (s.status === 'ACTIVE' || s.status === 'PAUSED' || s.status === 'COMPLETED'));
+
+  return rows
+    .map((s) => ({
+      id: s.id,
+      name: s.session_name,
+      sport: s.sport,
+      isLive: s.status === 'ACTIVE' || s.status === 'PAUSED',
+      date: s.completed_at ?? s.started_at ?? s.created_at,
+      communityName: s.community?.name ?? 'Unknown',
+      communitySlug: s.community?.slug ?? '',
+    }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
 
 export interface StartSessionInput {
   communityId: string;

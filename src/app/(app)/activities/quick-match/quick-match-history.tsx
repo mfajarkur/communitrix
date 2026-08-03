@@ -175,7 +175,7 @@ export default function QuickMatchHistory({ matches: initialMatches }: Props) {
                   return (
                     <Link
                       key={m.id}
-                      href={`/communities/quick-match/${m.id}`}
+                      href={`/activities/quick-match/${m.id}`}
                       onClick={() => setLoadingMatchId(m.id)}
                       className={`group rounded-2xl border transition-all flex flex-row items-stretch cursor-pointer select-none active:scale-[0.98] ${
                         isLoadingThis

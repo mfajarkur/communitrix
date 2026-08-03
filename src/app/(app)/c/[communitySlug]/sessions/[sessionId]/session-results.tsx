@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Trophy, Users, Crown } from 'lucide-react';
 import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
-import LeaderboardPrintSection from '@/app/(app)/communities/quick-match/[id]/leaderboard-print-section';
+import LeaderboardPrintSection from '@/app/(app)/activities/quick-match/[id]/leaderboard-print-section';
 import type { PosterStanding } from '@/components/leaderboard-poster';
 import ScoreButtonPair from '@/components/session-live/score-button-pair';
 
