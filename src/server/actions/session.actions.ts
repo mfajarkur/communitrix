@@ -18,9 +18,8 @@ export interface StartSessionInput {
   attendeeIds: string[];
   byeScoringMethod: 'PLAYER_AVERAGE' | 'HALF_N';
   sessionMode: 'ONLINE' | 'OFFLINE';
-  // Padel is always Doubles (DB constraint enforces this). Tennis can be either — defaults to
-  // Doubles for any caller that predates this field (e.g. the Offline upload path, which reuses
-  // the local Quick Match engine and always produces doubles matches today).
+  // Padel is always Doubles (DB constraint enforces this). Tennis can be either. Defaults to
+  // Doubles when omitted (e.g. Quick Match sandbox, which never surfaces this choice).
   matchType?: 'SINGLES' | 'DOUBLES';
 }
 
@@ -126,6 +125,7 @@ export interface UploadOfflineSessionInput {
   maxScoreTarget: number;
   courtCount: number;
   byeScoringMethod: 'PLAYER_AVERAGE' | 'HALF_N';
+  matchType?: 'SINGLES' | 'DOUBLES';
   // Already resolved to real profile IDs client-side (pendingGuestCreations awaited) — this
   // action never sees a temp/local ID.
   attendeeIds: string[];
@@ -180,6 +180,7 @@ export async function uploadOfflineSessionAction(
       p_attendee_ids: input.attendeeIds,
       p_bye_scoring_method: input.byeScoringMethod,
       p_session_mode: 'OFFLINE',
+      p_match_type: input.matchType || 'DOUBLES',
     });
 
     if (startErr || !sessionId) {

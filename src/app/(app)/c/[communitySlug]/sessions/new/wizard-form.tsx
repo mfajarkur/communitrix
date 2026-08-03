@@ -54,9 +54,9 @@ export type MatchType = 'SINGLES' | 'DOUBLES';
 export interface GameConfiguration {
   sport: SportType;
   gameType: GameType;
-  // Real community sessions only (Quick Match/Offline always play Doubles today — see the
-  // matchType comment on StartSessionInput). Padel is always Doubles; the DB rejects
-  // Padel+SINGLES outright, so the UI only offers this choice for Tennis.
+  // Real community sessions only — respected by both Online and Offline. Hidden in Quick
+  // Match, which always plays Doubles. Padel is always Doubles; the DB rejects Padel+SINGLES
+  // outright, so the UI only offers this choice for Tennis.
   matchType: MatchType;
   activityName: string;
   courtCount: number;
@@ -84,7 +84,10 @@ export interface Match {
   id: string;
   roundNumber: number;
   courtNumber: number;
-  teamA: [string, string]; // Player IDs or names
+  // Player IDs. Always a 2-slot tuple even for Singles (matchType === 'SINGLES') — the second
+  // slot is '' when there's no partner. Every consumer must .filter(Boolean) before use; this
+  // stays a fixed tuple rather than string[] to avoid a wider type change across the file.
+  teamA: [string, string];
   teamB: [string, string];
   scoreA: number | null;
   scoreB: number | null;
@@ -663,7 +666,7 @@ export default function WizardForm({
   // Step 3 -> 4: Generate Matches based on official Ruleset (Americano / Mexicano)
   const handleGenerateMatches = () => {
     const isTeamMode = config.gameType.includes('TEAM_');
-    const minRequired = isTeamMode ? 2 : 4;
+    const minRequired = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
 
     if (registeredPlayers.length < minRequired) {
       setErrorMessage(`Minimum ${minRequired} ${isTeamMode ? 'teams' : 'players'} required to generate matches.`);
@@ -685,7 +688,9 @@ export default function WizardForm({
     let matchCounter = 1;
 
     const isMexicano = config.gameType.includes('MEXICANO');
-    const playersPerMatch = isTeamMode ? 2 : 4;
+    // config.matchType is only ever 'SINGLES' for real (non-Quick-Match) sessions — the toggle
+    // that sets it is hidden entirely in Quick Match, so this always evaluates to Doubles there.
+    const playersPerMatch = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
     // For Americano: pre-compute 3-4 rounds upfront.
     // For Mexicano: generate Round 1 upfront (Round 2+ generated sequentially after scores per Rule 2.2).
     const totalRoundsToGenerate = isMexicano ? 1 : Math.min(4, Math.max(1, registeredPlayers.length - 1));
@@ -887,7 +892,7 @@ export default function WizardForm({
     });
 
     const isTeamMode = config.gameType.includes('TEAM_');
-    const playersPerMatch = isTeamMode ? 2 : 4;
+    const playersPerMatch = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
 
     const history: PastPairing[] = matches.map((m) => ({
       roundNumber: m.roundNumber || 1,
@@ -910,8 +915,8 @@ export default function WizardForm({
     const matchHistory: MatchHistory[] = completedMatches.map((m) => ({
       id: m.id,
       roundNumber: m.roundNumber || 1,
-      teamA: m.teamA,
-      teamB: m.teamB,
+      teamA: m.teamA.filter(Boolean),
+      teamB: m.teamB.filter(Boolean),
       scoreA: m.scoreA,
       scoreB: m.scoreB,
     }));
@@ -1174,8 +1179,8 @@ export default function WizardForm({
     const matchHistory: MatchHistory[] = completedMatches.map((m) => ({
       id: m.id,
       roundNumber: m.roundNumber || 1,
-      teamA: m.teamA,
-      teamB: m.teamB,
+      teamA: m.teamA.filter(Boolean),
+      teamB: m.teamB.filter(Boolean),
       scoreA: m.scoreA,
       scoreB: m.scoreB,
     }));
@@ -1291,6 +1296,7 @@ export default function WizardForm({
           maxScoreTarget: configN,
           courtCount: config.courtCount,
           byeScoringMethod: config.byeScoringMethod,
+          matchType: config.matchType,
           attendeeIds: registeredPlayers.map((p) => remap(p.id)),
           rounds,
         });
@@ -1538,7 +1544,8 @@ export default function WizardForm({
 
           {/* Singles / Doubles Toggle — Tennis only. Padel is always Doubles (padel courts are
               always 2v2), so this is hidden entirely rather than shown disabled. Real community
-              sessions only — Quick Match/Offline always play Doubles today. */}
+              sessions only (Online and Offline both respect it) — hidden in Quick Match, which
+              always plays Doubles. */}
           {!isGuestDemoMode && config.sport === 'TENNIS' && (
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Match Type</label>
@@ -2214,10 +2221,10 @@ export default function WizardForm({
               return currentRoundMatches.map((m) => {
                 const teamANamesJoined = config.gameType.includes('TEAM_')
                   ? (playerMap.get(m.teamA[0])?.name || 'Team')
-                  : m.teamA.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
+                  : m.teamA.filter(Boolean).map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
                 const teamBNamesJoined = config.gameType.includes('TEAM_')
                   ? (playerMap.get(m.teamB[0])?.name || 'Team')
-                  : m.teamB.map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
+                  : m.teamB.filter(Boolean).map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
                 const winnerSide: 'A' | 'B' | null =
                   m.scoreA !== null && m.scoreB !== null
                     ? m.scoreA > m.scoreB
