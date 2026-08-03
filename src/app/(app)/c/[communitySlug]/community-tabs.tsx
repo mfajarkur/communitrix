@@ -721,6 +721,7 @@ export default function CommunityTabs({
                               : 0;
 
                             const isLoadingThis = loadingSessionId === s.id;
+                            const isSessionEnded = s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED';
 
                             return (
                               <Link
@@ -742,7 +743,12 @@ export default function CommunityTabs({
                                   <span className="text-sm sm:text-base font-black text-orange-950 tracking-tight">
                                     {timeStr}
                                   </span>
-                                  <span className="text-[10px] font-extrabold tracking-wider text-orange-600/90 uppercase mt-0.5">
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-extrabold tracking-wider text-orange-600/90 uppercase mt-0.5">
+                                    <span
+                                      className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                                        isSessionEnded ? 'bg-zinc-400' : 'bg-green-500 animate-pulse'
+                                      }`}
+                                    />
                                     {s.format || s.sport}
                                   </span>
                                 </div>
