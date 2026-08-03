@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -50,6 +50,16 @@ export const metadata: Metadata = {
     icon: "/icon.png",
     apple: "/icon.png",
   },
+};
+
+// viewportFit: 'cover' lets the page extend under the iPhone home-indicator
+// area and makes env(safe-area-inset-bottom) resolve to a real value instead
+// of 0 — without it, the bottom nav's label can sit under/behind the home
+// indicator on notched iPhones.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
