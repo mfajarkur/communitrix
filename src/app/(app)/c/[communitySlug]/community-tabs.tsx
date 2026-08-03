@@ -621,7 +621,7 @@ export default function CommunityTabs({
                       onClick={() => setSessionStatusFilter('open')}
                       className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
                         sessionStatusFilter === 'open'
-                          ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
+                          ? 'bg-orange-500 text-white shadow-xs font-extrabold'
                           : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
                       }`}
                     >
@@ -632,7 +632,7 @@ export default function CommunityTabs({
                       onClick={() => setSessionStatusFilter('ended')}
                       className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
                         sessionStatusFilter === 'ended'
-                          ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
+                          ? 'bg-orange-500 text-white shadow-xs font-extrabold'
                           : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
                       }`}
                     >
@@ -646,8 +646,8 @@ export default function CommunityTabs({
                       onClick={() => setSessionSportFilter('ALL')}
                       className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         sessionSportFilter === 'ALL'
-                          ? 'bg-white text-zinc-900 shadow-xs font-black'
-                          : 'text-zinc-500 hover:text-zinc-900'
+                          ? 'bg-orange-500 text-white shadow-xs font-black'
+                          : 'text-zinc-500 hover:text-orange-600'
                       }`}
                     >
                       All
@@ -656,8 +656,8 @@ export default function CommunityTabs({
                       onClick={() => setSessionSportFilter('PADEL')}
                       className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         sessionSportFilter === 'PADEL'
-                          ? 'bg-white text-zinc-900 shadow-xs font-black'
-                          : 'text-zinc-500 hover:text-zinc-900'
+                          ? 'bg-orange-500 text-white shadow-xs font-black'
+                          : 'text-zinc-500 hover:text-orange-600'
                       }`}
                     >
                       Padel
@@ -666,8 +666,8 @@ export default function CommunityTabs({
                       onClick={() => setSessionSportFilter('TENNIS')}
                       className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         sessionSportFilter === 'TENNIS'
-                          ? 'bg-white text-zinc-900 shadow-xs font-black'
-                          : 'text-zinc-500 hover:text-zinc-900'
+                          ? 'bg-orange-500 text-white shadow-xs font-black'
+                          : 'text-zinc-500 hover:text-orange-600'
                       }`}
                     >
                       Tennis
@@ -721,14 +721,14 @@ export default function CommunityTabs({
                               <Link
                                 key={s.id}
                                 href={`/c/${communitySlug}/sessions/${s.id}`}
-                                className="group rounded-2xl border border-zinc-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-orange-300 transition-all flex flex-row items-stretch cursor-pointer"
+                                className="group rounded-2xl border border-orange-100 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-orange-300 transition-all flex flex-row items-stretch cursor-pointer"
                               >
-                                {/* Kotak Kiri: Jam dan Jenis Game saja */}
-                                <div className="bg-zinc-50/90 border-r border-zinc-100 p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[100px] sm:min-w-[125px] shrink-0 text-center">
-                                  <span className="text-sm sm:text-base font-black text-zinc-900 tracking-tight">
+                                {/* Kotak Kiri: Jam dan Jenis Game (Shading Orange Transparan) */}
+                                <div className="bg-orange-50/80 border-r border-orange-100/80 p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[100px] sm:min-w-[125px] shrink-0 text-center">
+                                  <span className="text-sm sm:text-base font-black text-orange-950 tracking-tight">
                                     {timeStr}
                                   </span>
-                                  <span className="text-[10px] font-extrabold tracking-wider text-zinc-400 uppercase mt-0.5">
+                                  <span className="text-[10px] font-extrabold tracking-wider text-orange-600/90 uppercase mt-0.5">
                                     {s.format || s.sport}
                                   </span>
                                 </div>
