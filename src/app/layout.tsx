@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import NavigationLoader from "@/components/navigation-loader";
 import "./globals.css";
 
 const nexa = localFont({
@@ -63,6 +64,7 @@ export default function RootLayout({
       className={`${nexa.variable} h-full antialiased`}
     >
       <body className="min-h-screen w-full overflow-y-auto bg-zinc-950 text-[#111827]">
+        <NavigationLoader />
         <div className="w-full min-h-screen flex flex-col relative font-sans">
           {children}
         </div>

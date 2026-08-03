@@ -87,3 +87,17 @@ html, body {
   animation-delay: 600ms;
 }
 
+/* Global Tactile Active Press Feedback */
+button:not(:disabled),
+a,
+[role="button"]:not([aria-disabled="true"]) {
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.12s ease;
+}
+
+button:not(:disabled):active,
+a:active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
