@@ -9,9 +9,9 @@ This document defines the official scoring, matchmaking, sit-out, and leaderboar
 ### 0.1 Rally Scoring & Equal Split
 - **Rally Scoring**: Every rally won yields 1 point, regardless of server.
 - **Configurable Match Target**: Default is **24 points** per match (configurable per session: 12, 16, 21, 24, 32 points).
-- **Doubles Play (2 vs 2)**: Every match is played as 2 vs 2.
-- **Equal Point Distribution**: Both players in Team A receive Team A's final points; both players in Team B receive Team B's final points.
-  - *Example*: Final score `18 - 14` $\rightarrow$ Team A players receive **+18** each; Team B players receive **+14** each.
+- **Match Type (`sessions.match_type`)**: Padel is always Doubles (2 vs 2) — enforced by a DB check constraint. Tennis can be either Doubles or Singles (1 v 1), chosen by the host at session creation; the session wizard only offers the choice for Tennis. Quick Match and Offline mode always play Doubles today, regardless of sport.
+- **Equal Point Distribution (Doubles only)**: Both players in Team A receive Team A's final points; both players in Team B receive Team B's final points.
+  - *Example*: Final score `18 - 14` $\rightarrow$ Team A players receive **+18** each; Team B players receive **+14** each. In Singles, the single player on each side simply receives that side's score directly.
 
 ### 0.2 Round Lifecycle Gate
 - Round $N+1$ **cannot** be generated until Round $N$ is 100% completed (all matches in Round $N$ must have final scores).
@@ -143,4 +143,5 @@ TheCommunitrix matchmaking and rating engine under `src/lib/` and `supabase/migr
 - `src/lib/elo/calculate.ts`: TypeScript Elo engine with Effective Team Rating and Carry Rule (formula_version >= 2).
 - `supabase/migrations/0028_carry_rule_and_effective_team_rating.sql`: `formula_version`/`rating_formula_versions`, `split_team_delta`, and the matching updates to `submit_match_score`, `persist_round`, and `replay_ratings` — the live implementation.
 - `supabase/migrations/0029_community_points.sql`: `community_points`, `community_point_seasons`, `communities.cp_reset_policy`, `calculate_cp_points`, `start_new_cp_season`, and the CP-awarding block in `finalize_session` — the live implementation.
+- `supabase/migrations/0032_session_match_type.sql`: wires `sessions.match_type` (existed since the original schema, but `start_session` never had a parameter for it) into `start_session`, plus a `src/server/actions/round.actions.ts` fix so round generation actually reads it instead of hardcoding Doubles. `persist_round`/`submit_match_score`/`replay_ratings` (0028) and the matchmaking engines (`americano.ts`/`mexicano.ts`) already handled Singles correctly — only the entry points were missing.
 - `supabase/migrations/0018_elo_adjustments_and_cp.sql`: confirmed **not applied to the live database at all** — none of its tables/columns/functions ever existed (`calculate_match_delta`, the original `formula_version`/`rating_formula_versions`, `skill_rating_official`, and the original `community_points`/`community_point_seasons`/`start_new_cp_season`, since superseded by `0028`/`0029` above). Skill Rating (section 5.2's `skill_rating_official` etc.) is the one remaining piece of 0018 with no live implementation. See `communitrix-elo-adjustment-brief.md` section 0.
