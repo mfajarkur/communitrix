@@ -192,7 +192,7 @@ export default async function CommunityDashboardPage({
   // 5. Fetch sessions history
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('*')
+    .select('*, session_players(id, status)')
     .eq('community_id', community.id)
     .order('created_at', { ascending: false });
 

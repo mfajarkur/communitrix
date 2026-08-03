@@ -25,6 +25,9 @@ import {
   LogOut,
   Flame,
   ArrowLeft,
+  Filter,
+  MapPin,
+  Clock,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import BannerImageEditor from './banner-image-editor';
@@ -88,6 +91,7 @@ export default function CommunityTabs({
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
+  const [sessionFilter, setSessionFilter] = useState<'open' | 'live' | 'past' | 'all'>('open');
 
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -534,102 +538,270 @@ export default function CommunityTabs({
           )}
 
           {/* TAB 2: GAME SESSIONS */}
-          {activeTab === 'sessions' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
-                    Game Sessions
-                  </h2>
-                  <p className="text-xs text-zinc-500 mt-0.5">
-                    Match sessions, live scoring boards, and historical tournament records.
-                  </p>
-                </div>
+          {activeTab === 'sessions' && (() => {
+            // Count metrics for filter tabs
+            const openSessionsCount = sessions.filter(
+              (s: any) => s.status === 'ACTIVE' || s.status === 'DRAFT' || s.status === 'SCHEDULED' || s.status === 'PAUSED'
+            ).length;
+            const liveSessionsCount = sessions.filter((s: any) => s.status === 'ACTIVE').length;
+            const pastSessionsCount = sessions.filter(
+              (s: any) => s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED'
+            ).length;
 
-                {isHostOrAdmin && (
-                  <Link
-                    href={`/c/${communitySlug}/sessions/new`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" />
-                    New Session
-                  </Link>
-                )}
-              </div>
+            // Filter logic
+            const filteredSessions = sessions.filter((s: any) => {
+              if (sessionFilter === 'open') {
+                return s.status === 'ACTIVE' || s.status === 'DRAFT' || s.status === 'SCHEDULED' || s.status === 'PAUSED';
+              }
+              if (sessionFilter === 'live') {
+                return s.status === 'ACTIVE';
+              }
+              if (sessionFilter === 'past') {
+                return s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED';
+              }
+              return true; // 'all'
+            });
 
-              {sessions.length === 0 ? (
-                <div className="text-center py-16 text-zinc-400 space-y-3 bg-zinc-50 rounded-2xl border border-zinc-100">
-                  <Calendar className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
-                  <p className="text-sm font-semibold">No game sessions created yet.</p>
+            // Sort by date descending (newest timestamp first)
+            const sortedSessions = [...filteredSessions].sort((a: any, b: any) => {
+              const dateA = new Date(a.scheduled_for || a.started_at || a.created_at).getTime();
+              const dateB = new Date(b.scheduled_for || b.started_at || b.created_at).getTime();
+              return dateB - dateA;
+            });
+
+            // Group by Date String Header
+            const groupedSessionsByDate: { dateLabel: string; items: any[] }[] = [];
+            sortedSessions.forEach((s: any) => {
+              const rawDate = s.scheduled_for || s.started_at || s.created_at;
+              const dateObj = new Date(rawDate);
+              let dateLabel = 'Unknown Date';
+              if (!isNaN(dateObj.getTime())) {
+                const isCurrentYear = dateObj.getFullYear() === new Date().getFullYear();
+                dateLabel = dateObj.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  ...(isCurrentYear ? {} : { year: 'numeric' }),
+                });
+              }
+
+              let group = groupedSessionsByDate.find((g) => g.dateLabel === dateLabel);
+              if (!group) {
+                group = { dateLabel, items: [] };
+                groupedSessionsByDate.push(group);
+              }
+              group.items.push(s);
+            });
+
+            return (
+              <div className="space-y-6 relative pb-16">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+                      Game Sessions
+                    </h2>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Match sessions, live scoring boards, and historical tournament records.
+                    </p>
+                  </div>
+
                   {isHostOrAdmin && (
                     <Link
                       href={`/c/${communitySlug}/sessions/new`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
                     >
                       <Plus className="h-4 w-4" />
-                      Create First Session
+                      New Session
                     </Link>
                   )}
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {sessions.map((s: any) => {
-                    const isActive = s.status === 'ACTIVE';
-                    return (
-                      <div
-                        key={s.id}
-                        className="rounded-2xl border border-zinc-200 bg-white p-4 flex items-center justify-between gap-3 shadow-sm"
-                      >
-                        <Link href={`/c/${communitySlug}/sessions/${s.id}`} className="min-w-0 flex-1 group/link">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-black text-zinc-900 truncate group-hover/link:text-orange-600 transition-colors">
-                              {s.session_name}
-                            </p>
-                            {isActive ? (
-                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-200">
-                                <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                                Live · Ongoing
-                              </span>
-                            ) : (
-                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200">
-                                Ended
-                              </span>
-                            )}
-                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
-                              {s.format} · {s.sport}
-                            </span>
-                            {s.session_mode === 'OFFLINE' && (
-                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200">
-                                Offline
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 mt-1.5 text-[11px] text-zinc-500 font-semibold">
-                            <span>{new Date(s.created_at).toLocaleDateString()}</span>
-                            <span className="inline-flex items-center gap-1">
-                              <Users className="h-3 w-3" /> {s.court_count} Courts
-                            </span>
-                          </div>
-                        </Link>
 
-                        <Link
-                          href={`/c/${communitySlug}/sessions/${s.id}`}
-                          className={`inline-flex h-9 px-4 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                            isActive
-                              ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-xs'
-                              : 'border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700'
-                          }`}
-                        >
-                          {isActive ? 'Open Live Board' : 'View Final Results'}
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </div>
-                    );
-                  })}
+                {/* Filter Pills Bar (Open, Live, Past, All) */}
+                <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSessionFilter('open')}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                        sessionFilter === 'open'
+                          ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
+                          : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
+                      }`}
+                    >
+                      Open • {openSessionsCount}
+                    </button>
+
+                    <button
+                      onClick={() => setSessionFilter('live')}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                        sessionFilter === 'live'
+                          ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
+                          : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
+                      }`}
+                    >
+                      {liveSessionsCount > 0 && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                      )}
+                      Live • {liveSessionsCount}
+                    </button>
+
+                    <button
+                      onClick={() => setSessionFilter('past')}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                        sessionFilter === 'past'
+                          ? 'bg-[#31e07b] text-zinc-950 shadow-xs font-extrabold'
+                          : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
+                      }`}
+                    >
+                      Past • {pastSessionsCount}
+                    </button>
+
+                    <button
+                      onClick={() => setSessionFilter('all')}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                        sessionFilter === 'all'
+                          ? 'bg-zinc-900 text-white shadow-xs font-extrabold'
+                          : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 border border-zinc-200/60'
+                      }`}
+                    >
+                      All • {sessions.length}
+                    </button>
+                  </div>
+
+                  <div className="shrink-0 pl-2">
+                    <div
+                      title="Filter Sessions"
+                      className="p-2 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* Sessions List grouped by Date */}
+                {sessions.length === 0 ? (
+                  <div className="text-center py-16 text-zinc-400 space-y-3 bg-zinc-50 rounded-2xl border border-zinc-100">
+                    <Calendar className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
+                    <p className="text-sm font-semibold">No game sessions created yet.</p>
+                    {isHostOrAdmin && (
+                      <Link
+                        href={`/c/${communitySlug}/sessions/new`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Create First Session
+                      </Link>
+                    )}
+                  </div>
+                ) : filteredSessions.length === 0 ? (
+                  <div className="text-center py-12 text-zinc-400 space-y-2 bg-zinc-50 rounded-2xl border border-zinc-100">
+                    <Calendar className="h-8 w-8 mx-auto opacity-30 text-zinc-500" />
+                    <p className="text-sm font-semibold text-zinc-600">
+                      No {sessionFilter === 'all' ? '' : sessionFilter} sessions found.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {groupedSessionsByDate.map((group) => (
+                      <div key={group.dateLabel} className="space-y-3">
+                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-800 tracking-tight pt-1">
+                          {group.dateLabel}
+                        </h3>
+
+                        <div className="space-y-3">
+                          {group.items.map((s: any) => {
+                            const rawDate = s.scheduled_for || s.started_at || s.created_at;
+                            const dateObj = new Date(rawDate);
+                            const timeStr = !isNaN(dateObj.getTime())
+                              ? dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+                              : '6:00 PM';
+
+                            const joinedCount = Array.isArray(s.session_players)
+                              ? s.session_players.filter((sp: any) => sp.status === 'ACTIVE').length
+                              : 0;
+
+                            const isLive = s.status === 'ACTIVE';
+                            const isCompleted = s.status === 'COMPLETED' || s.status === 'CANCELLED' || s.status === 'ENDED';
+
+                            return (
+                              <Link
+                                key={s.id}
+                                href={`/c/${communitySlug}/sessions/${s.id}`}
+                                className="group rounded-2xl border border-zinc-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-orange-300 transition-all flex flex-col sm:flex-row items-stretch cursor-pointer"
+                              >
+                                {/* Left Column: Time & Status Badge */}
+                                <div className="bg-zinc-50/90 border-b sm:border-b-0 sm:border-r border-zinc-100 p-3.5 sm:p-4 flex flex-col items-center justify-center min-w-[110px] sm:min-w-[130px] shrink-0 text-center">
+                                  <span className="text-sm sm:text-base font-black text-zinc-900 tracking-tight">
+                                    {timeStr}
+                                  </span>
+                                  <span className="text-[10px] font-extrabold tracking-wider text-zinc-400 uppercase mt-0.5">
+                                    {s.format || s.sport}
+                                  </span>
+
+                                  {isLive ? (
+                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                                      HOSTED
+                                    </span>
+                                  ) : isCompleted ? (
+                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-zinc-200 text-zinc-600">
+                                      ENDED
+                                    </span>
+                                  ) : (
+                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-white shadow-xs">
+                                      OPEN
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Right Column: Details & Stats */}
+                                <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between min-w-0 bg-white">
+                                  <div>
+                                    <h4 className="text-base sm:text-lg font-black text-zinc-900 group-hover:text-orange-600 transition-colors truncate">
+                                      {s.session_name}
+                                    </h4>
+                                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium mt-1 truncate">
+                                      <MapPin className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                                      <span className="truncate">{s.location || communityName}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between mt-3 text-xs text-zinc-500 font-semibold pt-2 border-t border-zinc-100/60">
+                                    <span className="flex items-center gap-1.5">
+                                      <Users className="h-3.5 w-3.5 text-zinc-400" />
+                                      <span>
+                                        {joinedCount > 0 ? `${joinedCount} Joined` : `${s.court_count} Courts`}
+                                      </span>
+                                      {joinedCount > 0 && <span>• {s.court_count} Courts</span>}
+                                    </span>
+
+                                    <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
+                                  </div>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Floating Action Button (FAB) */}
+                {isHostOrAdmin && (
+                  <Link
+                    href={`/c/${communitySlug}/sessions/new`}
+                    className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    title="Create New Session"
+                  >
+                    <Plus className="h-7 w-7" />
+                  </Link>
+                )}
+              </div>
+            );
+          })()}
 
           {/* TAB 3: MEMBERS */}
           {activeTab === 'members' && (() => {
