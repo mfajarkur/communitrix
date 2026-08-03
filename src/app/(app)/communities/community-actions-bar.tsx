@@ -20,7 +20,7 @@ export function JoinCodeButton({ usage }: { usage: CommunityUsage }) {
             setUpgradeKind('joined');
           }
         }}
-        className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3.5 text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm"
+        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition-all cursor-pointer shadow-sm"
       >
         <Compass className="h-3.5 w-3.5 text-zinc-400" />
         Join Code
@@ -44,7 +44,7 @@ export function NewCommunityFab({ usage }: { usage: CommunityUsage }) {
             setUpgradeKind('created');
           }
         }}
-        className="fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+        className="fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
         title="New Community"
       >
         <Plus className="h-7 w-7" />

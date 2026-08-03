@@ -156,7 +156,7 @@ export default function QuickMatchHistory({ matches: initialMatches }: Props) {
         <div className="space-y-6">
           {groupedMatchesByDate.map((group) => (
             <div key={group.dateLabel} className="space-y-3">
-              <h3 className="text-sm sm:text-base font-extrabold text-zinc-800 tracking-tight pt-1">
+              <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight pt-1">
                 {group.dateLabel}
               </h3>
 

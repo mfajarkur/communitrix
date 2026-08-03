@@ -39,7 +39,7 @@ export default function UpgradeModal({ open, kind, onClose }: Props) {
 
         <button
           onClick={onClose}
-          className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all cursor-pointer"
+          className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
         >
           Upgrade to Communitrix Plus
         </button>

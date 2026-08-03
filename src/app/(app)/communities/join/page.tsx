@@ -46,13 +46,13 @@ export default function JoinCommunityPage() {
       <div>
         <Link
           href="/communities"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-550 hover:text-orange-500 transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors mb-4"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Communities
         </Link>
-        <h2 className="text-2xl font-extrabold tracking-tight text-[#111827]">Join a Community</h2>
-        <p className="text-sm text-zinc-500 mt-1">
+        <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Join a Community</h2>
+        <p className="text-xs text-zinc-500 mt-0.5">
           Enter an 8-character invitation join code to join an existing group.
         </p>
       </div>
@@ -96,7 +96,7 @@ export default function JoinCommunityPage() {
           <button
             type="submit"
             disabled={isSubmitting || success !== null}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-50 transition-all shadow-sm cursor-pointer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-orange-600 disabled:opacity-50 transition-all shadow-sm cursor-pointer"
           >
             {isSubmitting ? (
               <>

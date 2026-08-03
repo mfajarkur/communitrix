@@ -132,7 +132,7 @@ export default function ProfileView({ profileData, perSportStats, eloTrends }: P
             onChange={handleFileSelect}
           />
 
-          <h2 className="text-xl font-black tracking-tight text-white mt-3">{displayName}</h2>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-3">{displayName}</h2>
           {username && <p className="text-xs text-white/50 font-medium">@{username}</p>}
 
           {gender && (

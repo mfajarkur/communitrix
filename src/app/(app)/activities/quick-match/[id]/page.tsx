@@ -53,7 +53,7 @@ export default async function QuickMatchDetailPage({
             </span>
           )}
         </div>
-        <h1 className="text-2xl font-black tracking-tight">{match.activity_name}</h1>
+        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">{match.activity_name}</h1>
         <div className="flex flex-wrap items-center gap-4 text-xs text-white/60 font-semibold pt-1">
           <span className="inline-flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" /> {date}
@@ -90,7 +90,7 @@ export default async function QuickMatchDetailPage({
       <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-100 flex items-center gap-2">
           <Trophy className="h-4 w-4 text-orange-500" />
-          <h2 className="text-sm font-black uppercase tracking-wide text-zinc-900">Leaderboard</h2>
+          <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Leaderboard</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -144,11 +144,11 @@ export default async function QuickMatchDetailPage({
 
       {/* Round-by-round match history */}
       <div className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-zinc-900">Match History</h2>
+        <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Match History</h2>
         {rounds.map((roundNumber) => (
           <div key={roundNumber} className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-zinc-100 bg-zinc-50">
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-600">Round {roundNumber}</h3>
+              <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight">Round {roundNumber}</h3>
             </div>
             <div className="divide-y divide-zinc-100">
               {match.matches

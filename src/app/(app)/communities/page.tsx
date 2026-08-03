@@ -36,7 +36,7 @@ export default async function CommunitiesPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-extrabold tracking-tight text-[#111827]">My Communities</h2>
+            <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">My Communities</h2>
             <p className="text-xs text-zinc-500 mt-0.5">
               Manage your organizations, view leaderboards, and launch sessions.
             </p>
@@ -58,14 +58,14 @@ export default async function CommunitiesPage() {
           <div className="flex gap-4">
             <Link
               href="/communities/join"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-all shadow-sm"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition-all cursor-pointer shadow-sm"
             >
               <Compass className="h-4 w-4" />
               Join Code
             </Link>
             <Link
               href="/communities/new"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 text-sm font-bold text-white hover:bg-orange-600 transition-all"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               Create One
