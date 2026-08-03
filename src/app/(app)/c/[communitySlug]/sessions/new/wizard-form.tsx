@@ -232,6 +232,11 @@ export default function WizardForm({
   const [registeredPlayers, setRegisteredPlayers] = useState<PlayerRegistration[]>(
     initialState?.registeredPlayers ?? []
   );
+  // Team Americano/Mexicano (community mode only — see handleAddTeam): each entry pairs two
+  // REAL registeredPlayers entries together as fixed partners. `label` is a local-only display
+  // name (never persisted — the schema has no team-name column, and every other doubles pairing
+  // in this app is already shown as "PlayerA / PlayerB").
+  const [fixedTeams, setFixedTeams] = useState<{ id: string; label: string; playerIds: [string, string] }[]>([]);
   const [manualInputName, setManualInputName] = useState('');
   const [teamNameInput, setTeamNameInput] = useState('');
   const [player1NameInput, setPlayer1NameInput] = useState('');
@@ -361,6 +366,7 @@ export default function WizardForm({
         if (parsed.step) setStep(parsed.step);
         if (parsed.config) setConfig(parsed.config);
         if (parsed.registeredPlayers) setRegisteredPlayers(parsed.registeredPlayers);
+        if (!isGuestDemoMode && parsed.fixedTeams) setFixedTeams(parsed.fixedTeams);
         if (!saveToProfile) {
           if (parsed.matches) setMatches(parsed.matches);
           if (parsed.roundSitOuts) {
@@ -398,6 +404,7 @@ export default function WizardForm({
       matchType: 'DOUBLES',
     });
     setRegisteredPlayers([]);
+    setFixedTeams([]);
     setMatches([]);
     setRoundSitOuts(new Map());
     setSelectedRound(1);
@@ -415,9 +422,9 @@ export default function WizardForm({
     }
     const sitOutsObj: Record<string, string[]> = {};
     roundSitOuts.forEach((v, k) => { sitOutsObj[String(k)] = v; });
-    const payload = { step, config, registeredPlayers, matches, roundSitOuts: sitOutsObj, selectedRound };
+    const payload = { step, config, registeredPlayers, fixedTeams, matches, roundSitOuts: sitOutsObj, selectedRound };
     localStorage.setItem(quickMatchStorageKey, JSON.stringify(payload));
-  }, [isGuestDemoMode, saveToProfile, quickMatchStorageKey, step, config, registeredPlayers, matches, roundSitOuts, selectedRound]);
+  }, [isGuestDemoMode, saveToProfile, quickMatchStorageKey, step, config, registeredPlayers, fixedTeams, matches, roundSitOuts, selectedRound]);
 
   // Serializes the current match state into the shape saveQuickMatchStateAction expects.
   const buildQuickMatchStatePayload = (status: 'OPEN' | 'ENDED') => {
@@ -637,60 +644,119 @@ export default function WizardForm({
     }
   };
 
-  // Step 3: Add Manual Team
-  const handleAddTeam = () => {
-    const rawP1 = formatTitleCase(player1NameInput);
-    const rawP2 = formatTitleCase(player2NameInput);
-    const rawT = formatTitleCase(teamNameInput);
-    if (!rawP1 || !rawP2) return;
+  // Resolves a typed name to a real community member (exact match, real profile — no guest
+  // created) or an individual guest (same background-creation pattern as
+  // handleAddManualPlayer, just factored out so handleAddTeam can call it twice per team).
+  // Community mode only — this is what makes a team's two partners real, individually-tracked
+  // players instead of one synthetic combined profile.
+  const resolveOrAddIndividual = (rawName: string): PlayerRegistration => {
+    const match = availableCommunityPlayers.find(
+      (p) => p.fullName.trim().toLowerCase() === rawName.trim().toLowerCase()
+    );
+    if (match) {
+      return { id: match.id, name: match.fullName, isGuest: match.isGuest, avatarUrl: match.avatarUrl };
+    }
 
-    let fullName = rawT ? `${rawT} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2}`;
-
-    // Check duplicate name and append numeric suffix
+    let name = rawName;
     const existingNames = registeredPlayers.map((p) => p.name.trim().toLowerCase());
-    if (existingNames.includes(fullName.toLowerCase())) {
+    if (existingNames.includes(name.toLowerCase())) {
       let count = 2;
-      let checkName = rawT ? `${rawT} ${count} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2} ${count}`;
-      while (existingNames.includes(checkName.toLowerCase())) {
+      while (existingNames.includes(`${rawName} ${count}`.toLowerCase())) {
         count++;
-        checkName = rawT ? `${rawT} ${count} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2} ${count}`;
       }
-      fullName = checkName;
+      name = `${rawName} ${count}`;
     }
 
     const tempId = crypto.randomUUID();
-    const newTeam: PlayerRegistration = {
-      id: tempId,
-      name: fullName,
-      isGuest: true,
-      avatarUrl: null,
-    };
-
-    // INSTANT UI UPDATE - 0ms delay, clears input fields immediately
-    setRegisteredPlayers((prev) => [...prev, newTeam]);
-    setTeamNameInput('');
-    setPlayer1NameInput('');
-    setPlayer2NameInput('');
-
-    // Asynchronously create guest member in DB for community mode
-    if (!isGuestDemoMode && communityId) {
-      const creationPromise = addGuestPlayerAction({ communityId, fullName })
+    if (communityId) {
+      const creationPromise = addGuestPlayerAction({ communityId, fullName: name })
         .then((result) => {
           if (result.ok && result.data) {
             const dbId = result.data.id;
             setRegisteredPlayers((prev) =>
-              prev.map((p) => (p.id === tempId ? { ...p, id: dbId } : p))
+              prev.map((p) => (p.id === tempId ? { ...p, id: dbId, name: result.data.full_name || name } : p))
+            );
+            setFixedTeams((prev) =>
+              prev.map((t) => ({
+                ...t,
+                playerIds: t.playerIds.map((id) => (id === tempId ? dbId : id)) as [string, string],
+              }))
             );
             return dbId;
           }
           return tempId;
         })
         .catch((err) => {
-          console.error('Background team creation error:', err);
+          console.error('Background guest creation error:', err);
           return tempId;
         });
       pendingGuestCreations.current.set(tempId, creationPromise);
     }
+
+    return { id: tempId, name, isGuest: true, avatarUrl: null };
+  };
+
+  // Step 3: Add Team (fixed pair). Quick Match sandbox keeps the old synthetic-combined-profile
+  // behavior (no real community Elo to connect to there); community mode records each partner
+  // as a genuine registeredPlayers entry, paired via fixedTeams — see
+  // handleGenerateMatches/handleGenerateNextRound for how a fixed pair is scheduled as one unit
+  // but always scores as two real players.
+  const handleAddTeam = () => {
+    const rawP1 = formatTitleCase(player1NameInput);
+    const rawP2 = formatTitleCase(player2NameInput);
+    const rawT = formatTitleCase(teamNameInput);
+    if (!rawP1 || !rawP2) return;
+
+    if (isGuestDemoMode) {
+      let fullName = rawT ? `${rawT} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2}`;
+      const existingNames = registeredPlayers.map((p) => p.name.trim().toLowerCase());
+      if (existingNames.includes(fullName.toLowerCase())) {
+        let count = 2;
+        let checkName = rawT ? `${rawT} ${count} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2} ${count}`;
+        while (existingNames.includes(checkName.toLowerCase())) {
+          count++;
+          checkName = rawT ? `${rawT} ${count} (${rawP1} / ${rawP2})` : `${rawP1} / ${rawP2} ${count}`;
+        }
+        fullName = checkName;
+      }
+      const tempId = crypto.randomUUID();
+      setRegisteredPlayers((prev) => [...prev, { id: tempId, name: fullName, isGuest: true, avatarUrl: null }]);
+      setTeamNameInput('');
+      setPlayer1NameInput('');
+      setPlayer2NameInput('');
+      return;
+    }
+
+    if (rawP1.toLowerCase() === rawP2.toLowerCase()) {
+      setErrorMessage('Player 1 and Player 2 must be different people.');
+      return;
+    }
+
+    const p1 = resolveOrAddIndividual(rawP1);
+    const p2 = resolveOrAddIndividual(rawP2);
+
+    if (fixedTeams.some((t) => t.playerIds.includes(p1.id) || t.playerIds.includes(p2.id))) {
+      setErrorMessage('One of these players is already on another team.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setRegisteredPlayers((prev) => [...prev, p1, p2]);
+    setFixedTeams((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), label: rawT || `${rawP1} / ${rawP2}`, playerIds: [p1.id, p2.id] },
+    ]);
+    setTeamNameInput('');
+    setPlayer1NameInput('');
+    setPlayer2NameInput('');
+  };
+
+  // Removes a whole team (both partners + the pairing) — the team-mode roster's remove action.
+  const handleRemoveTeam = (teamId: string) => {
+    const team = fixedTeams.find((t) => t.id === teamId);
+    if (!team) return;
+    setFixedTeams((prev) => prev.filter((t) => t.id !== teamId));
+    setRegisteredPlayers((prev) => prev.filter((p) => !team.playerIds.includes(p.id)));
   };
 
   const handleRemovePlayer = (id: string) => {
@@ -701,20 +767,39 @@ export default function WizardForm({
   const handleGenerateMatches = () => {
     const isTeamMode = config.gameType.includes('TEAM_');
     const minRequired = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
+    // Quick Match's synthetic teams are one registeredPlayers entry each; community Offline
+    // teams are two real entries per team (see fixedTeams), so team count must come from there.
+    const teamOrPlayerCount = isTeamMode ? (isGuestDemoMode ? registeredPlayers.length : fixedTeams.length) : registeredPlayers.length;
 
-    if (registeredPlayers.length < minRequired) {
+    if (teamOrPlayerCount < minRequired) {
       setErrorMessage(`Minimum ${minRequired} ${isTeamMode ? 'teams' : 'players'} required to generate matches.`);
       return;
     }
     setErrorMessage(null);
 
-    const attendees: Attendee[] = registeredPlayers.map((p, idx) => ({
-      id: p.id,
-      seedElo: 1000 - idx,
-      matchesPlayed: 0,
-      sitOutCount: 0,
-      lastSitOutRound: null,
-    }));
+    // Community Team mode schedules by fixed-pair "team unit" (see fixedTeams), expanding each
+    // team-unit id back to its two real players only when building the final Match objects below
+    // — everywhere else (attendees, history) stays in team-unit space, exactly like
+    // round.actions.ts's generateNextRoundAction does for Online. Quick Match keeps its old
+    // one-entry-per-team model untouched.
+    const isRealTeamMode = isTeamMode && !isGuestDemoMode;
+    const teamIdToMembers = new Map(fixedTeams.map((t) => [t.id, t.playerIds] as const));
+
+    const attendees: Attendee[] = isRealTeamMode
+      ? fixedTeams.map((t, idx) => ({
+          id: t.id,
+          seedElo: 1000 - idx,
+          matchesPlayed: 0,
+          sitOutCount: 0,
+          lastSitOutRound: null,
+        }))
+      : registeredPlayers.map((p, idx) => ({
+          id: p.id,
+          seedElo: 1000 - idx,
+          matchesPlayed: 0,
+          sitOutCount: 0,
+          lastSitOutRound: null,
+        }));
 
     const generated: Match[] = [];
     const newRoundSitOuts = new Map<number, string[]>();
@@ -725,9 +810,11 @@ export default function WizardForm({
     // config.matchType is only ever 'SINGLES' for real (non-Quick-Match) sessions — the toggle
     // that sets it is hidden entirely in Quick Match, so this always evaluates to Doubles there.
     const playersPerMatch = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
-    // For Americano: pre-compute 3-4 rounds upfront.
+    // For Americano: pre-compute 3-4 rounds upfront (team mode is a round-robin among teams, so
+    // the count should track fixedTeams, not the doubled real-player registeredPlayers list).
     // For Mexicano: generate Round 1 upfront (Round 2+ generated sequentially after scores per Rule 2.2).
-    const totalRoundsToGenerate = isMexicano ? 1 : Math.min(4, Math.max(1, registeredPlayers.length - 1));
+    const schedulingUnitCount = isRealTeamMode ? fixedTeams.length : registeredPlayers.length;
+    const totalRoundsToGenerate = isMexicano ? 1 : Math.min(4, Math.max(1, schedulingUnitCount - 1));
 
     for (let r = 1; r <= totalRoundsToGenerate; r++) {
       try {
@@ -751,12 +838,14 @@ export default function WizardForm({
             });
 
         roundOutput.courts.forEach((c) => {
+          const teamA = isRealTeamMode ? teamIdToMembers.get(c.teamA[0]) : undefined;
+          const teamB = isRealTeamMode ? teamIdToMembers.get(c.teamB[0]) : undefined;
           generated.push({
             id: `match-${matchCounter}`,
             roundNumber: r,
             courtNumber: c.courtNumber,
-            teamA: [c.teamA[0], c.teamA[1] || ''] as [string, string],
-            teamB: [c.teamB[0], c.teamB[1] || ''] as [string, string],
+            teamA: teamA ?? ([c.teamA[0], c.teamA[1] || ''] as [string, string]),
+            teamB: teamB ?? ([c.teamB[0], c.teamB[1] || ''] as [string, string]),
             scoreA: null,
             scoreB: null,
             isCompleted: false,
@@ -805,8 +894,9 @@ export default function WizardForm({
   const handleStartCommunitySession = async () => {
     const isTeamMode = config.gameType.includes('TEAM_');
     const minRequired = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
+    const teamOrPlayerCount = isTeamMode ? fixedTeams.length : registeredPlayers.length;
 
-    if (registeredPlayers.length < minRequired) {
+    if (teamOrPlayerCount < minRequired) {
       setErrorMessage(`Minimum ${minRequired} ${isTeamMode ? 'teams' : 'players'} required to start a session.`);
       return;
     }
@@ -817,6 +907,17 @@ export default function WizardForm({
       // Wait for any in-flight guest-player DB creations so attendeeIds are all real profile ids.
       const attendeeIds = await Promise.all(
         registeredPlayers.map((p) => pendingGuestCreations.current.get(p.id) ?? Promise.resolve(p.id))
+      );
+
+      // Same resolution as attendeeIds above — a team's guest partner may still be a temp id if
+      // their background creation (see resolveOrAddIndividual) hasn't resolved yet.
+      const fixedPairs: [string, string][] = await Promise.all(
+        fixedTeams.map(async (t) => {
+          const resolved = await Promise.all(
+            t.playerIds.map((id) => pendingGuestCreations.current.get(id) ?? Promise.resolve(id))
+          );
+          return resolved as [string, string];
+        })
       );
 
       // The DB only allows points_mode='FIXED_TOTAL' when scoring_type='POINTS' (see
@@ -838,6 +939,7 @@ export default function WizardForm({
         byeScoringMethod: config.byeScoringMethod,
         sessionMode: 'ONLINE', // this path is only ever reached for Online sessions — see handleProceedFromRegistration
         matchType: config.matchType,
+        fixedPairs: fixedPairs.length > 0 ? fixedPairs : undefined,
       });
 
       if (!result.ok) {
@@ -900,57 +1002,96 @@ export default function WizardForm({
     const maxRound = matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0);
     const nextRoundNumber = maxRound + 1;
 
-    const attendees: Attendee[] = registeredPlayers.map((p, idx) => {
-      const matchesPlayed = matches.filter(
-        (m) => m.teamA.includes(p.id) || m.teamB.includes(p.id)
-      ).length;
-
-      let sitOutCount = 0;
-      let lastSitOutRound: number | null = null;
-      roundSitOuts.forEach((players, rNum) => {
-        if (players.includes(p.id)) {
-          sitOutCount++;
-          if (lastSitOutRound === null || rNum > lastSitOutRound) {
-            lastSitOutRound = rNum;
-          }
-        }
-      });
-
-      return {
-        id: p.id,
-        seedElo: 1000 - idx,
-        matchesPlayed,
-        sitOutCount,
-        lastSitOutRound,
-      };
-    });
-
     const isTeamMode = config.gameType.includes('TEAM_');
+    // Same team-unit-scheduling trick as handleGenerateMatches — history/standings/attendees
+    // are derived from `matches`, which already hold real expanded player ids (see below), so
+    // they need to be re-mapped back to team-unit space via fixedTeams before being fed to the
+    // engine. Quick Match's synthetic one-entry-per-team model is untouched.
+    const isRealTeamMode = isTeamMode && !isGuestDemoMode;
+    const teamIdToMembers = new Map(fixedTeams.map((t) => [t.id, t.playerIds] as const));
+    const memberToTeamUnit = new Map<string, string>();
+    fixedTeams.forEach((t) => t.playerIds.forEach((id) => memberToTeamUnit.set(id, t.id)));
+    const toUnitSide = (ids: string[]): string[] =>
+      isRealTeamMode ? Array.from(new Set(ids.map((id) => memberToTeamUnit.get(id) || id))) : ids;
+
+    const attendees: Attendee[] = isRealTeamMode
+      ? fixedTeams.map((t, idx) => {
+          const repId = t.playerIds[0];
+          const matchesPlayed = matches.filter((m) => m.teamA.includes(repId) || m.teamB.includes(repId)).length;
+          let sitOutCount = 0;
+          let lastSitOutRound: number | null = null;
+          roundSitOuts.forEach((players, rNum) => {
+            if (players.includes(repId)) {
+              sitOutCount++;
+              if (lastSitOutRound === null || rNum > lastSitOutRound) lastSitOutRound = rNum;
+            }
+          });
+          return { id: t.id, seedElo: 1000 - idx, matchesPlayed, sitOutCount, lastSitOutRound };
+        })
+      : registeredPlayers.map((p, idx) => {
+          const matchesPlayed = matches.filter(
+            (m) => m.teamA.includes(p.id) || m.teamB.includes(p.id)
+          ).length;
+
+          let sitOutCount = 0;
+          let lastSitOutRound: number | null = null;
+          roundSitOuts.forEach((players, rNum) => {
+            if (players.includes(p.id)) {
+              sitOutCount++;
+              if (lastSitOutRound === null || rNum > lastSitOutRound) {
+                lastSitOutRound = rNum;
+              }
+            }
+          });
+
+          return {
+            id: p.id,
+            seedElo: 1000 - idx,
+            matchesPlayed,
+            sitOutCount,
+            lastSitOutRound,
+          };
+        });
+
     const playersPerMatch = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
 
     const history: PastPairing[] = matches.map((m) => ({
       roundNumber: m.roundNumber || 1,
-      teamA: m.teamA.filter(Boolean),
-      teamB: m.teamB.filter(Boolean),
+      teamA: toUnitSide(m.teamA.filter(Boolean)),
+      teamB: toUnitSide(m.teamB.filter(Boolean)),
     }));
 
-    const activeStandings = standings.map((s) => ({
-      profileId: s.playerId,
-      matchesPlayed: (s.realMatchesPlayed ?? 0) + (s.byesCount ?? 0),
-      sessionPointsFor: s.totalPoints,
-      sessionPointsAgainst: s.pointsLost,
-      sessionWins: s.wins,
-      sessionLosses: s.losses,
-      sessionDraws: s.ties,
-      seedElo: 1000 - registeredPlayers.findIndex((p) => p.id === s.playerId),
-    }));
+    const activeStandings = isRealTeamMode
+      ? fixedTeams.map((t) => {
+          const s = standings.find((s) => t.playerIds.includes(s.playerId));
+          return {
+            profileId: t.id,
+            matchesPlayed: s ? (s.realMatchesPlayed ?? 0) + (s.byesCount ?? 0) : 0,
+            sessionPointsFor: s?.totalPoints ?? 0,
+            sessionPointsAgainst: s?.pointsLost ?? 0,
+            sessionWins: s?.wins ?? 0,
+            sessionLosses: s?.losses ?? 0,
+            sessionDraws: s?.ties ?? 0,
+            seedElo: 1000 - fixedTeams.findIndex((ft) => ft.id === t.id),
+          };
+        })
+      : standings.map((s) => ({
+          profileId: s.playerId,
+          matchesPlayed: (s.realMatchesPlayed ?? 0) + (s.byesCount ?? 0),
+          sessionPointsFor: s.totalPoints,
+          sessionPointsAgainst: s.pointsLost,
+          sessionWins: s.wins,
+          sessionLosses: s.losses,
+          sessionDraws: s.ties,
+          seedElo: 1000 - registeredPlayers.findIndex((p) => p.id === s.playerId),
+        }));
 
     const completedMatches = matches.filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null);
     const matchHistory: MatchHistory[] = completedMatches.map((m) => ({
       id: m.id,
       roundNumber: m.roundNumber || 1,
-      teamA: m.teamA.filter(Boolean),
-      teamB: m.teamB.filter(Boolean),
+      teamA: toUnitSide(m.teamA.filter(Boolean)),
+      teamB: toUnitSide(m.teamB.filter(Boolean)),
       scoreA: m.scoreA,
       scoreB: m.scoreB,
     }));
@@ -982,16 +1123,20 @@ export default function WizardForm({
           });
 
       let matchCounter = matches.length + 1;
-      const newMatches: Match[] = roundOutput.courts.map((c) => ({
-        id: `match-${matchCounter++}`,
-        roundNumber: nextRoundNumber,
-        courtNumber: c.courtNumber,
-        teamA: [c.teamA[0], c.teamA[1] || ''] as [string, string],
-        teamB: [c.teamB[0], c.teamB[1] || ''] as [string, string],
-        scoreA: null,
-        scoreB: null,
-        isCompleted: false,
-      }));
+      const newMatches: Match[] = roundOutput.courts.map((c) => {
+        const teamA = isRealTeamMode ? teamIdToMembers.get(c.teamA[0]) : undefined;
+        const teamB = isRealTeamMode ? teamIdToMembers.get(c.teamB[0]) : undefined;
+        return {
+          id: `match-${matchCounter++}`,
+          roundNumber: nextRoundNumber,
+          courtNumber: c.courtNumber,
+          teamA: teamA ?? ([c.teamA[0], c.teamA[1] || ''] as [string, string]),
+          teamB: teamB ?? ([c.teamB[0], c.teamB[1] || ''] as [string, string]),
+          scoreA: null,
+          scoreB: null,
+          isCompleted: false,
+        };
+      });
 
       // Store sit-outs for this new round in roundSitOuts state
       if (roundOutput.sitOuts.length > 0) {
@@ -2164,7 +2309,9 @@ export default function WizardForm({
             {/* Player List Counter Header */}
             <div className="pt-4 border-t border-zinc-100 text-center space-y-1">
               <h3 className="text-lg sm:text-xl font-black uppercase tracking-wide text-[#111827]">
-                {config.gameType.includes('TEAM_') ? 'Team Roster' : 'Player Roster'} ({registeredPlayers.length})
+                {config.gameType.includes('TEAM_')
+                  ? `Team Roster (${isGuestDemoMode ? registeredPlayers.length : fixedTeams.length})`
+                  : `Player Roster (${registeredPlayers.length})`}
               </h3>
               <p className="text-xs text-zinc-400 italic font-light">
                 {config.gameType.includes('TEAM_')
@@ -2173,8 +2320,39 @@ export default function WizardForm({
               </p>
             </div>
 
-            {/* Selected Registered Players Badges */}
-            {registeredPlayers.length > 0 ? (
+            {/* Selected Registered Players / Teams */}
+            {config.gameType.includes('TEAM_') && !isGuestDemoMode ? (
+              // Community team mode: grouped by fixedTeams — each row is two real partners,
+              // removed together (handleRemoveTeam), since a fixed pair is never partial.
+              fixedTeams.length > 0 ? (
+                <div className="flex flex-col gap-2 pt-1 max-h-56 overflow-y-auto pr-1">
+                  {fixedTeams.map((t) => {
+                    const members = t.playerIds.map((id) => registeredPlayers.find((p) => p.id === id)).filter(Boolean) as PlayerRegistration[];
+                    return (
+                      <div
+                        key={t.id}
+                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-xs font-bold text-zinc-800 shadow-2xs"
+                      >
+                        <span className="truncate">
+                          {t.label} <span className="text-zinc-400 font-medium">({members.map((m) => m.name).join(' / ')})</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTeam(t.id)}
+                          className="text-zinc-400 hover:text-red-500 text-base leading-none ml-1 cursor-pointer font-bold shrink-0"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-dashed border-zinc-200 text-center text-xs text-zinc-400 font-light">
+                  No teams added yet. Add at least 2 teams to start the session.
+                </div>
+              )
+            ) : registeredPlayers.length > 0 ? (
               <div className="flex flex-wrap gap-2 pt-1 max-h-56 overflow-y-auto pr-1">
                 {registeredPlayers.map((p) => (
                   <span
@@ -2334,10 +2512,13 @@ export default function WizardForm({
               }
 
               return currentRoundMatches.map((m) => {
-                const teamANamesJoined = config.gameType.includes('TEAM_')
+                // Community Team mode now has two real players per side, same as regular
+                // doubles — only Quick Match's synthetic one-id-per-team model still needs the
+                // single-name/"Team" fallback.
+                const teamANamesJoined = config.gameType.includes('TEAM_') && isGuestDemoMode
                   ? (playerMap.get(m.teamA[0])?.name || 'Team')
                   : m.teamA.filter(Boolean).map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
-                const teamBNamesJoined = config.gameType.includes('TEAM_')
+                const teamBNamesJoined = config.gameType.includes('TEAM_') && isGuestDemoMode
                   ? (playerMap.get(m.teamB[0])?.name || 'Team')
                   : m.teamB.filter(Boolean).map((id) => playerMap.get(id)?.name || 'Player').join(' / ');
                 const winnerSide: 'A' | 'B' | null =

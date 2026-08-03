@@ -21,6 +21,9 @@ export interface StartSessionInput {
   // Padel is always Doubles (DB constraint enforces this). Tennis can be either. Defaults to
   // Doubles when omitted (e.g. Quick Match sandbox, which never surfaces this choice).
   matchType?: 'SINGLES' | 'DOUBLES';
+  // Team Americano/Mexicano only — every attendeeId must appear in exactly one pair (the RPC
+  // enforces this). Omitted entirely for regular (non-team) sessions.
+  fixedPairs?: [string, string][];
 }
 
 export async function startSessionAction(
@@ -90,6 +93,7 @@ export async function startSessionAction(
       p_bye_scoring_method: input.byeScoringMethod,
       p_session_mode: input.sessionMode,
       p_match_type: matchType,
+      p_fixed_pairs: input.fixedPairs ?? null,
     });
 
     if (error) {

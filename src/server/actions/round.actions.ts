@@ -57,6 +57,7 @@ export async function generateNextRoundAction(
         session_wins,
         session_losses,
         session_draws,
+        fixed_partner_profile_id,
         profile:profiles (
           full_name
         )
@@ -72,19 +73,57 @@ export async function generateNextRoundAction(
       };
     }
 
-    const attendees: Attendee[] = players.map(p => ({
-      id: p.profile_id,
-      seedElo: Number(p.seed_elo),
-      matchesPlayed: p.matches_played,
-      sitOutCount: p.sit_out_count,
-      lastSitOutRound: p.last_sit_out_round,
-    }));
-
     // Mapping profile IDs to names for UI display later
     const idToName = new Map<string, string>();
     players.forEach(p => {
       idToName.set(p.profile_id, (p.profile as any)?.full_name || 'Player');
     });
+
+    // Team Americano/Mexicano ("fixed pairs"): schedule using one synthetic ID per pair (the
+    // matchmaking engines don't care whether an attendee id represents one person), then expand
+    // back to the two real profile IDs right before returning — see
+    // supabase/migrations/0034_team_fixed_pairs.sql for why this needs no SQL changes at all.
+    const isFixedPairMode = players.some(p => p.fixed_partner_profile_id);
+    const partnerOf = new Map<string, string>();
+    players.forEach(p => {
+      if (p.fixed_partner_profile_id) partnerOf.set(p.profile_id, p.fixed_partner_profile_id);
+    });
+    const teamUnitOf = (profileId: string): string => {
+      const partner = partnerOf.get(profileId);
+      if (!partner) return profileId;
+      return profileId < partner ? profileId : partner;
+    };
+    const teamUnitMembers = new Map<string, string[]>();
+    if (isFixedPairMode) {
+      players.forEach(p => {
+        const unit = teamUnitOf(p.profile_id);
+        const members = teamUnitMembers.get(unit) || [];
+        if (!members.includes(p.profile_id)) members.push(p.profile_id);
+        teamUnitMembers.set(unit, members);
+      });
+    }
+    const expandUnit = (unitId: string): string[] => teamUnitMembers.get(unitId) || [unitId];
+
+    const attendees: Attendee[] = isFixedPairMode
+      ? Array.from(teamUnitMembers.entries()).map(([unitId, memberIds]) => {
+          // Partners always play together, so their per-round stats stay in lockstep — sourcing
+          // from whichever member the unit id itself belongs to is safe and avoids double-counting.
+          const rep = players.find(p => p.profile_id === unitId)!;
+          return {
+            id: unitId,
+            seedElo: memberIds.reduce((sum, id) => sum + Number(players.find(p => p.profile_id === id)!.seed_elo), 0) / memberIds.length,
+            matchesPlayed: rep.matches_played,
+            sitOutCount: rep.sit_out_count,
+            lastSitOutRound: rep.last_sit_out_round,
+          };
+        })
+      : players.map(p => ({
+          id: p.profile_id,
+          seedElo: Number(p.seed_elo),
+          matchesPlayed: p.matches_played,
+          sitOutCount: p.sit_out_count,
+          lastSitOutRound: p.last_sit_out_round,
+        }));
 
     // 4. Fetch session matches history
     const { data: rawMatches, error: mErr } = await supabase
@@ -111,6 +150,12 @@ export async function generateNextRoundAction(
       };
     }
 
+    // Dedupes after mapping real profile IDs to their team-unit ID — both partners on a side
+    // collapse to the same unit id, matching the "2 real players = 1 scheduling attendee" shape
+    // the engines expect from fixed-pair mode.
+    const toUnitSide = (ids: string[]): string[] =>
+      isFixedPairMode ? Array.from(new Set(ids.map(teamUnitOf))) : ids;
+
     // Filter and map to Americano pairing history
     const history: PastPairing[] = rawMatches
       .filter(m => m.status !== 'VOIDED')
@@ -119,15 +164,16 @@ export async function generateNextRoundAction(
         const teamB = m.match_players.filter(mp => mp.team === 'B').map(mp => mp.profile_id);
         return {
           roundNumber: m.round_number,
-          teamA,
-          teamB,
+          teamA: toUnitSide(teamA),
+          teamB: toUnitSide(teamB),
         };
       });
 
-    // Mirrors the same branch already live in submit_match_score/replay_ratings (see
-    // supabase/migrations/0028) — Padel's match_type is always DOUBLES (DB constraint), Tennis
-    // can be either depending on what the host chose at session creation.
-    const playersPerMatch = session.match_type === 'SINGLES' ? 2 : 4;
+    // Fixed-pair mode always schedules exactly one team-unit per side (a pair vs a pair) —
+    // independent of match_type, which only matters for regular (non-team) Singles/Doubles.
+    // Mirrors the same match_type branch already live in submit_match_score/replay_ratings
+    // (supabase/migrations/0028) for the non-team case.
+    const playersPerMatch = isFixedPairMode ? 2 : session.match_type === 'SINGLES' ? 2 : 4;
 
     let roundPlan;
     const seed = `${sessionId}:${roundNumber}`;
@@ -142,17 +188,32 @@ export async function generateNextRoundAction(
         seed,
       });
     } else {
-      // Mexicano requires standings for round >= 2
-      const standings: StandingRow[] = players.map(p => ({
-        profileId: p.profile_id,
-        matchesPlayed: p.matches_played,
-        sessionPointsFor: p.session_points_for,
-        sessionPointsAgainst: p.session_points_against,
-        sessionWins: p.session_wins,
-        sessionLosses: p.session_losses,
-        sessionDraws: p.session_draws,
-        seedElo: Number(p.seed_elo),
-      }));
+      // Mexicano requires standings for round >= 2 — team-unit scoped in fixed-pair mode
+      // (partners always share identical stats, so either member's row represents the unit).
+      const standings: StandingRow[] = isFixedPairMode
+        ? Array.from(teamUnitMembers.keys()).map(unitId => {
+            const rep = players.find(p => p.profile_id === unitId)!;
+            return {
+              profileId: unitId,
+              matchesPlayed: rep.matches_played,
+              sessionPointsFor: rep.session_points_for,
+              sessionPointsAgainst: rep.session_points_against,
+              sessionWins: rep.session_wins,
+              sessionLosses: rep.session_losses,
+              sessionDraws: rep.session_draws,
+              seedElo: Number(rep.seed_elo),
+            };
+          })
+        : players.map(p => ({
+            profileId: p.profile_id,
+            matchesPlayed: p.matches_played,
+            sessionPointsFor: p.session_points_for,
+            sessionPointsAgainst: p.session_points_against,
+            sessionWins: p.session_wins,
+            sessionLosses: p.session_losses,
+            sessionDraws: p.session_draws,
+            seedElo: Number(p.seed_elo),
+          }));
 
       // Gather MatchHistory with scores to resolve head-to-head ties
       const matchHistory: MatchHistory[] = rawMatches
@@ -163,8 +224,8 @@ export async function generateNextRoundAction(
           return {
             id: m.id,
             roundNumber: m.round_number,
-            teamA,
-            teamB,
+            teamA: toUnitSide(teamA),
+            teamB: toUnitSide(teamB),
             scoreA: m.team_a_score,
             scoreB: m.team_b_score,
           };
@@ -182,14 +243,16 @@ export async function generateNextRoundAction(
       });
     }
 
-    // Format proposed matches with player names for presentation
+    // Format proposed matches with player names for presentation — expanding each team-unit id
+    // back into its two real profile ids so every consumer from here on (persistRoundAction,
+    // the Live Board, Elo/standings) sees a normal doubles match, same as it always has.
     const courtsOutput = roundPlan.courts.map(c => ({
       courtNumber: c.courtNumber,
-      teamA: c.teamA.map(id => ({ id, name: idToName.get(id) || 'Player' })),
-      teamB: c.teamB.map(id => ({ id, name: idToName.get(id) || 'Player' })),
+      teamA: c.teamA.flatMap(expandUnit).map(id => ({ id, name: idToName.get(id) || 'Player' })),
+      teamB: c.teamB.flatMap(expandUnit).map(id => ({ id, name: idToName.get(id) || 'Player' })),
     }));
 
-    const sitOutsOutput = roundPlan.sitOuts.map(id => ({
+    const sitOutsOutput = roundPlan.sitOuts.flatMap(expandUnit).map(id => ({
       id,
       name: idToName.get(id) || 'Player',
     }));
