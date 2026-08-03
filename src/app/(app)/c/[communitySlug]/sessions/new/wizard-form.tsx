@@ -49,9 +49,15 @@ export type ByeScoringMethod = 'PLAYER_AVERAGE' | 'HALF_N';
 
 export type SessionMode = 'ONLINE' | 'OFFLINE';
 
+export type MatchType = 'SINGLES' | 'DOUBLES';
+
 export interface GameConfiguration {
   sport: SportType;
   gameType: GameType;
+  // Real community sessions only (Quick Match/Offline always play Doubles today — see the
+  // matchType comment on StartSessionInput). Padel is always Doubles; the DB rejects
+  // Padel+SINGLES outright, so the UI only offers this choice for Tennis.
+  matchType: MatchType;
   activityName: string;
   courtCount: number;
   scoringSystem: ScoringSystem;
@@ -208,6 +214,7 @@ export default function WizardForm({
       leaderboardRankedBy: 'POINT',
       byeScoringMethod: 'PLAYER_AVERAGE', // default per brief §3
       sessionMode: 'ONLINE',
+      matchType: 'DOUBLES',
     }
   );
 
@@ -758,7 +765,7 @@ export default function WizardForm({
   // multiple Hosts scoring the same session concurrently, which local wizard state cannot.
   const handleStartCommunitySession = async () => {
     const isTeamMode = config.gameType.includes('TEAM_');
-    const minRequired = isTeamMode ? 2 : 4;
+    const minRequired = isTeamMode ? 2 : config.matchType === 'SINGLES' ? 2 : 4;
 
     if (registeredPlayers.length < minRequired) {
       setErrorMessage(`Minimum ${minRequired} ${isTeamMode ? 'teams' : 'players'} required to start a session.`);
@@ -791,6 +798,7 @@ export default function WizardForm({
         attendeeIds,
         byeScoringMethod: config.byeScoringMethod,
         sessionMode: 'ONLINE', // this path is only ever reached for Online sessions — see handleProceedFromRegistration
+        matchType: config.matchType,
       });
 
       if (!result.ok) {
@@ -1508,7 +1516,7 @@ export default function WizardForm({
           <div className="flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-900 rounded-2xl max-w-xs">
             <button
               type="button"
-              onClick={() => setConfig((prev) => ({ ...prev, sport: 'PADEL' }))}
+              onClick={() => setConfig((prev) => ({ ...prev, sport: 'PADEL', matchType: 'DOUBLES' }))}
               className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${config.sport === 'PADEL'
                 ? 'bg-orange-500 text-white shadow-sm'
                 : 'text-zinc-500 hover:text-zinc-900'
@@ -1527,6 +1535,37 @@ export default function WizardForm({
               Tennis
             </button>
           </div>
+
+          {/* Singles / Doubles Toggle — Tennis only. Padel is always Doubles (padel courts are
+              always 2v2), so this is hidden entirely rather than shown disabled. Real community
+              sessions only — Quick Match/Offline always play Doubles today. */}
+          {!isGuestDemoMode && config.sport === 'TENNIS' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Match Type</label>
+              <div className="flex items-center gap-2 p-1.5 bg-zinc-100 dark:bg-zinc-900 rounded-2xl max-w-xs">
+                <button
+                  type="button"
+                  onClick={() => setConfig((prev) => ({ ...prev, matchType: 'DOUBLES' }))}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${config.matchType === 'DOUBLES'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                >
+                  Doubles
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfig((prev) => ({ ...prev, matchType: 'SINGLES' }))}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${config.matchType === 'SINGLES'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-900'
+                    }`}
+                >
+                  Singles
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 4 Tournament Type Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2006,7 +2045,9 @@ export default function WizardForm({
                 {config.gameType.includes('TEAM_') ? 'Team Roster' : 'Player Roster'} ({registeredPlayers.length})
               </h3>
               <p className="text-xs text-zinc-400 italic font-light">
-                {config.gameType.includes('TEAM_') ? '*Minimum 2 teams required' : '*Minimum 4 players required'}
+                {config.gameType.includes('TEAM_')
+                  ? '*Minimum 2 teams required'
+                  : `*Minimum ${config.matchType === 'SINGLES' ? 2 : 4} players required`}
               </p>
             </div>
 
@@ -2038,7 +2079,7 @@ export default function WizardForm({
               <div className="p-4 rounded-xl border border-dashed border-zinc-200 text-center text-xs text-zinc-400 font-light">
                 {config.gameType.includes('TEAM_')
                   ? 'No teams added yet. Add at least 2 teams to start the session.'
-                  : 'No players added yet. Add at least 4 players to start the session.'}
+                  : `No players added yet. Add at least ${config.matchType === 'SINGLES' ? 2 : 4} players to start the session.`}
               </div>
             )}
 

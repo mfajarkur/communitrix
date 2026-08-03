@@ -28,7 +28,7 @@ export async function generateNextRoundAction(
     // 1. Fetch Session Info
     const { data: session, error: sErr } = await supabase
       .from('sessions')
-      .select('community_id, format, sport, court_count, rounds_planned')
+      .select('community_id, format, sport, match_type, court_count, rounds_planned')
       .eq('id', sessionId)
       .single();
 
@@ -124,9 +124,10 @@ export async function generateNextRoundAction(
         };
       });
 
-    // Determine players per match based on sport (Padel always doubles, tennis default doubles unless courtCount ratio)
-    // For V1 Americano/Mexicano we default to doubles (4 players) unless court capacity is set differently.
-    const playersPerMatch = 4; // Doubles default
+    // Mirrors the same branch already live in submit_match_score/replay_ratings (see
+    // supabase/migrations/0028) — Padel's match_type is always DOUBLES (DB constraint), Tennis
+    // can be either depending on what the host chose at session creation.
+    const playersPerMatch = session.match_type === 'SINGLES' ? 2 : 4;
 
     let roundPlan;
     const seed = `${sessionId}:${roundNumber}`;

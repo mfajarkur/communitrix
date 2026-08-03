@@ -18,6 +18,10 @@ export interface StartSessionInput {
   attendeeIds: string[];
   byeScoringMethod: 'PLAYER_AVERAGE' | 'HALF_N';
   sessionMode: 'ONLINE' | 'OFFLINE';
+  // Padel is always Doubles (DB constraint enforces this). Tennis can be either — defaults to
+  // Doubles for any caller that predates this field (e.g. the Offline upload path, which reuses
+  // the local Quick Match engine and always produces doubles matches today).
+  matchType?: 'SINGLES' | 'DOUBLES';
 }
 
 export async function startSessionAction(
@@ -44,19 +48,29 @@ export async function startSessionAction(
       };
     }
 
-    if (input.sport === 'PADEL' && input.attendeeIds.length < 4) {
+    const matchType = input.matchType || 'DOUBLES';
+
+    if (input.sport === 'PADEL' && matchType === 'SINGLES') {
       return {
         ok: false,
         code: 'VALIDATION',
-        message: 'Padel sessions require at least 4 players.',
+        message: 'Padel sessions must be Doubles.',
       };
     }
 
-    if (input.sport === 'TENNIS' && input.format === 'AMERICANO' && input.attendeeIds.length < 2) {
+    if (matchType === 'SINGLES' && input.attendeeIds.length < 2) {
       return {
         ok: false,
         code: 'VALIDATION',
-        message: 'Tennis Americano sessions require at least 2 players.',
+        message: 'Singles sessions require at least 2 players.',
+      };
+    }
+
+    if (matchType === 'DOUBLES' && input.attendeeIds.length < 4) {
+      return {
+        ok: false,
+        code: 'VALIDATION',
+        message: 'Doubles sessions require at least 4 players.',
       };
     }
 
@@ -76,6 +90,7 @@ export async function startSessionAction(
       p_attendee_ids: input.attendeeIds,
       p_bye_scoring_method: input.byeScoringMethod,
       p_session_mode: input.sessionMode,
+      p_match_type: matchType,
     });
 
     if (error) {
