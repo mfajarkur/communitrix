@@ -79,6 +79,7 @@ export default function CommunityTabs({
     defaultSport === 'TENNIS' ? 'TENNIS' : 'PADEL'
   );
   const [leaderboardSortBy, setLeaderboardSortBy] = useState<'elo' | 'cp' | 'skill' | 'winrate' | 'wins' | 'diff'>('elo');
+  const [leaderboardSearchQuery, setLeaderboardSearchQuery] = useState('');
   const [starSportTab, setStarSportTab] = useState<'PADEL' | 'TENNIS'>('PADEL');
   const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -944,9 +945,13 @@ export default function CommunityTabs({
               }
             };
 
-            const currentLeaderboard = [...(rankingsBySport[selectedLeaderboardSport] || rankings || [])].sort(
-              (a, b) => getSortValue(b) - getSortValue(a)
-            );
+            const currentLeaderboard = [...(rankingsBySport[selectedLeaderboardSport] || rankings || [])]
+              .filter((r: any) =>
+                leaderboardSearchQuery.trim()
+                  ? getDisplayName(r.profile).toLowerCase().includes(leaderboardSearchQuery.trim().toLowerCase())
+                  : true
+              )
+              .sort((a, b) => getSortValue(b) - getSortValue(a));
 
             return (
               <div className="space-y-6">
@@ -985,31 +990,57 @@ export default function CommunityTabs({
                   </div>
                 </div>
 
-                {/* Sort By */}
-                <div className="flex items-center gap-2">
-                  <label htmlFor="leaderboard-sort" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    Sort by
-                  </label>
-                  <select
-                    id="leaderboard-sort"
-                    value={leaderboardSortBy}
-                    onChange={(e) => setLeaderboardSortBy(e.target.value as typeof leaderboardSortBy)}
-                    className="text-xs font-bold rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer"
-                  >
-                    <option value="elo">Elo Rating</option>
-                    <option value="cp">Community Points</option>
-                    <option value="skill">Skill Rating</option>
-                    <option value="winrate">Win Rate</option>
-                    <option value="wins">Wins</option>
-                    <option value="diff">Diff</option>
-                  </select>
+                {/* Search + Sort By */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                    <input
+                      type="text"
+                      placeholder="Search name..."
+                      value={leaderboardSearchQuery}
+                      onChange={(e) => setLeaderboardSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-9 py-2.5 bg-zinc-100/90 focus:bg-white text-xs font-semibold rounded-full text-zinc-900 placeholder-zinc-400 border border-transparent focus:border-orange-500 focus:outline-none transition-all shadow-2xs"
+                    />
+                    {leaderboardSearchQuery && (
+                      <button
+                        onClick={() => setLeaderboardSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-0.5 rounded-full"
+                        title="Clear search"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <label htmlFor="leaderboard-sort" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                      Sort by
+                    </label>
+                    <select
+                      id="leaderboard-sort"
+                      value={leaderboardSortBy}
+                      onChange={(e) => setLeaderboardSortBy(e.target.value as typeof leaderboardSortBy)}
+                      className="text-xs font-bold rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer"
+                    >
+                      <option value="elo">Elo Rating</option>
+                      <option value="cp">Community Points</option>
+                      <option value="skill">Skill Rating</option>
+                      <option value="winrate">Win Rate</option>
+                      <option value="wins">Wins</option>
+                      <option value="diff">Diff</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">
                   {currentLeaderboard.length === 0 ? (
                     <div className="text-center py-16 text-zinc-400 space-y-2">
                       <Trophy className="h-10 w-10 mx-auto opacity-30 text-orange-500" />
-                      <p className="text-sm font-semibold">No standings computed yet for {selectedLeaderboardSport}.</p>
+                      <p className="text-sm font-semibold">
+                        {leaderboardSearchQuery.trim()
+                          ? `No players found matching "${leaderboardSearchQuery}".`
+                          : `No standings computed yet for ${selectedLeaderboardSport}.`}
+                      </p>
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
