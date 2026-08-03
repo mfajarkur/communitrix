@@ -484,6 +484,7 @@ export default function LiveBoardWrapper({
                         </div>
                       )}
                     </div>
+                  </div>
                 );
               })}
             </div>
