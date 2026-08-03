@@ -977,7 +977,7 @@ export default function CommunityTabs({
                           <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                             <th className="p-3 w-12 text-center">Rank</th>
                             <th className="p-3">Name</th>
-                            <th className="p-3 text-center">W-L-D</th>
+                            <th className="p-3 text-center">W-L-T</th>
                             <th className="p-3 text-center">WR%</th>
                             <th className="p-3 text-center">Diff</th>
                             <th className="p-3 text-center">Elo</th>
