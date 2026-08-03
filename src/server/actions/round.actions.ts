@@ -301,10 +301,10 @@ export async function submitMatchScoreAction(
   try {
     const supabase = await createClient();
 
-    // 1. Fetch match to verify community context
+    // 1. Fetch match to verify community context and session_id
     const { data: match } = await supabase
       .from('matches')
-      .select('community_id')
+      .select('community_id, session_id')
       .eq('id', input.matchId)
       .maybeSingle();
 
@@ -328,6 +328,7 @@ export async function submitMatchScoreAction(
     });
 
     if (rpcErr) {
+      console.error('RPC submit_match_score error:', rpcErr);
       return {
         ok: false,
         code: 'UNKNOWN',
@@ -335,6 +336,9 @@ export async function submitMatchScoreAction(
       };
     }
 
+    if (input.communitySlug && match.session_id) {
+      revalidatePath(`/c/${input.communitySlug}/sessions/${match.session_id}`);
+    }
     if (input.communitySlug) {
       revalidatePath(`/c/${input.communitySlug}`);
     }

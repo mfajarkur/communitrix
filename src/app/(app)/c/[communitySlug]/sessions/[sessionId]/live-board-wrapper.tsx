@@ -185,22 +185,27 @@ export default function LiveBoardWrapper({
     setSubmittingMatchId(matchId);
     setError(null);
 
-    const result = await submitMatchScoreAction({ matchId, scoreA, scoreB, communitySlug });
+    try {
+      const result = await submitMatchScoreAction({ matchId, scoreA, scoreB, communitySlug });
 
-    setSubmittingMatchId(null);
-
-    if (result.ok) {
-      setScoreDrafts((prev) => {
-        const next = new Map(prev);
-        next.delete(matchId);
-        return next;
-      });
-      if (result.data?.alreadyScored) {
-        setError('Someone else already submitted a score for this match — showing their result instead.');
+      if (result.ok) {
+        setScoreDrafts((prev) => {
+          const next = new Map(prev);
+          next.delete(matchId);
+          return next;
+        });
+        if (result.data?.alreadyScored) {
+          setError('Someone else already submitted a score for this match — showing their result instead.');
+        }
+        router.refresh();
+      } else {
+        setError(result.message || 'Failed to submit score.');
       }
-      router.refresh();
-    } else {
-      setError(result.message);
+    } catch (err: any) {
+      console.error('Error submitting match score:', err);
+      setError(err?.message || 'An unexpected error occurred while saving the score.');
+    } finally {
+      setSubmittingMatchId(null);
     }
   };
 
