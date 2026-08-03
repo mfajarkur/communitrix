@@ -292,6 +292,8 @@ const getDeltas = (team: PlayerInput[], sign: number, formulaVersion: number): P
 
 ## 7. Patch 6 — Skill Rating (admin judgment only; Elo is a review TRIGGER, never the source of the number)
 
+**WON'T BUILD — decided, not just unimplemented.** Kept below for the reasoning (still useful context), but this patch will not ship. The Skill Rating shown in the app is instead a client-side derived estimate from `elo_rating` (see `docs/SCORING_RULESET.md` §5.2) — no admin-judgment value, no `review_flagged` drift trigger, no carry-overperformance trigger. `SESSION_DELTA_CAP` has also been removed from `src/lib/elo/constants.ts` for the same reason: defined, never enforced, deliberately dropped rather than finished (see `docs/SCORING_RULESET.md` §5.3).
+
 **Why every earlier formula in this section was wrong, and why this is the actual fix (not another iteration to keep revisiting):** Elo is, by its own mathematical nature, a *comparative* measure valid only within the closed pool of players it's computed from — it cannot be converted into an absolute skill claim without an external anchor connecting that pool to the outside world (this is well-established: see the Elo article's own framing, "ratings are relative, not absolute measures of skill"). Communitrix communities are closed pools with no cross-community match data. That means:
 - `elo/1000` (attempt #1) was wrong — wrong calibration AND wrong in kind.
 - Percentile-within-community (attempt #2) was wrong — explicitly relative-to-neighbors, which is exactly the failure mode described above (a player's label could shift just because someone else joined, without the player playing at all).
