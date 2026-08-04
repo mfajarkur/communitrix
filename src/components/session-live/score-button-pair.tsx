@@ -5,8 +5,12 @@ import { Loader2 } from 'lucide-react';
 type Props = {
   scoreA: number | null;
   scoreB: number | null;
-  onTapA: () => void;
-  onTapB: () => void;
+  // Optional so a read-only display (e.g. a finished session's results recap, rendered from a
+  // Server Component) can render this without a Server Component having to pass a Client
+  // Component a newly-created function — not allowed across that boundary. isCompleted already
+  // makes the buttons non-interactive in that case, so there's nothing to wire up anyway.
+  onTapA?: () => void;
+  onTapB?: () => void;
   disabled?: boolean;
   isCompleted?: boolean;
   winnerSide?: 'A' | 'B' | null;

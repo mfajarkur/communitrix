@@ -163,7 +163,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
           </table>
         </div>
         <div className="text-center text-[9px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
-          M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points · (+N) = bye points included
+          M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points (bye points already included, badge shows how many)
         </div>
       </div>
 
@@ -199,8 +199,6 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                             scoreB={m.team_b_score}
                             isCompleted
                             winnerSide={m.winner_side}
-                            onTapA={() => {}}
-                            onTapB={() => {}}
                           />
                         </div>
                         <div className="flex items-center gap-2">
