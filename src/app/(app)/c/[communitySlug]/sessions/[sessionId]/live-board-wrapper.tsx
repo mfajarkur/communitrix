@@ -9,7 +9,8 @@ import {
   submitMatchScoreAction,
 } from '@/server/actions/round.actions';
 import { finalizeSessionAction } from '@/server/actions/session.actions';
-import { HelpCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { setMatchSubstituteAction } from '@/server/actions/substitute.actions';
+import { HelpCircle, Loader2, ChevronDown, ChevronUp, Repeat, X } from 'lucide-react';
 import Link from 'next/link';
 import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
@@ -31,11 +32,20 @@ interface MatchPlayer {
   elo_delta: number | null;
   elo_after: number | null;
   k_factor: number | null;
+  // Set when this slot was "joki'd" — someone else played this match in the original player's
+  // place. Game/session stats (renderTeam, standings) always stay on `profile`; only the Elo
+  // breakdown (eloRow) attributes to `elo_profile` instead. See supabase/migrations/0037.
+  elo_profile_id: string | null;
   profile: {
     full_name?: string | null;
     display_name?: string | null;
     avatar_url?: string | null;
   };
+  elo_profile: {
+    full_name?: string | null;
+    display_name?: string | null;
+    avatar_url?: string | null;
+  } | null;
 }
 
 interface Match {
@@ -60,6 +70,7 @@ interface Round {
 interface SessionPlayer {
   id: string;
   name: string;
+  avatarUrl?: string | null;
   pointsFor: number;
   pointsAgainst: number;
   wins: number;
@@ -120,6 +131,15 @@ export default function LiveBoardWrapper({
   } | null>(null);
   const [submittingMatchId, setSubmittingMatchId] = useState<string | null>(null);
   const [expandedEloMatchId, setExpandedEloMatchId] = useState<string | null>(null);
+
+  // "Joki" mid-match substitute picker — only offered while a match is unscored (see
+  // set_match_substitute's own server-side guard for the authoritative version of this rule).
+  const [subPickerFor, setSubPickerFor] = useState<{
+    matchId: string;
+    originalProfileId: string;
+    originalName: string;
+  } | null>(null);
+  const [isSettingSub, setIsSettingSub] = useState(false);
 
   const isPointsSystem = isFixedSumSessionConfig(sessionConfig.scoringType, sessionConfig.pointsMode);
   const targetN = sessionConfig.maxScoreTarget || 24;
@@ -226,6 +246,26 @@ export default function LiveBoardWrapper({
     } finally {
       setSubmittingMatchId(null);
       clearStatus(statusId);
+    }
+  };
+
+  // Marks/changes (substituteProfileId set) or unmarks (substituteProfileId null) a joki
+  // substitute for one match slot — see set_match_substitute for the actual Elo/CP split.
+  const handleSetSubstitute = async (matchId: string, originalProfileId: string, substituteProfileId: string | null) => {
+    setIsSettingSub(true);
+    setError(null);
+    try {
+      const result = await setMatchSubstituteAction({ matchId, originalProfileId, substituteProfileId, communitySlug });
+      if (result.ok) {
+        setSubPickerFor(null);
+        refreshBoard();
+      } else {
+        setError(result.message || 'Failed to set match substitute.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'An unexpected error occurred while setting the substitute.');
+    } finally {
+      setIsSettingSub(false);
     }
   };
 
@@ -402,16 +442,44 @@ export default function LiveBoardWrapper({
                       {players.map((mp) => (
                         <div
                           key={mp.profile_id}
-                          className={`flex items-center gap-1.5 min-w-0 ${side === 'B' ? 'flex-row-reverse' : ''}`}
+                          className={`flex flex-col gap-0.5 min-w-0 ${side === 'B' ? 'items-end' : 'items-start'}`}
                         >
-                          <img
-                            src={getAvatarUrl({ id: mp.profile_id, avatar_url: mp.profile.avatar_url, full_name: mp.profile.full_name })}
-                            alt=""
-                            className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
-                          />
-                          <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
-                            {getDisplayName(mp.profile)}
-                          </span>
+                          <div className={`flex items-center gap-1.5 min-w-0 ${side === 'B' ? 'flex-row-reverse' : ''}`}>
+                            <img
+                              src={getAvatarUrl({ id: mp.profile_id, avatar_url: mp.profile.avatar_url, full_name: mp.profile.full_name })}
+                              alt=""
+                              className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
+                            />
+                            <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
+                              {getDisplayName(mp.profile)}
+                            </span>
+                          </div>
+                          {!isCompleted && isHostOrAdmin && (
+                            mp.elo_profile_id ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSetSubstitute(m.id, mp.profile_id, null)}
+                                disabled={isSettingSub}
+                                className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-1.5 py-0.5 rounded-full transition-all cursor-pointer disabled:opacity-50"
+                                title="Remove substitute — ELO reverts to this player"
+                              >
+                                <Repeat className="h-2.5 w-2.5" />
+                                Subbed by {getDisplayName(mp.elo_profile)}
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSubPickerFor({ matchId: m.id, originalProfileId: mp.profile_id, originalName: getDisplayName(mp.profile) })
+                                }
+                                className="inline-flex items-center gap-0.5 text-[9px] font-bold text-zinc-400 hover:text-orange-600 px-1.5 py-0.5 rounded-full transition-all cursor-pointer"
+                                title="Mark a substitute for this player"
+                              >
+                                <Repeat className="h-2.5 w-2.5" /> Sub
+                              </button>
+                            )
+                          )}
                         </div>
                       ))}
                     </div>
@@ -421,16 +489,24 @@ export default function LiveBoardWrapper({
                 const eloRow = (mp: MatchPlayer) => {
                   const delta = mp.elo_delta ?? 0;
                   const isPositive = delta >= 0;
+                  // A joki'd slot's ELO belongs to the substitute, not the roster name shown
+                  // elsewhere on this card — see the MatchPlayer interface comment above.
+                  const eloIdentity = mp.elo_profile_id ? mp.elo_profile : mp.profile;
                   return (
                     <div key={mp.profile_id} className="flex items-center justify-between gap-2 text-xs">
                       <div className="flex items-center gap-2 min-w-0">
                         <img
-                          src={getAvatarUrl({ id: mp.profile_id, avatar_url: mp.profile.avatar_url, full_name: mp.profile.full_name })}
+                          src={getAvatarUrl({ id: mp.elo_profile_id ?? mp.profile_id, avatar_url: eloIdentity?.avatar_url, full_name: eloIdentity?.full_name })}
                           alt=""
                           className="h-6 w-6 rounded-full object-cover shrink-0 border border-zinc-200"
                         />
                         <div className="min-w-0">
-                          <p className="font-bold text-zinc-800 truncate">{getDisplayName(mp.profile)}</p>
+                          <p className="font-bold text-zinc-800 truncate">
+                            {getDisplayName(eloIdentity)}
+                            {mp.elo_profile_id && (
+                              <span className="text-[9px] font-bold text-orange-600 uppercase ml-1">(sub)</span>
+                            )}
+                          </p>
                           {mp.elo_before !== null && mp.elo_after !== null && (
                             <p className="text-[10px] text-zinc-400 font-mono tabular-nums">
                               {Math.round(mp.elo_before)} → {Math.round(mp.elo_after)}
@@ -664,6 +740,55 @@ export default function LiveBoardWrapper({
           />
         );
       })()}
+
+      {/* "Joki" Substitute Picker Modal — candidates are whoever is sitting out this round
+          (the same pool the "Sitting Out (Bye)" banner already shows) since anyone already on
+          another court can't also sub in here. */}
+      {subPickerFor && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-zinc-100 text-[#111827]">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <h3 className="font-extrabold text-sm text-zinc-900 flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-orange-500" />
+                Substitute for {subPickerFor.originalName}
+              </h3>
+              <button
+                onClick={() => setSubPickerFor(null)}
+                className="text-zinc-400 hover:text-zinc-600 p-1 rounded-full hover:bg-zinc-100 transition-all cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-zinc-500 leading-relaxed">
+              ELO from this match goes to the substitute. {subPickerFor.originalName} keeps the game score and takes a CP penalty for being subbed out.
+            </p>
+
+            {sitOuts.length === 0 ? (
+              <p className="text-xs text-zinc-400 py-4 text-center">No one is sitting out this round to substitute in.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                {sitOuts.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleSetSubstitute(subPickerFor.matchId, subPickerFor.originalProfileId, p.id)}
+                    disabled={isSettingSub}
+                    className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border border-zinc-200 hover:border-orange-400 hover:bg-orange-50 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <img
+                      src={getAvatarUrl({ id: p.id, avatar_url: p.avatarUrl, full_name: p.name })}
+                      alt=""
+                      className="h-8 w-8 rounded-full object-cover border border-zinc-200 shrink-0"
+                    />
+                    <span className="text-xs font-bold text-zinc-800 truncate">{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

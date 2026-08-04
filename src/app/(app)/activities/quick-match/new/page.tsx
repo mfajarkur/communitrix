@@ -29,7 +29,14 @@ export default async function PersonalQuickMatchPage({
           version: existing.version,
           config: existing.config as unknown as GameConfiguration,
           registeredPlayers: existing.players,
-          matches: existing.matches,
+          // Personal Quick Match never has a community, so the "joki" substitute feature is
+          // N/A here — these fields only exist to satisfy the shared Match type from
+          // wizard-form.tsx, defaulted for records saved before the feature existed.
+          matches: existing.matches.map((m) => ({
+            ...m,
+            eloOverrideA: [null, null] as [string | null, string | null],
+            eloOverrideB: [null, null] as [string | null, string | null],
+          })),
           roundSitOuts: existing.round_sit_outs,
           selectedRound: existing.matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 1),
         }

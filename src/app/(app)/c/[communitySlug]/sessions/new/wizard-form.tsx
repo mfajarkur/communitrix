@@ -29,6 +29,8 @@ import {
   Sparkles,
   Search,
   RotateCcw,
+  Repeat,
+  X,
 } from 'lucide-react';
 import { generateAmericanoRound } from '@/lib/matchmaking/americano';
 import { generateMexicanoRound } from '@/lib/matchmaking/mexicano';
@@ -94,6 +96,12 @@ export interface Match {
   scoreA: number | null;
   scoreB: number | null;
   isCompleted: boolean;
+  // "Joki" mid-match substitute, per slot — null = that slot's teamA/teamB id is who actually
+  // played. teamA/teamB themselves NEVER change on a substitution (game score/standings always
+  // stay on the original registered player); only these per-slot overrides shift the ELO
+  // preview (see eloByMatchId) and, on upload, the real Elo/CP split (set_match_substitute).
+  eloOverrideA: [string | null, string | null];
+  eloOverrideB: [string | null, string | null];
 }
 
 export interface PlayerStanding {
@@ -303,6 +311,52 @@ export default function WizardForm({
     currentScore: number | null;
   } | null>(null);
 
+  // "Joki" mid-match substitute picker (Offline community sessions only — same feature as the
+  // online Live Board's, purely local until upload; see eloByMatchId and the upload builder).
+  const [offlineSubPickerFor, setOfflineSubPickerFor] = useState<{
+    matchId: string;
+    side: 'A' | 'B';
+    slotIndex: number;
+    originalId: string;
+    originalName: string;
+  } | null>(null);
+
+  const handleSetOfflineSubstitute = (
+    matchId: string,
+    side: 'A' | 'B',
+    slotIndex: number,
+    substituteId: string | null
+  ) => {
+    setMatches((prev) =>
+      prev.map((m) => {
+        if (m.id !== matchId) return m;
+        if (side === 'A') {
+          const next: [string | null, string | null] = [...m.eloOverrideA];
+          next[slotIndex] = substituteId;
+          return { ...m, eloOverrideA: next };
+        }
+        const next: [string | null, string | null] = [...m.eloOverrideB];
+        next[slotIndex] = substituteId;
+        return { ...m, eloOverrideB: next };
+      })
+    );
+    setOfflineSubPickerFor(null);
+  };
+
+  // Candidates for a substitute: active registered players not already on a court this round,
+  // and not already marked as someone else's substitute this round (prevents double-booking —
+  // offline has no server round-trip to catch this until upload, unlike the online RPC).
+  const getAvailableSubstitutes = (roundNumber: number, excludeOriginalId: string) => {
+    const roundMatches = matches.filter((mm) => mm.roundNumber === roundNumber);
+    const playingIds = new Set(roundMatches.flatMap((mm) => [...mm.teamA, ...mm.teamB].filter(Boolean)));
+    const alreadySubbedIds = new Set(
+      roundMatches.flatMap((mm) => [...mm.eloOverrideA, ...mm.eloOverrideB].filter((x): x is string => !!x))
+    );
+    return registeredPlayers.filter(
+      (p) => !playingIds.has(p.id) && !alreadySubbedIds.has(p.id) && p.id !== excludeOriginalId
+    );
+  };
+
   // System Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -384,18 +438,22 @@ export default function WizardForm({
       .sort((a, b) => a.roundNumber - b.roundNumber || a.courtNumber - b.courtNumber);
 
     for (const m of orderedCompleted) {
-      const teamAIds = m.teamA.filter(Boolean);
-      const teamBIds = m.teamB.filter(Boolean);
-      if (teamAIds.length === 0 || teamBIds.length === 0) continue;
+      // Pair each slot with its own override (if any) before filtering out empty Singles
+      // slots — .filter(Boolean) on teamA/teamB alone would lose the index correspondence
+      // eloOverrideA/B relies on.
+      const teamASlots = m.teamA.map((id, i) => ({ id, override: m.eloOverrideA[i] })).filter((s) => s.id);
+      const teamBSlots = m.teamB.map((id, i) => ({ id, override: m.eloOverrideB[i] })).filter((s) => s.id);
+      if (teamASlots.length === 0 || teamBSlots.length === 0) continue;
 
-      const toPlayerInput = (id: string) => {
-        const r = ratingOf(id);
-        return { id, ratingBefore: r.rating, totalMatchesPlayed: r.totalMatches };
+      const toPlayerInput = (slot: { id: string; override: string | null }) => {
+        const eloId = slot.override ?? slot.id;
+        const r = ratingOf(eloId);
+        return { id: eloId, ratingBefore: r.rating, totalMatchesPlayed: r.totalMatches };
       };
 
       const eloResult = calculateElo({
-        teamA: teamAIds.map(toPlayerInput),
-        teamB: teamBIds.map(toPlayerInput),
+        teamA: teamASlots.map(toPlayerInput),
+        teamB: teamBSlots.map(toPlayerInput),
         scoreA: m.scoreA as number,
         scoreB: m.scoreB as number,
         scoringType: isFixedSum ? 'POINTS' : 'GAMES',
@@ -482,7 +540,18 @@ export default function WizardForm({
         if (parsed.registeredPlayers) setRegisteredPlayers(parsed.registeredPlayers);
         if (!isGuestDemoMode && parsed.fixedTeams) setFixedTeams(parsed.fixedTeams);
         if (!saveToProfile) {
-          if (parsed.matches) setMatches(parsed.matches);
+          // Drafts saved before the "joki" substitute feature shipped won't have
+          // eloOverrideA/B on their matches — default them rather than leaving `undefined`,
+          // which every eloOverrideA[i]/eloOverrideB[i] access below assumes is a real tuple.
+          if (parsed.matches) {
+            setMatches(
+              parsed.matches.map((m: Match) => ({
+                ...m,
+                eloOverrideA: m.eloOverrideA || [null, null],
+                eloOverrideB: m.eloOverrideB || [null, null],
+              }))
+            );
+          }
           if (parsed.roundSitOuts) {
             // Restore Map from serialized plain object {"1": ["id1", "id2"], ...}
             const restoredMap = new Map<number, string[]>();
@@ -972,6 +1041,8 @@ export default function WizardForm({
             scoreA: null,
             scoreB: null,
             isCompleted: false,
+            eloOverrideA: [null, null],
+            eloOverrideB: [null, null],
           });
 
           history.push({
@@ -1259,6 +1330,8 @@ export default function WizardForm({
           scoreA: null,
           scoreB: null,
           isCompleted: false,
+          eloOverrideA: [null, null],
+          eloOverrideB: [null, null],
         };
       });
 
@@ -1567,13 +1640,25 @@ export default function WizardForm({
             if (!fullyScored) return null;
             return {
               roundNumber,
-              courts: roundMatches.map((m) => ({
-                courtNumber: m.courtNumber,
-                teamA: m.teamA.filter(Boolean).map(remap),
-                teamB: m.teamB.filter(Boolean).map(remap),
-                scoreA: m.scoreA as number,
-                scoreB: m.scoreB as number,
-              })),
+              courts: roundMatches.map((m) => {
+                const substitutions: { originalProfileId: string; substituteProfileId: string }[] = [];
+                [0, 1].forEach((i) => {
+                  if (m.teamA[i] && m.eloOverrideA[i]) {
+                    substitutions.push({ originalProfileId: remap(m.teamA[i]), substituteProfileId: remap(m.eloOverrideA[i] as string) });
+                  }
+                  if (m.teamB[i] && m.eloOverrideB[i]) {
+                    substitutions.push({ originalProfileId: remap(m.teamB[i]), substituteProfileId: remap(m.eloOverrideB[i] as string) });
+                  }
+                });
+                return {
+                  courtNumber: m.courtNumber,
+                  teamA: m.teamA.filter(Boolean).map(remap),
+                  teamB: m.teamB.filter(Boolean).map(remap),
+                  scoreA: m.scoreA as number,
+                  scoreB: m.scoreB as number,
+                  substitutions: substitutions.length > 0 ? substitutions : undefined,
+                };
+              }),
               sitOuts: (roundSitOuts.get(roundNumber) || []).map(remap),
             };
           })
@@ -2690,25 +2775,56 @@ export default function WizardForm({
                   );
                 };
 
-                const renderTeam = (ids: string[], side: 'A' | 'B') => {
+                const renderTeam = (ids: [string, string], side: 'A' | 'B') => {
                   const isWinner = m.isCompleted && winnerSide === side;
+                  const overrides = side === 'A' ? m.eloOverrideA : m.eloOverrideB;
                   return (
                     <div className={`flex-1 space-y-1.5 flex flex-col ${side === 'A' ? 'items-start' : 'items-end'}`}>
-                      {ids.filter(Boolean).map((id, pIdx) => {
+                      {ids.map((id, pIdx) => {
+                        if (!id) return null;
                         const p = playerMap.get(id);
+                        const subId = overrides[pIdx];
+                        const subP = subId ? playerMap.get(subId) : null;
                         return (
                           <div
                             key={`${id}-${pIdx}`}
-                            className={`flex items-center gap-1.5 min-w-0 ${side === 'B' ? 'flex-row-reverse' : ''}`}
+                            className={`flex flex-col gap-0.5 min-w-0 ${side === 'B' ? 'items-end' : 'items-start'}`}
                           >
-                            <img
-                              src={getAvatarUrl({ id, avatar_url: p?.avatarUrl, full_name: p?.name })}
-                              alt=""
-                              className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
-                            />
-                            <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
-                              {p?.name || 'Player'}
-                            </span>
+                            <div className={`flex items-center gap-1.5 min-w-0 ${side === 'B' ? 'flex-row-reverse' : ''}`}>
+                              <img
+                                src={getAvatarUrl({ id, avatar_url: p?.avatarUrl, full_name: p?.name })}
+                                alt=""
+                                className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
+                              />
+                              <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
+                                {p?.name || 'Player'}
+                              </span>
+                            </div>
+                            {!m.isCompleted && (
+                              subId ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetOfflineSubstitute(m.id, side, pIdx, null)}
+                                  className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-1.5 py-0.5 rounded-full transition-all cursor-pointer"
+                                  title="Remove substitute — ELO reverts to this player"
+                                >
+                                  <Repeat className="h-2.5 w-2.5" />
+                                  Subbed by {subP?.name || 'Player'}
+                                  <X className="h-2.5 w-2.5" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOfflineSubPickerFor({ matchId: m.id, side, slotIndex: pIdx, originalId: id, originalName: p?.name || 'Player' })
+                                  }
+                                  className="inline-flex items-center gap-0.5 text-[9px] font-bold text-zinc-400 hover:text-orange-600 px-1.5 py-0.5 rounded-full transition-all cursor-pointer"
+                                  title="Mark a substitute for this player"
+                                >
+                                  <Repeat className="h-2.5 w-2.5" /> Sub
+                                </button>
+                              )
+                            )}
                           </div>
                         );
                       })}
@@ -2951,6 +3067,61 @@ export default function WizardForm({
               }
             }}
           />
+        );
+      })()}
+
+      {/* "Joki" Substitute Picker Modal (Offline community sessions) — candidates are active
+          registered players not already on a court this round and not already subbed in
+          elsewhere this round. */}
+      {offlineSubPickerFor && (() => {
+        const activeMatch = matches.find((m) => m.id === offlineSubPickerFor.matchId);
+        const candidates = activeMatch ? getAvailableSubstitutes(activeMatch.roundNumber, offlineSubPickerFor.originalId) : [];
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-zinc-100 text-[#111827]">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+                <h3 className="font-extrabold text-sm text-zinc-900 flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-orange-500" />
+                  Substitute for {offlineSubPickerFor.originalName}
+                </h3>
+                <button
+                  onClick={() => setOfflineSubPickerFor(null)}
+                  className="text-zinc-400 hover:text-zinc-600 p-1 rounded-full hover:bg-zinc-100 transition-all cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <p className="text-[11px] text-zinc-500 leading-relaxed">
+                ELO from this match goes to the substitute. {offlineSubPickerFor.originalName} keeps the game score and takes a CP penalty for being subbed out — both apply once this session is uploaded.
+              </p>
+
+              {candidates.length === 0 ? (
+                <p className="text-xs text-zinc-400 py-4 text-center">No one is available to substitute in this round.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {candidates.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() =>
+                        handleSetOfflineSubstitute(offlineSubPickerFor.matchId, offlineSubPickerFor.side, offlineSubPickerFor.slotIndex, p.id)
+                      }
+                      className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border border-zinc-200 hover:border-orange-400 hover:bg-orange-50 transition-all cursor-pointer"
+                    >
+                      <img
+                        src={getAvatarUrl({ id: p.id, avatar_url: p.avatarUrl, full_name: p.name })}
+                        alt=""
+                        className="h-8 w-8 rounded-full object-cover border border-zinc-200 shrink-0"
+                      />
+                      <span className="text-xs font-bold text-zinc-800 truncate">{p.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         );
       })()}
     </div>

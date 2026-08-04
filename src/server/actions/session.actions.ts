@@ -193,6 +193,11 @@ export interface UploadOfflineSessionInput {
       teamB: string[];
       scoreA: number;
       scoreB: number;
+      // "Joki" mid-match substitutes marked while playing offline — applied via
+      // set_match_substitute right after this court's match_players rows are created (below),
+      // before submit_match_score runs, so Elo/CP land on the substitute/original exactly like
+      // the online path.
+      substitutions?: { originalProfileId: string; substituteProfileId: string }[];
     }[];
     sitOuts: string[];
   }[];
@@ -284,6 +289,24 @@ export async function uploadOfflineSessionAction(
       for (const court of round.courts) {
         const match = persistedMatches.find((m) => m.court_number === court.courtNumber);
         if (!match) continue;
+
+        for (const sub of court.substitutions || []) {
+          const { error: subErr } = await supabase.rpc('set_match_substitute', {
+            p_match_id: match.id,
+            p_original_profile_id: sub.originalProfileId,
+            p_substitute_profile_id: sub.substituteProfileId,
+          });
+
+          if (subErr) {
+            return {
+              ok: false,
+              code: 'UNKNOWN',
+              message:
+                (subErr.message || `Failed to apply a substitution for round ${round.roundNumber}, court ${court.courtNumber}.`) +
+                ' The session was already created and partially uploaded — check the community Sessions list to finish it from the Live Board instead of retrying here.',
+            };
+          }
+        }
 
         const { error: scoreErr } = await supabase.rpc('submit_match_score', {
           p_match_id: match.id,

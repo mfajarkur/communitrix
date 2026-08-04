@@ -68,7 +68,13 @@ export default async function SessionLiveBoardPage({
         elo_delta,
         elo_after,
         k_factor,
-        profile:profiles (
+        elo_profile_id,
+        profile:profiles!match_players_profile_id_fkey (
+          full_name,
+          display_name,
+          avatar_url
+        ),
+        elo_profile:profiles!match_players_elo_profile_id_fkey (
           full_name,
           display_name,
           avatar_url
@@ -99,7 +105,8 @@ export default async function SessionLiveBoardPage({
       session_draws,
       profile:profiles!session_players_profile_id_fkey (
         full_name,
-        display_name
+        display_name,
+        avatar_url
       )
     `)
     .eq('session_id', sessionId)
@@ -169,6 +176,7 @@ export default async function SessionLiveBoardPage({
   const sessionPlayersForBoard = activePlayers.map((p: any) => ({
     id: p.profile_id,
     name: getDisplayName(p.profile),
+    avatarUrl: p.profile?.avatar_url ?? null,
     pointsFor: p.session_points_for,
     pointsAgainst: p.session_points_against,
     wins: p.session_wins,
