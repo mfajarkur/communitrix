@@ -33,7 +33,7 @@ export default function GenerateRoundButton({
         className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer disabled:opacity-50"
       >
         {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        <span>+ Generate Next Round (Round {nextRoundNumber})</span>
+        <span>Generate Next Round (Round {nextRoundNumber})</span>
       </button>
       {showEndSession && onEndSession && (
         <button

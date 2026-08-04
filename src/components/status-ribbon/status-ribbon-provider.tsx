@@ -10,6 +10,12 @@ type StatusRibbonContextValue = {
   /** Pushes a busy message onto the ribbon; returns the id to pass to clearStatus later. */
   showStatus: (message: string, id?: string) => string;
   clearStatus: (id: string) => void;
+  /** Read by StatusRibbonBar — exposed on the same context so that component can live inside
+   * the app shell's own flex layout (see status-ribbon-provider's render) instead of needing
+   * StatusRibbonProvider to render the bar itself, which would force it outside that layout. */
+  progress: number;
+  visible: boolean;
+  message: string;
 };
 
 const StatusRibbonContext = createContext<StatusRibbonContextValue | null>(null);
@@ -21,9 +27,23 @@ const StatusRibbonContext = createContext<StatusRibbonContextValue | null>(null)
 export function useStatusRibbon(): StatusRibbonContextValue {
   const ctx = useContext(StatusRibbonContext);
   if (!ctx) {
-    return { showStatus: () => '', clearStatus: () => {} };
+    return { showStatus: () => '', clearStatus: () => {}, progress: 0, visible: false, message: '' };
   }
   return ctx;
+}
+
+// Renders the actual ribbon bar — pulled out of StatusRibbonProvider so it can be placed
+// wherever the app shell's layout needs it (as a normal flex child, sized into the shell's own
+// h-dvh math) instead of as a sibling of the whole shell, which used to add its height on top
+// of a full viewport-height shell and get scrolled out of view. Hidden entirely on the post-
+// login homepage per product decision — everywhere else it always renders.
+const HOMEPAGE_PATH = '/communities';
+
+export function StatusRibbonBar() {
+  const { progress, visible, message } = useStatusRibbon();
+  const pathname = usePathname();
+  if (pathname === HOMEPAGE_PATH) return null;
+  return <StatusRibbon progress={visible ? progress : 0} message={message} />;
 }
 
 const NAV_ID = '__nav__';
@@ -114,11 +134,10 @@ export function StatusRibbonProvider({ children }: { children: React.ReactNode }
   }, [isBusy, visible]);
 
   return (
-    <StatusRibbonContext.Provider value={{ showStatus, clearStatus }}>
+    <StatusRibbonContext.Provider value={{ showStatus, clearStatus, progress, visible, message }}>
       <Suspense fallback={null}>
         <NavDetector showStatus={showStatus} clearStatus={clearStatus} />
       </Suspense>
-      <StatusRibbon progress={visible ? progress : 0} message={message} />
       {children}
     </StatusRibbonContext.Provider>
   );
