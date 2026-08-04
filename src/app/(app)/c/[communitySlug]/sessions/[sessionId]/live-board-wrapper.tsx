@@ -450,7 +450,7 @@ export default function LiveBoardWrapper({
                               alt=""
                               className="h-7 w-7 rounded-full object-cover shrink-0 border border-zinc-200"
                             />
-                            <span className={`text-xs truncate max-w-[100px] ${isWinner ? 'text-orange-600 font-bold' : 'text-zinc-700 font-medium'}`}>
+                            <span className={`font-bold text-xs sm:text-sm md:text-base truncate max-w-[100px] sm:max-w-[140px] md:max-w-[180px] ${isWinner ? 'text-orange-600' : 'text-zinc-700'}`}>
                               {getDisplayName(mp.profile)}
                             </span>
                           </div>
