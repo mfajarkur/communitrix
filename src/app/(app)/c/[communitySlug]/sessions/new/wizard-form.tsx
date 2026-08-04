@@ -39,6 +39,7 @@ import { sortStandings, StandingsMetric } from '@/lib/matchmaking/standings';
 import { isFixedSumWizardConfig } from '@/lib/matchmaking/scoring-format';
 import ScorePickerModal from '@/components/score-picker-modal';
 import { calculateElo, type PlayerDelta } from '@/lib/elo/calculate';
+import { useStatusRibbon } from '@/components/status-ribbon/status-ribbon-provider';
 
 // ==========================================
 // 1. DATA MODELS & STATE INTERFACES
@@ -209,6 +210,7 @@ export default function WizardForm({
   initialState,
 }: WizardFormProps) {
   const router = useRouter();
+  const { showStatus, clearStatus } = useStatusRibbon();
 
   // Wizard Step State (1: Game Type, 2: Setup Config, 3: Registration, 4: Match Generation, 5: Leaderboard)
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialState ? 4 : 1);
@@ -1096,6 +1098,7 @@ export default function WizardForm({
     }
     setErrorMessage(null);
     setIsSubmitting(true);
+    const statusId = showStatus('Starting session…');
 
     try {
       // Wait for any in-flight guest-player DB creations so attendeeIds are all real profile ids.
@@ -1139,6 +1142,7 @@ export default function WizardForm({
       if (!result.ok) {
         setIsSubmitting(false);
         setErrorMessage(result.message || 'Failed to start the session.');
+        clearStatus(statusId);
         return;
       }
 
@@ -1169,10 +1173,12 @@ export default function WizardForm({
         localStorage.removeItem(quickMatchStorageKey);
       }
 
+      clearStatus(statusId);
       router.push(`/c/${communitySlug}/sessions/${sessionId}`);
     } catch (err: any) {
       setIsSubmitting(false);
       setErrorMessage(err.message || 'Failed to start the session.');
+      clearStatus(statusId);
     }
   };
 
@@ -1193,6 +1199,7 @@ export default function WizardForm({
     if (!canGenerateNextRoundOffline) return;
     isGeneratingRoundRef.current = true;
     setIsGeneratingRound(true);
+    const statusId = showStatus('Generating next round…');
 
     const maxRound = matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 0);
     const nextRoundNumber = maxRound + 1;
@@ -1351,6 +1358,7 @@ export default function WizardForm({
     } finally {
       isGeneratingRoundRef.current = false;
       setIsGeneratingRound(false);
+      clearStatus(statusId);
     }
   };
 

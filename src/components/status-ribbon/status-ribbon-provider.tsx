@@ -14,10 +14,14 @@ type StatusRibbonContextValue = {
 
 const StatusRibbonContext = createContext<StatusRibbonContextValue | null>(null);
 
+// Degrades to a no-op outside a StatusRibbonProvider (e.g. the public /quick-match sandbox,
+// which renders WizardForm — the same component the authenticated app uses — under its own
+// standalone layout with no provider) rather than throwing, so shared components don't need to
+// special-case which host page they're rendered in.
 export function useStatusRibbon(): StatusRibbonContextValue {
   const ctx = useContext(StatusRibbonContext);
   if (!ctx) {
-    throw new Error('useStatusRibbon must be used within a StatusRibbonProvider');
+    return { showStatus: () => '', clearStatus: () => {} };
   }
   return ctx;
 }

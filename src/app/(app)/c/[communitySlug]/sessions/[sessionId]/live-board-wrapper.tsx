@@ -333,11 +333,13 @@ export default function LiveBoardWrapper({
     // round and shows it immediately, with no separate "verify pairings" confirmation step.
     setIsGenerating(true);
     setError(null);
+    const statusId = showStatus('Generating next round…');
 
     const result = await generateNextRoundAction(sessionId, nextRoundNumber);
     if (!result.ok) {
       setIsGenerating(false);
       setError(result.message);
+      clearStatus(statusId);
       return;
     }
 
@@ -356,6 +358,7 @@ export default function LiveBoardWrapper({
     });
 
     setIsGenerating(false);
+    clearStatus(statusId);
 
     if (persistResult.ok) {
       router.refresh();
@@ -528,7 +531,7 @@ export default function LiveBoardWrapper({
                     key={m.id}
                     className={`relative rounded-2xl border transition-all overflow-hidden ${
                       isSubmittingThis
-                        ? 'border-orange-500 ring-2 ring-orange-400/50 bg-orange-50/40 animate-pulse shadow-md'
+                        ? 'border-orange-500 ring-2 ring-orange-400/50 bg-orange-50/40 shadow-md'
                         : isCompleted
                         ? 'border-zinc-200 bg-white shadow-sm'
                         : 'border-zinc-200 border-l-4 border-l-orange-500 bg-white shadow-sm'
@@ -537,8 +540,7 @@ export default function LiveBoardWrapper({
                     <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
                       <span className="font-bold text-base text-[#111827]">Court {m.court_number}</span>
                       {isSubmittingThis ? (
-                        <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-orange-500 text-white animate-pulse flex items-center gap-1.5 shadow-sm">
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-orange-500 text-white shadow-sm">
                           Updating Score & ELO...
                         </span>
                       ) : (
@@ -660,8 +662,7 @@ export default function LiveBoardWrapper({
                       )}
 
                       {isSubmittingThis && (
-                        <div className="flex items-center justify-center gap-2 text-xs font-extrabold uppercase tracking-wider text-orange-600 bg-orange-100/90 py-2.5 px-3 rounded-xl border border-orange-200 mt-3 animate-pulse">
-                          <Loader2 className="h-4 w-4 animate-spin text-orange-600" />
+                        <div className="flex items-center justify-center gap-2 text-xs font-extrabold uppercase tracking-wider text-orange-600 bg-orange-100/90 py-2.5 px-3 rounded-xl border border-orange-200 mt-3">
                           <span>Updating system & calculating ELO...</span>
                         </div>
                       )}

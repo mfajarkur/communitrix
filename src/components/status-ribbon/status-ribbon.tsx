@@ -10,11 +10,16 @@ export default function StatusRibbon({ progress, message }: StatusRibbonProps) {
 
   return (
     <div className="relative h-[23px] w-full shrink-0 overflow-hidden bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 select-none">
-      {/* Grows literally empty → full, not a sweep, so users can gauge real progress speed. */}
+      {/* Width still grows literally empty → full so users can gauge real progress speed — the
+          shimmer sweeping across it is purely a "something is happening" cue on top of that. */}
       <div
-        className="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 transition-[width] duration-300 ease-out shadow-[0_0_10px_#f97316]"
+        className="absolute inset-y-0 left-0 overflow-hidden bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 transition-[width] duration-300 ease-out shadow-[0_0_10px_#f97316]"
         style={{ width: showBusy ? `${progress}%` : '0%' }}
-      />
+      >
+        {showBusy && (
+          <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+        )}
+      </div>
 
       <div className="relative h-full flex items-center justify-center px-3">
         <span
