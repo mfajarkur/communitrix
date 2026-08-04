@@ -58,7 +58,7 @@ export async function generateNextRoundAction(
         session_losses,
         session_draws,
         fixed_partner_profile_id,
-        profile:profiles (
+        profile:profiles!session_players_profile_id_fkey (
           full_name
         )
       `)

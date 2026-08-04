@@ -97,7 +97,7 @@ export default async function SessionLiveBoardPage({
       session_wins,
       session_losses,
       session_draws,
-      profile:profiles (
+      profile:profiles!session_players_profile_id_fkey (
         full_name,
         display_name
       )
