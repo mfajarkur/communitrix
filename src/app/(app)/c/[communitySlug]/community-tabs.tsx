@@ -116,6 +116,9 @@ export default function CommunityTabs({
   const [skillLevelPickerOpen, setSkillLevelPickerOpen] = useState(false);
   const [isRequestingSkillLevel, setIsRequestingSkillLevel] = useState(false);
   const [skillLevelError, setSkillLevelError] = useState<string | null>(null);
+  const [memberSelectionMode, setMemberSelectionMode] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
+  const [isBatchRemoving, setIsBatchRemoving] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
@@ -281,6 +284,42 @@ export default function CommunityTabs({
     } finally {
       setIsRequestingSkillLevel(false);
     }
+  };
+
+  const toggleMemberSelected = (targetProfileId: string) => {
+    setSelectedMemberIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(targetProfileId)) next.delete(targetProfileId);
+      else next.add(targetProfileId);
+      return next;
+    });
+  };
+
+  // Removes every selected member one at a time — removeMemberAction's own last-admin guard
+  // re-checks the live active-admin count on each call, so it stays correct even if the batch
+  // includes several admins (the last one simply fails with a clear reason while the rest go
+  // through). Reports a summary instead of one alert per failure.
+  const handleBatchRemove = async () => {
+    const count = selectedMemberIds.size;
+    if (count === 0) return;
+    if (!confirm(`Remove ${count} selected member${count === 1 ? '' : 's'} from this community?`)) return;
+
+    setIsBatchRemoving(true);
+    const failures: string[] = [];
+    for (const targetProfileId of selectedMemberIds) {
+      try {
+        const result = await removeMemberAction({ communityId, targetProfileId, communitySlug });
+        if (!result.ok) failures.push(result.message || 'Unknown error');
+      } catch (err: any) {
+        failures.push(err?.message || 'Unknown error');
+      }
+    }
+    setIsBatchRemoving(false);
+
+    if (failures.length > 0) {
+      alert(`Removed ${count - failures.length} of ${count} members.\n\nFailed:\n${failures.join('\n')}`);
+    }
+    window.location.reload();
   };
 
   const topPlayer = rankings && rankings.length > 0 ? rankings[0] : null;
@@ -918,10 +957,49 @@ export default function CommunityTabs({
             return (
               <div className="grid gap-6 grid-cols-1">
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Members</h2>
-                    <p className="text-xs text-zinc-500 mt-0.5">Admins, hosts, and players in this community.</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Members</h2>
+                      <p className="text-xs text-zinc-500 mt-0.5">Admins, hosts, and players in this community.</p>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setMemberSelectionMode((v) => !v);
+                          setSelectedMemberIds(new Set());
+                        }}
+                        className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-full border transition-all cursor-pointer ${
+                          memberSelectionMode
+                            ? 'bg-zinc-900 text-white border-zinc-900'
+                            : 'text-zinc-600 border-zinc-200 hover:bg-zinc-50'
+                        }`}
+                      >
+                        {memberSelectionMode ? 'Cancel' : 'Select'}
+                      </button>
+                    )}
                   </div>
+
+                  {memberSelectionMode && (
+                    <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-40 flex justify-center px-4 pointer-events-none">
+                      <div className="pointer-events-auto flex items-center gap-3 bg-zinc-900 text-white rounded-full shadow-lg px-4 py-2.5 max-w-full">
+                        <span className="text-xs font-bold whitespace-nowrap">
+                          {selectedMemberIds.size} selected
+                        </span>
+                        <button
+                          onClick={handleBatchRemove}
+                          disabled={selectedMemberIds.size === 0 || isBatchRemoving}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          {isBatchRemoving ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <UserMinus className="h-3.5 w-3.5" />
+                          )}
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Search Bar */}
                   <div className="relative">
@@ -974,6 +1052,14 @@ export default function CommunityTabs({
                             <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
                               <Link
                                 href={`/c/${communitySlug}/players/${p.id}`}
+                                onClick={(e) => {
+                                  if (memberSelectionMode && p.id !== callerProfile?.id) {
+                                    e.preventDefault();
+                                    toggleMemberSelected(p.id);
+                                  } else if (memberSelectionMode) {
+                                    e.preventDefault();
+                                  }
+                                }}
                                 className="flex flex-col items-center w-full"
                               >
                                 <div className="relative">
@@ -981,7 +1067,9 @@ export default function CommunityTabs({
                                     <img
                                       src={p.avatar_url}
                                       alt={pName}
-                                      className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs"
+                                      className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
+                                        memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
+                                      }`}
                                     />
                                   ) : (
                                     <div className="flex h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black text-base uppercase shadow-xs">
@@ -991,6 +1079,15 @@ export default function CommunityTabs({
                                   <div className="absolute top-0 right-0 bg-blue-600 rounded-full p-1 text-white shadow-sm border-2 border-white">
                                     <Shield className="h-3 w-3 fill-current" />
                                   </div>
+                                  {memberSelectionMode && p.id !== callerProfile?.id && (
+                                    <div
+                                      className={`absolute top-0 left-0 h-5 w-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+                                        selectedMemberIds.has(p.id) ? 'bg-orange-500' : 'bg-white/90'
+                                      }`}
+                                    >
+                                      {selectedMemberIds.has(p.id) && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+                                    </div>
+                                  )}
                                 </div>
                                 <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
                                   {pName}
@@ -1001,7 +1098,7 @@ export default function CommunityTabs({
                                   {SKILL_LEVEL_LABEL[m.skill_level]}
                                 </span>
                               )}
-                              {callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
+                              {!memberSelectionMode && callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
                                 <button
                                   onClick={() => setSkillLevelPickerOpen(true)}
                                   className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
@@ -1010,7 +1107,7 @@ export default function CommunityTabs({
                                   <TrendingUp className="h-2.5 w-2.5" /> Level Up
                                 </button>
                               )}
-                              {isAdmin && p.id !== callerProfile?.id && (
+                              {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
                                 <button
                                   onClick={() => handleRemoveMember(p.id, pName)}
                                   className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
@@ -1055,17 +1152,36 @@ export default function CommunityTabs({
                               <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
                                 <Link
                                   href={`/c/${communitySlug}/players/${p.id}`}
+                                  onClick={(e) => {
+                                    if (memberSelectionMode && p.id !== callerProfile?.id) {
+                                      e.preventDefault();
+                                      toggleMemberSelected(p.id);
+                                    } else if (memberSelectionMode) {
+                                      e.preventDefault();
+                                    }
+                                  }}
                                   className="flex flex-col items-center w-full"
                                 >
                                   <div className="relative">
                                     <img
                                       src={getAvatarUrl(p)}
                                       alt={pName}
-                                      className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs group-hover:scale-105 transition-transform"
+                                      className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs group-hover:scale-105 transition-transform ${
+                                        memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
+                                      }`}
                                     />
                                     <div className="absolute top-0 right-0 bg-amber-500 rounded-full p-1 text-white shadow-sm border-2 border-white">
                                       <UserCheck className="h-3 w-3" />
                                     </div>
+                                    {memberSelectionMode && p.id !== callerProfile?.id && (
+                                      <div
+                                        className={`absolute top-0 left-0 h-5 w-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+                                          selectedMemberIds.has(p.id) ? 'bg-orange-500' : 'bg-white/90'
+                                        }`}
+                                      >
+                                        {selectedMemberIds.has(p.id) && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+                                      </div>
+                                    )}
                                   </div>
                                   <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
                                     {pName}
@@ -1076,7 +1192,7 @@ export default function CommunityTabs({
                                     {SKILL_LEVEL_LABEL[m.skill_level]}
                                   </span>
                                 )}
-                                {callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
+                                {!memberSelectionMode && callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
                                   <button
                                     onClick={() => setSkillLevelPickerOpen(true)}
                                     className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
@@ -1085,7 +1201,7 @@ export default function CommunityTabs({
                                     <TrendingUp className="h-2.5 w-2.5" /> Level Up
                                   </button>
                                 )}
-                                {isAdmin && p.id !== callerProfile?.id && (
+                                {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
                                   <button
                                     onClick={() => handleRemoveMember(p.id, pName)}
                                     className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
@@ -1119,6 +1235,14 @@ export default function CommunityTabs({
                             <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
                               <Link
                                 href={`/c/${communitySlug}/players/${p.id}`}
+                                onClick={(e) => {
+                                  if (memberSelectionMode && p.id !== callerProfile?.id) {
+                                    e.preventDefault();
+                                    toggleMemberSelected(p.id);
+                                  } else if (memberSelectionMode) {
+                                    e.preventDefault();
+                                  }
+                                }}
                                 className="flex flex-col items-center w-full"
                               >
                                 <div className="relative">
@@ -1126,11 +1250,22 @@ export default function CommunityTabs({
                                     <img
                                       src={p.avatar_url}
                                       alt={pName}
-                                      className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs"
+                                      className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
+                                        memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
+                                      }`}
                                     />
                                   ) : (
                                     <div className="flex h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-full bg-zinc-200 text-zinc-700 font-extrabold text-base uppercase shadow-xs">
                                       {pName.slice(0, 2)}
+                                    </div>
+                                  )}
+                                  {memberSelectionMode && p.id !== callerProfile?.id && (
+                                    <div
+                                      className={`absolute top-0 left-0 h-5 w-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+                                        selectedMemberIds.has(p.id) ? 'bg-orange-500' : 'bg-white/90'
+                                      }`}
+                                    >
+                                      {selectedMemberIds.has(p.id) && <CheckCircle className="h-3.5 w-3.5 text-white" />}
                                     </div>
                                   )}
                                 </div>
@@ -1138,7 +1273,7 @@ export default function CommunityTabs({
                                   {pName}
                                 </span>
                               </Link>
-                              {p.is_guest ? (
+                              {!memberSelectionMode && (p.is_guest ? (
                                 myClaimedGuestIds.includes(p.id) ? (
                                   <span className="text-[8px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full mt-1">
                                     Pending
@@ -1152,13 +1287,13 @@ export default function CommunityTabs({
                                     Claim
                                   </button>
                                 )
-                              ) : null}
+                              ) : null)}
                               {m.skill_level && (
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full mt-1 ${SKILL_LEVEL_STYLE[m.skill_level]}`}>
                                   {SKILL_LEVEL_LABEL[m.skill_level]}
                                 </span>
                               )}
-                              {callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
+                              {!memberSelectionMode && callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
                                 <button
                                   onClick={() => setSkillLevelPickerOpen(true)}
                                   className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
@@ -1167,7 +1302,7 @@ export default function CommunityTabs({
                                   <TrendingUp className="h-2.5 w-2.5" /> Level Up
                                 </button>
                               )}
-                              {isAdmin && p.id !== callerProfile?.id && (
+                              {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
                                 <button
                                   onClick={() => handleRemoveMember(p.id, pName)}
                                   className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
