@@ -99,14 +99,14 @@ export default function StandingsTable({ standings }: Props) {
                     <span
                       title={
                         s.byeIsPlaceholder
-                          ? 'Temporary placeholder score (no actual matches played yet)'
-                          : 'Dynamic bye points based on player average'
+                          ? `Includes ${s.byePoints} placeholder point${s.byePoints === 1 ? '' : 's'} for a round not yet played (no match history yet)`
+                          : `Includes ${s.byePoints} bye point${s.byePoints === 1 ? '' : 's'} (estimated from this player's average, for a round they sat out)`
                       }
-                      className={`text-[10px] font-bold ml-1 ${
-                        s.byeIsPlaceholder ? 'text-zinc-400' : 'text-amber-600'
+                      className={`text-[9px] font-bold ml-1 px-1 py-0.5 rounded uppercase tracking-wide ${
+                        s.byeIsPlaceholder ? 'text-zinc-500 bg-zinc-100' : 'text-amber-700 bg-amber-100'
                       }`}
                     >
-                      ({s.byeIsPlaceholder ? '~' : '+'}{s.byePoints})
+                      {s.byePoints} bye
                     </span>
                   )}
                 </td>
@@ -116,7 +116,7 @@ export default function StandingsTable({ standings }: Props) {
         </table>
       </div>
       <div className="text-center text-[9px] text-zinc-400 font-medium py-2 bg-zinc-50 border-t border-zinc-100">
-        M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points · (+N) = bye points included
+        M = Matches · W-L-T = Wins-Losses-Ties · D = Diff · P = Points (bye points already included, badge shows how many)
       </div>
     </div>
   );

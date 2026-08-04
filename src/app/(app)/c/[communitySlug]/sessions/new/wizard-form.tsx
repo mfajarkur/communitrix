@@ -198,6 +198,7 @@ export default function WizardForm({
   // never silently drops a host back into an old in-progress attempt with no visible cue and
   // no way out.
   const [restoredDraftNotice, setRestoredDraftNotice] = useState(false);
+  const restoredDraftNoticeRef = useRef<HTMLDivElement>(null);
 
   // Tracks the personal_quick_matches row id once the session has been created in the DB
   // (as soon as the first round is generated), so a lost connection or a dead phone doesn't
@@ -358,6 +359,14 @@ export default function WizardForm({
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // A draft with matches already on it (step >= 4) that's gone stale reads as brand new
+        // data if silently resumed — e.g. old test players' scores getting summed into what
+        // looks like a fresh session. Past this age, treat it as if nothing were saved at all.
+        const DRAFT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+        if (parsed.step >= 4 && (!parsed.savedAt || Date.now() - parsed.savedAt > DRAFT_MAX_AGE_MS)) {
+          localStorage.removeItem(quickMatchStorageKey);
+          return;
+        }
         if (saveToProfile && (!parsed.step || parsed.step >= 4)) return; // never restore a generated match locally in profile mode
         // Community mode has no equivalent step-4 guard (Offline sessions legitimately need to
         // resume mid-play), so flag it here instead — surfaced as a dismissible "resuming a
@@ -384,6 +393,15 @@ export default function WizardForm({
       }
     }
   }, [isGuestDemoMode, saveToProfile, quickMatchStorageKey, initialState]);
+
+  // The restored-draft banner renders wherever step happens to scroll to (often well down the
+  // page by step 3+), so it's easy to miss entirely — pull it into view instead of hoping a host
+  // scrolls up and notices it themselves.
+  useEffect(() => {
+    if (restoredDraftNotice) {
+      restoredDraftNoticeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [restoredDraftNotice]);
 
   // Explicit escape hatch for the restored-draft banner above — discards the local draft and
   // resets every piece of wizard state back to a blank Step 1, so "New Session" can actually
@@ -422,7 +440,7 @@ export default function WizardForm({
     }
     const sitOutsObj: Record<string, string[]> = {};
     roundSitOuts.forEach((v, k) => { sitOutsObj[String(k)] = v; });
-    const payload = { step, config, registeredPlayers, fixedTeams, matches, roundSitOuts: sitOutsObj, selectedRound };
+    const payload = { step, config, registeredPlayers, fixedTeams, matches, roundSitOuts: sitOutsObj, selectedRound, savedAt: Date.now() };
     localStorage.setItem(quickMatchStorageKey, JSON.stringify(payload));
   }, [isGuestDemoMode, saveToProfile, quickMatchStorageKey, step, config, registeredPlayers, fixedTeams, matches, roundSitOuts, selectedRound]);
 
@@ -1663,15 +1681,22 @@ export default function WizardForm({
           an old in-progress attempt (possibly all the way to Step 4, matches already on court)
           looks indistinguishable from having clicked "New Session" and landed somewhere wrong. */}
       {restoredDraftNotice && !isGuestDemoMode && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs font-medium text-amber-800">
-          <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-          <span className="flex-1">
-            Resuming an unfinished session draft from a previous visit.
-          </span>
+        <div
+          ref={restoredDraftNoticeRef}
+          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl bg-amber-50 border-2 border-amber-300 p-5 shadow-md shadow-amber-500/10"
+        >
+          <AlertCircle className="h-6 w-6 shrink-0 text-amber-500" />
+          <div className="flex-1 space-y-0.5">
+            <p className="text-sm font-black text-amber-900">Resuming an unfinished draft</p>
+            <p className="text-xs font-medium text-amber-700">
+              This is a session draft left over from a previous visit — including any matches and scores already
+              entered. If you meant to start completely fresh, discard it below.
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleDiscardDraftAndStartNew}
-            className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+            className="shrink-0 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
           >
             Start New Session Instead
           </button>
