@@ -1615,14 +1615,14 @@ export default function CommunityTabs({
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                            <th className="p-3 w-12 text-center">Rank</th>
-                            <th className="p-3">Name</th>
-                            <th className="p-3 text-center">Elo</th>
-                            <th className="p-3 text-center">CP</th>
-                            <th className="p-3 text-center">W-L-T</th>
-                            <th className="p-3 text-center">WR%</th>
-                            <th className="p-3 text-center">Diff</th>
-                            <th className="p-3 text-center">Skill</th>
+                            <th className="p-3 sm:p-4 w-12 text-center">Rank</th>
+                            <th className="p-3 sm:p-4">Name</th>
+                            <th className="p-3 sm:p-4 text-center">Elo</th>
+                            <th className="p-3 sm:p-4 text-center">CP</th>
+                            <th className="p-3 sm:p-4 text-center">W-L-T</th>
+                            <th className="p-3 sm:p-4 text-center">WR%</th>
+                            <th className="p-3 sm:p-4 text-center">Diff</th>
+                            <th className="p-3 sm:p-4 text-center">Skill</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
@@ -1640,19 +1640,19 @@ export default function CommunityTabs({
                           return (
                             <tr
                               key={r.id}
-                              className="group hover:bg-zinc-50/40 transition-all text-xs text-[#111827]"
+                              className="group hover:bg-zinc-50/40 transition-all text-xs sm:text-sm text-[#111827]"
                             >
-                              <td className="p-3 text-center align-middle font-extrabold">
+                              <td className="p-3 sm:p-4 text-center align-middle font-extrabold">
                                 {rank === 1 ? (
-                                  <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-xs font-black border border-orange-500/20 shadow-2xs">
+                                  <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-xs font-black border border-orange-500/20 shadow-2xs">
                                     🏆
                                   </span>
                                 ) : rank === 2 ? (
-                                  <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-xs font-black border border-zinc-200 shadow-2xs">
+                                  <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-xs font-black border border-zinc-200 shadow-2xs">
                                     🥈
                                   </span>
                                 ) : rank === 3 ? (
-                                  <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-xs font-black border border-orange-500/10 shadow-2xs">
+                                  <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-xs font-black border border-orange-500/10 shadow-2xs">
                                     🥉
                                   </span>
                                 ) : (
@@ -1660,7 +1660,7 @@ export default function CommunityTabs({
                                 )}
                               </td>
 
-                              <td className="p-3 align-middle">
+                              <td className="p-3 sm:p-4 align-middle">
                                 <Link
                                   href={`/c/${communitySlug}/players/${r.profile.id}`}
                                   className="flex items-center gap-3 hover:underline"
@@ -1670,7 +1670,7 @@ export default function CommunityTabs({
                                      alt={getDisplayName(r.profile)}
                                      className="h-10 w-10 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
                                    />
-                                  <p className="text-xs font-extrabold text-[#111827] truncate max-w-[90px] flex items-center gap-1.5">
+                                  <p className="text-xs sm:text-sm font-extrabold text-[#111827] truncate max-w-[90px] sm:max-w-[180px] md:max-w-[260px] lg:max-w-none flex items-center gap-1.5">
                                     {getDisplayName(r.profile)}
                                     {r.profile.is_guest && (
                                       <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
@@ -1687,29 +1687,29 @@ export default function CommunityTabs({
                                 </Link>
                               </td>
 
-                              <td className="p-3 text-center align-middle font-mono font-black text-xs text-orange-600">
+                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-black text-xs sm:text-sm text-orange-600">
                                 {Number(r.elo_rating).toFixed(0)}
                               </td>
 
-                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs">
                                 <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
                                   {playerCp}
                                 </span>
                               </td>
 
-                              <td className="p-3 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
                                 {r.total_wins}-{r.total_losses}-{r.total_draws}
                               </td>
-                              <td className="p-3 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
                                 {winRate}%
                               </td>
-                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs">
                                 <span className={pDiff > 0 ? 'text-emerald-600' : pDiff < 0 ? 'text-rose-600' : 'text-zinc-500'}>
                                   {pDiff > 0 ? `+${pDiff}` : pDiff}
                                 </span>
                               </td>
 
-                              <td className="p-3 text-center align-middle font-mono font-bold text-xs">
+                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200 font-black text-[11px] shadow-2xs">
                                   {skillRating}
                                 </span>
