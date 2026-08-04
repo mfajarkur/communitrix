@@ -55,6 +55,21 @@ export default async function NewSessionPage({
     avatarUrl: m.profile.avatar_url,
   })).sort((a, b) => a.fullName.localeCompare(b.fullName));
 
+  // 4. Fetch current Elo ratings for every sport this community tracks — lets an Offline
+  // session show a live Elo preview locally, without touching the DB until upload. Only the
+  // fields calculateElo() actually needs (see wizard-form.tsx's eloByMatchId).
+  const { data: rankings } = await supabase
+    .from('player_rankings')
+    .select('profile_id, sport, elo_rating, total_matches')
+    .eq('community_id', community.id);
+
+  const communityRankings = (rankings || []).map((r) => ({
+    profileId: r.profile_id,
+    sport: r.sport,
+    eloRating: Number(r.elo_rating),
+    totalMatches: r.total_matches,
+  }));
+
   return (
     <div className="space-y-6">
       <Link
@@ -80,6 +95,7 @@ export default async function NewSessionPage({
           name: profile.display_name || profile.full_name,
           avatarUrl: profile.avatar_url,
         }}
+        communityRankings={communityRankings}
       />
     </div>
   );

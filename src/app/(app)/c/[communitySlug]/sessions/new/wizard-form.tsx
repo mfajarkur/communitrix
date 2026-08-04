@@ -22,6 +22,7 @@ import {
   Check,
   ArrowLeft,
   ChevronDown,
+  ChevronUp,
   UserPlus,
   Flame,
   Award,
@@ -35,6 +36,7 @@ import { Attendee, PastPairing, MatchHistory, StandingRow } from '@/lib/matchmak
 import { sortStandings, StandingsMetric } from '@/lib/matchmaking/standings';
 import { isFixedSumWizardConfig } from '@/lib/matchmaking/scoring-format';
 import ScorePickerModal from '@/components/score-picker-modal';
+import { calculateElo, type PlayerDelta } from '@/lib/elo/calculate';
 
 // ==========================================
 // 1. DATA MODELS & STATE INTERFACES
@@ -127,11 +129,22 @@ interface CurrentProfile {
   avatarUrl: string | null;
 }
 
+interface CommunityRanking {
+  profileId: string;
+  sport: string;
+  eloRating: number;
+  totalMatches: number;
+}
+
 interface WizardFormProps {
   communityId: string;
   communitySlug: string;
   players: Player[];
   currentProfile: CurrentProfile;
+  // Current real Elo ratings for this community, one row per (profile, sport) — used to power a
+  // live, locally-computed Elo preview during Offline sessions (see eloByMatchId below). Absent/
+  // empty for Quick Match and guest-demo mode, which never fetch it (no community, no Elo).
+  communityRankings?: CommunityRanking[];
   isGuestDemoMode?: boolean;
   // Personal Quick Match (from the Profile page): local play like guest demo mode, but the
   // finished match is saved to the logged-in user's own profile (not a community, no ELO).
@@ -182,6 +195,7 @@ export default function WizardForm({
   communitySlug,
   players: initialPlayers,
   currentProfile,
+  communityRankings = [],
   isGuestDemoMode = false,
   saveToProfile = false,
   initialState,
@@ -327,6 +341,85 @@ export default function WizardForm({
     config.pointTarget,
     config.scoringSystem === 'POINTS' ? 16 : 4
   );
+
+  // Real community session, played Offline — the only case with both a real Elo history to
+  // build on (communityRankings) and a reason to preview it locally (nothing reaches the server
+  // until upload). Quick Match / guest-demo never has a community; Online sessions already get
+  // real, server-computed Elo per match from the Live Board the moment they leave Round 1 here.
+  const isRealCommunityOfflineSession = !isGuestDemoMode && !saveToProfile && config.sessionMode === 'OFFLINE';
+
+  // Each player's current real rating for the sport being played — the starting point the
+  // preview below chains from. Falls back to 1000/0 for anyone with no ranking row yet, exactly
+  // matching start_session's own fallback (0034_team_fixed_pairs.sql) for a brand new player.
+  const initialEloRatings = useMemo(() => {
+    const map = new Map<string, { rating: number; totalMatches: number }>();
+    communityRankings
+      .filter((r) => r.sport === config.sport)
+      .forEach((r) => map.set(r.profileId, { rating: r.eloRating, totalMatches: r.totalMatches }));
+    return map;
+  }, [communityRankings, config.sport]);
+
+  // Locally-computed, per-match Elo preview for an Offline session — replays calculateElo()
+  // (the same pure function submit_match_score uses server-side) over every scored match in
+  // play order, chaining each player's rating/matches-played forward exactly like the server
+  // does within one session. This is deliberately an ESTIMATE, not a guarantee: the server
+  // recomputes the whole trajectory from scratch at upload time using whatever ratings are
+  // live in the DB *then* (uploadOfflineSessionAction), so it can drift if the same players
+  // finish other sessions elsewhere before this one gets uploaded. formulaVersion is hardcoded
+  // to 2 (Carry Rule + effective-team-rating) — the only version persist_round has assigned to
+  // new matches since rating_formula_versions row 2 shipped (0028).
+  const eloByMatchId = useMemo(() => {
+    const result = new Map<string, { teamADeltas: PlayerDelta[]; teamBDeltas: PlayerDelta[] }>();
+    if (!isRealCommunityOfflineSession) return result;
+
+    const isFixedSum = isFixedSumWizardConfig(config.scoringSystem, config.pointTarget);
+    const playersPerMatchForElo = config.matchType === 'SINGLES' ? 2 : 4;
+    const attendeeCount = Math.max(registeredPlayers.length, 1);
+
+    const live = new Map<string, { rating: number; totalMatches: number }>();
+    const ratingOf = (id: string) => live.get(id) || initialEloRatings.get(id) || { rating: 1000, totalMatches: 0 };
+
+    const orderedCompleted = matches
+      .filter((m) => m.isCompleted && m.scoreA !== null && m.scoreB !== null)
+      .sort((a, b) => a.roundNumber - b.roundNumber || a.courtNumber - b.courtNumber);
+
+    for (const m of orderedCompleted) {
+      const teamAIds = m.teamA.filter(Boolean);
+      const teamBIds = m.teamB.filter(Boolean);
+      if (teamAIds.length === 0 || teamBIds.length === 0) continue;
+
+      const toPlayerInput = (id: string) => {
+        const r = ratingOf(id);
+        return { id, ratingBefore: r.rating, totalMatchesPlayed: r.totalMatches };
+      };
+
+      const eloResult = calculateElo({
+        teamA: teamAIds.map(toPlayerInput),
+        teamB: teamBIds.map(toPlayerInput),
+        scoreA: m.scoreA as number,
+        scoreB: m.scoreB as number,
+        scoringType: isFixedSum ? 'POINTS' : 'GAMES',
+        pointsMode: isFixedSum ? 'FIXED_TOTAL' : 'FIRST_TO_TARGET',
+        maxScoreTarget: configN,
+        roundsPlanned: null,
+        courtCount: config.courtCount,
+        playersPerMatch: playersPerMatchForElo,
+        attendeeCount,
+        formulaVersion: 2,
+      });
+
+      result.set(m.id, { teamADeltas: eloResult.teamADeltas, teamBDeltas: eloResult.teamBDeltas });
+
+      [...eloResult.teamADeltas, ...eloResult.teamBDeltas].forEach((d) => {
+        const prevTotalMatches = ratingOf(d.id).totalMatches;
+        live.set(d.id, { rating: d.ratingAfter, totalMatches: prevTotalMatches + 1 });
+      });
+    }
+
+    return result;
+  }, [isRealCommunityOfflineSession, matches, initialEloRatings, config.scoringSystem, config.pointTarget, config.matchType, config.courtCount, configN, registeredPlayers.length]);
+
+  const [expandedEloMatchId, setExpandedEloMatchId] = useState<string | null>(null);
 
   // ------------------------------------------
   // QUICK MATCH PERSISTENCE (AUTO-SAVE & AUTO-RESTORE ON REFRESH)
@@ -2568,6 +2661,35 @@ export default function WizardForm({
                       : null
                     : null;
 
+                const matchElo = eloByMatchId.get(m.id);
+                const isEloExpanded = expandedEloMatchId === m.id;
+
+                const eloRow = (d: PlayerDelta) => {
+                  const p = playerMap.get(d.id);
+                  const isPositive = d.delta >= 0;
+                  return (
+                    <div key={d.id} className="flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={getAvatarUrl({ id: d.id, avatar_url: p?.avatarUrl, full_name: p?.name })}
+                          alt=""
+                          className="h-6 w-6 rounded-full object-cover shrink-0 border border-zinc-200"
+                        />
+                        <div className="min-w-0">
+                          <p className="font-bold text-zinc-800 truncate">{p?.name || 'Player'}</p>
+                          <p className="text-[10px] text-zinc-400 font-mono tabular-nums">
+                            {Math.round(d.ratingBefore)} → {Math.round(d.ratingAfter)} · K {d.kFactor.toFixed(1)}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`font-black shrink-0 tabular-nums ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {isPositive ? '+' : ''}
+                        {d.delta.toFixed(1)}
+                      </span>
+                    </div>
+                  );
+                };
+
                 const renderTeam = (ids: string[], side: 'A' | 'B') => {
                   const isWinner = m.isCompleted && winnerSide === side;
                   return (
@@ -2636,6 +2758,43 @@ export default function WizardForm({
                         </span>
                         {renderTeam(m.teamB, 'B')}
                       </div>
+
+                      {m.isCompleted && matchElo && (
+                        <div className="mt-2">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedEloMatchId(isEloExpanded ? null : m.id)}
+                            className="w-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-orange-600 py-1.5 cursor-pointer hover:opacity-70 transition-opacity"
+                          >
+                            <span>{isEloExpanded ? 'Hide' : 'Show'} ELO Changes (Estimated)</span>
+                            {isEloExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                          </button>
+
+                          {isEloExpanded && (
+                            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-100 space-y-4 animate-in fade-in duration-150">
+                              <p className="text-[10px] text-amber-600 font-medium leading-relaxed flex items-start gap-1">
+                                <span>⚠</span>
+                                <span>
+                                  Estimated locally on this device — recalculated for real when this Offline session
+                                  is uploaded, which is also when the global ranking updates. A round with any
+                                  unscored court is skipped entirely at upload, so finish every court before ending
+                                  the session if you want this round to count.
+                                </span>
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2.5">
+                                  <span className="text-[10px] font-bold text-zinc-400 uppercase">Team A</span>
+                                  {matchElo.teamADeltas.map(eloRow)}
+                                </div>
+                                <div className="space-y-2.5">
+                                  <span className="text-[10px] font-bold text-zinc-400 uppercase">Team B</span>
+                                  {matchElo.teamBDeltas.map(eloRow)}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
