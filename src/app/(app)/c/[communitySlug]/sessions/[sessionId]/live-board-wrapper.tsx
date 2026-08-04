@@ -155,7 +155,12 @@ export default function LiveBoardWrapper({
     [matches, latestRoundNumber]
   );
   const allMatchesCompleted = latestRoundMatches.length > 0 && latestRoundMatches.every((m) => m.status === 'COMPLETED');
-  const canGenerateNextRound = totalRounds === 0 || allMatchesCompleted;
+  // Mexicano seeds each round off the standings/results of the round before it, so generating
+  // ahead of an unfinished round pairs players against stale data — repeat opponents, wrong
+  // seeding. Americano's pairing doesn't depend on results, so it stays ungated here (mirrors
+  // the same format branch enforced server-side in generateNextRoundAction).
+  const canGenerateNextRound =
+    totalRounds === 0 || sessionMeta.format !== 'MEXICANO' || allMatchesCompleted;
 
   const getDraft = (matchId: string): ScoreDraft => scoreDrafts.get(matchId) || { scoreA: null, scoreB: null };
 

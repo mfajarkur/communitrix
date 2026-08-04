@@ -270,6 +270,18 @@ export default function WizardForm({
     return matches.reduce((acc, m) => Math.max(acc, m.roundNumber || 1), 1);
   }, [matches]);
 
+  // Mexicano seeds each round off the standings/results of the round before it, so generating
+  // ahead of an unfinished round pairs players against stale data — repeat opponents, wrong
+  // seeding (mirrors the same format branch enforced for the online community flow in
+  // generateNextRoundAction/live-board-wrapper.tsx). Americano's pairing doesn't depend on
+  // results, so it stays ungated here.
+  const canGenerateNextRoundOffline = useMemo(() => {
+    if (!config.gameType.includes('MEXICANO')) return true;
+    if (matches.length === 0) return true;
+    const latestRoundMatches = matches.filter((m) => (m.roundNumber || 1) === totalRounds);
+    return latestRoundMatches.length > 0 && latestRoundMatches.every((m) => m.isCompleted);
+  }, [config.gameType, matches, totalRounds]);
+
   const [activePicker, setActivePicker] = useState<{
     matchId: string;
     team: 'A' | 'B';
@@ -1014,6 +1026,7 @@ export default function WizardForm({
   // Step 4: Generate Next Match Round
   const handleGenerateNextRound = () => {
     if (isGeneratingRoundRef.current) return;
+    if (!canGenerateNextRoundOffline) return;
     isGeneratingRoundRef.current = true;
     setIsGeneratingRound(true);
 
@@ -2635,7 +2648,13 @@ export default function WizardForm({
               nextRoundNumber={totalRounds + 1}
               onGenerate={handleGenerateNextRound}
               isGenerating={isGeneratingRound}
+              disabled={!canGenerateNextRoundOffline}
             />
+            {!canGenerateNextRoundOffline && (
+              <p className="text-[11px] text-amber-600 font-medium mt-1.5 text-center">
+                All courts in this round must be scored before generating the next Mexicano round.
+              </p>
+            )}
           </div>
         </div>
       )}

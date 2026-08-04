@@ -150,6 +150,23 @@ export async function generateNextRoundAction(
       };
     }
 
+    // Mexicano seeds each round off the standings/results of the round(s) before it, so
+    // generating ahead of a still-in-progress round pairs players against stale or missing
+    // data — repeat opponents, wrong seeding, general chaos. Americano's pairing doesn't depend
+    // on results (fixed rotation), so it's deliberately left unblocked here.
+    if (session.format !== 'AMERICANO' && roundNumber > 1) {
+      const previousRoundUnfinished = rawMatches.some(
+        m => m.round_number === roundNumber - 1 && m.status !== 'COMPLETED' && m.status !== 'VOIDED'
+      );
+      if (previousRoundUnfinished) {
+        return {
+          ok: false,
+          code: 'VALIDATION',
+          message: 'All courts in the current round must be scored before generating the next Mexicano round.',
+        };
+      }
+    }
+
     // Dedupes after mapping real profile IDs to their team-unit ID — both partners on a side
     // collapse to the same unit id, matching the "2 real players = 1 scheduling attendee" shape
     // the engines expect from fixed-pair mode.
