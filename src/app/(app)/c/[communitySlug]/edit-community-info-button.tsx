@@ -10,7 +10,7 @@ type Props = {
   communitySlug: string;
   community: {
     description?: string | null;
-    settings?: { description?: string | null } | null;
+    settings?: { description?: string | null; require_join_approval?: boolean | null } | null;
     default_sport: string;
     cp_reset_policy?: 'never' | 'seasonal' | null;
   };
@@ -28,6 +28,9 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
   const [editCpResetPolicy, setEditCpResetPolicy] = useState<'never' | 'seasonal'>(
     community.cp_reset_policy === 'seasonal' ? 'seasonal' : 'never'
   );
+  const [editRequireJoinApproval, setEditRequireJoinApproval] = useState(
+    community.settings?.require_join_approval === true
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isStartingSeason, setIsStartingSeason] = useState(false);
 
@@ -40,6 +43,7 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
         description: editDescription,
         defaultSport: editSport,
         cpResetPolicy: editCpResetPolicy,
+        requireJoinApproval: editRequireJoinApproval,
       });
       if (res.ok) {
         setIsOpen(false);
@@ -128,6 +132,23 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
                   <option value="PADEL">PADEL</option>
                   <option value="TENNIS">TENNIS</option>
                 </select>
+              </div>
+
+              <div className="pt-1 border-t border-zinc-100">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <span>
+                    <span className="font-bold text-zinc-700 block">Require approval to join</span>
+                    <span className="text-[10px] text-zinc-400 font-medium block mt-0.5">
+                      New join-code requests wait for an admin to approve them instead of joining instantly.
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={editRequireJoinApproval}
+                    onChange={(e) => setEditRequireJoinApproval(e.target.checked)}
+                    className="h-5 w-5 shrink-0 accent-orange-500 cursor-pointer"
+                  />
+                </label>
               </div>
 
               <div className="pt-1 border-t border-zinc-100">

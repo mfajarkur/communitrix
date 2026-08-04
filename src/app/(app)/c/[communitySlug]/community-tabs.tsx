@@ -29,6 +29,10 @@ import {
   Filter,
   MapPin,
   Clock,
+  UserMinus,
+  UserPlus,
+  Award,
+  TrendingUp,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import BannerImageEditor from './banner-image-editor';
@@ -36,6 +40,20 @@ import EditCommunityInfoButton from './edit-community-info-button';
 import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
+import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
+import { requestSkillLevelAction, resolveSkillLevelRequestAction, type SkillLevel } from '@/server/actions/skill.actions';
+
+const SKILL_LEVEL_LABEL: Record<string, string> = {
+  BEGINNER: 'Beginner',
+  INTERMEDIATE: 'Intermediate',
+  ADVANCED: 'Advanced',
+};
+const SKILL_LEVEL_STYLE: Record<string, string> = {
+  BEGINNER: 'bg-zinc-100 text-zinc-600',
+  INTERMEDIATE: 'bg-blue-50 text-blue-600 border border-blue-200',
+  ADVANCED: 'bg-orange-50 text-orange-600 border border-orange-200',
+};
+const SKILL_LEVEL_ORDER: SkillLevel[] = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
 
 interface CommunityTabsProps {
   community?: any;
@@ -56,6 +74,8 @@ interface CommunityTabsProps {
   pendingClaims?: any[];
   myClaimedGuestIds?: string[];
   callerProfile?: any;
+  pendingJoinRequests?: any[];
+  pendingSkillRequests?: any[];
 }
 
 export default function CommunityTabs({
@@ -77,6 +97,8 @@ export default function CommunityTabs({
   pendingClaims = [],
   myClaimedGuestIds = [],
   callerProfile,
+  pendingJoinRequests = [],
+  pendingSkillRequests = [],
 }: CommunityTabsProps) {
   const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'members' | 'leaderboard'>('home');
   const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
@@ -89,6 +111,11 @@ export default function CommunityTabs({
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolvingJoinId, setResolvingJoinId] = useState<string | null>(null);
+  const [resolvingSkillId, setResolvingSkillId] = useState<string | null>(null);
+  const [skillLevelPickerOpen, setSkillLevelPickerOpen] = useState(false);
+  const [isRequestingSkillLevel, setIsRequestingSkillLevel] = useState(false);
+  const [skillLevelError, setSkillLevelError] = useState<string | null>(null);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
@@ -200,6 +227,59 @@ export default function CommunityTabs({
       }
     } catch (err: any) {
       alert(err?.message || 'Error removing member');
+    }
+  };
+
+  // Admin approves or rejects a join request
+  const handleResolveJoin = async (requestId: string, action: 'APPROVE' | 'REJECT') => {
+    setResolvingJoinId(requestId);
+    try {
+      const result = await resolveJoinRequestAction(requestId, action, communitySlug, communityId);
+      if (result?.success) {
+        window.location.reload();
+      } else {
+        alert(result?.error || 'Failed to resolve join request');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to resolve join request');
+    } finally {
+      setResolvingJoinId(null);
+    }
+  };
+
+  // Admin approves or rejects a skill level request
+  const handleResolveSkill = async (requestId: string, action: 'APPROVE' | 'REJECT') => {
+    setResolvingSkillId(requestId);
+    try {
+      const result = await resolveSkillLevelRequestAction(requestId, action, communitySlug, communityId);
+      if (result?.success) {
+        window.location.reload();
+      } else {
+        alert(result?.error || 'Failed to resolve skill level request');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to resolve skill level request');
+    } finally {
+      setResolvingSkillId(null);
+    }
+  };
+
+  // Member requests their own skill level be raised
+  const handleRequestSkillLevel = async (requestedLevel: SkillLevel) => {
+    setIsRequestingSkillLevel(true);
+    setSkillLevelError(null);
+    try {
+      const result = await requestSkillLevelAction(communityId, requestedLevel, communitySlug);
+      if (result?.success) {
+        setSkillLevelPickerOpen(false);
+        window.location.reload();
+      } else {
+        setSkillLevelError(result?.error || 'Failed to request skill level');
+      }
+    } catch (err: any) {
+      setSkillLevelError(err?.message || 'Failed to request skill level');
+    } finally {
+      setIsRequestingSkillLevel(false);
     }
   };
 
@@ -916,6 +996,28 @@ export default function CommunityTabs({
                                   {pName}
                                 </span>
                               </Link>
+                              {m.skill_level && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full mt-1 ${SKILL_LEVEL_STYLE[m.skill_level]}`}>
+                                  {SKILL_LEVEL_LABEL[m.skill_level]}
+                                </span>
+                              )}
+                              {callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
+                                <button
+                                  onClick={() => setSkillLevelPickerOpen(true)}
+                                  className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
+                                  title="Request a higher skill level"
+                                >
+                                  <TrendingUp className="h-2.5 w-2.5" /> Level Up
+                                </button>
+                              )}
+                              {isAdmin && p.id !== callerProfile?.id && (
+                                <button
+                                  onClick={() => handleRemoveMember(p.id, pName)}
+                                  className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -969,6 +1071,28 @@ export default function CommunityTabs({
                                     {pName}
                                   </span>
                                 </Link>
+                                {m.skill_level && (
+                                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full mt-1 ${SKILL_LEVEL_STYLE[m.skill_level]}`}>
+                                    {SKILL_LEVEL_LABEL[m.skill_level]}
+                                  </span>
+                                )}
+                                {callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
+                                  <button
+                                    onClick={() => setSkillLevelPickerOpen(true)}
+                                    className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
+                                    title="Request a higher skill level"
+                                  >
+                                    <TrendingUp className="h-2.5 w-2.5" /> Level Up
+                                  </button>
+                                )}
+                                {isAdmin && p.id !== callerProfile?.id && (
+                                  <button
+                                    onClick={() => handleRemoveMember(p.id, pName)}
+                                    className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
                               </div>
                             );
                           })}
@@ -1029,6 +1153,28 @@ export default function CommunityTabs({
                                   </button>
                                 )
                               ) : null}
+                              {m.skill_level && (
+                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full mt-1 ${SKILL_LEVEL_STYLE[m.skill_level]}`}>
+                                  {SKILL_LEVEL_LABEL[m.skill_level]}
+                                </span>
+                              )}
+                              {callerProfile && p.id === callerProfile.id && m.skill_level !== 'ADVANCED' && (
+                                <button
+                                  onClick={() => setSkillLevelPickerOpen(true)}
+                                  className="inline-flex items-center gap-0.5 text-[8px] font-black uppercase bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
+                                  title="Request a higher skill level"
+                                >
+                                  <TrendingUp className="h-2.5 w-2.5" /> Level Up
+                                </button>
+                              )}
+                              {isAdmin && p.id !== callerProfile?.id && (
+                                <button
+                                  onClick={() => handleRemoveMember(p.id, pName)}
+                                  className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -1080,6 +1226,108 @@ export default function CommunityTabs({
                                 </button>
                                 <button
                                   onClick={() => handleResolve(req.id, 'REJECT')}
+                                  disabled={isProcessingThis}
+                                  className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {isAdmin && pendingJoinRequests.length > 0 && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
+                      <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
+                        <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
+                          <UserPlus className="h-4 w-4 text-amber-600" />
+                          Pending Join Requests ({pendingJoinRequests.length})
+                        </h3>
+                      </div>
+
+                      <div className="space-y-3">
+                        {pendingJoinRequests.map((req) => {
+                          const reqName = getDisplayName(req.profile);
+                          const username = req.profile?.username ? `@${req.profile.username}` : '';
+                          const isProcessingThis = resolvingJoinId === req.id;
+
+                          return (
+                            <div
+                              key={req.id}
+                              className="p-3.5 rounded-xl bg-white border border-amber-200/80 space-y-3 shadow-xs"
+                            >
+                              <div className="text-xs text-gray-800 space-y-1 font-sans">
+                                <p className="font-bold">
+                                  {reqName} <span className="text-gray-400 font-normal">{username}</span>
+                                </p>
+                                <p className="text-gray-500 font-light text-[11px]">Wants to join this community</p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleResolveJoin(req.id, 'APPROVE')}
+                                  disabled={isProcessingThis}
+                                  className="flex-1 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  {isProcessingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Approve'}
+                                </button>
+                                <button
+                                  onClick={() => handleResolveJoin(req.id, 'REJECT')}
+                                  disabled={isProcessingThis}
+                                  className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {isAdmin && pendingSkillRequests.length > 0 && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
+                      <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
+                        <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
+                          <Award className="h-4 w-4 text-amber-600" />
+                          Pending Skill Requests ({pendingSkillRequests.length})
+                        </h3>
+                      </div>
+
+                      <div className="space-y-3">
+                        {pendingSkillRequests.map((req) => {
+                          const reqName = getDisplayName(req.profile);
+                          const isProcessingThis = resolvingSkillId === req.id;
+
+                          return (
+                            <div
+                              key={req.id}
+                              className="p-3.5 rounded-xl bg-white border border-amber-200/80 space-y-3 shadow-xs"
+                            >
+                              <div className="text-xs text-gray-800 space-y-1 font-sans">
+                                <p className="font-bold">{reqName}</p>
+                                <p className="text-gray-500 font-light text-[11px]">
+                                  {req.current_level ? SKILL_LEVEL_LABEL[req.current_level] : 'Unrated'} →{' '}
+                                  <span className="font-extrabold text-orange-600">
+                                    {SKILL_LEVEL_LABEL[req.requested_level]}
+                                  </span>
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleResolveSkill(req.id, 'APPROVE')}
+                                  disabled={isProcessingThis}
+                                  className="flex-1 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  {isProcessingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Approve'}
+                                </button>
+                                <button
+                                  onClick={() => handleResolveSkill(req.id, 'REJECT')}
                                   disabled={isProcessingThis}
                                   className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
                                 >
@@ -1405,6 +1653,64 @@ export default function CommunityTabs({
           </div>
         </div>
       )}
+
+      {/* Skill Level Picker Modal — member requests their own level be raised */}
+      {skillLevelPickerOpen && (() => {
+        const myMember = members.find((m: any) => m.profile?.id === callerProfile?.id);
+        const myCurrentLevel: string | undefined = myMember?.skill_level;
+        const myRank = myCurrentLevel ? SKILL_LEVEL_ORDER.indexOf(myCurrentLevel as SkillLevel) : -1;
+        const availableLevels = SKILL_LEVEL_ORDER.slice(myRank + 1);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl space-y-5 border border-zinc-100 text-[#111827]">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 font-sans">
+                  Request Skill Level
+                </h3>
+                <button
+                  onClick={() => {
+                    setSkillLevelPickerOpen(false);
+                    setSkillLevelError(null);
+                  }}
+                  disabled={isRequestingSkillLevel}
+                  className="p-1 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-zinc-500 leading-relaxed font-light">
+                Pick the level you'd like to be rated at. A community admin reviews and approves this before it shows on your profile.
+              </p>
+
+              {skillLevelError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
+                  {skillLevelError}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {availableLevels.map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => handleRequestSkillLevel(level)}
+                    disabled={isRequestingSkillLevel}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-zinc-200 hover:border-orange-300 hover:bg-orange-50/60 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <span className="text-sm font-bold text-zinc-900">{SKILL_LEVEL_LABEL[level]}</span>
+                    {isRequestingSkillLevel ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-zinc-300" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ADD ADMIN / ADD HOST MODAL */}
       {targetRoleToAdd && (

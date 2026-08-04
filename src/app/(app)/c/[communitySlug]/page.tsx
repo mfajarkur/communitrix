@@ -23,6 +23,7 @@ interface ActiveMemberRow {
   role: string;
   is_active: boolean;
   joined_at: string;
+  skill_level: string | null;
   profile: MemberProfileRow | null;
 }
 interface RankingRow {
@@ -84,6 +85,7 @@ export default async function CommunityDashboardPage({
       role,
       is_active,
       joined_at,
+      skill_level,
       profile:profiles (
         id,
         full_name,
@@ -241,6 +243,51 @@ export default async function CommunityDashboardPage({
     pendingClaims = claimsData || [];
   }
 
+  // 8b. Fetch pending join requests and skill level requests for this community (Admin Only)
+  let pendingJoinRequests: any[] = [];
+  let pendingSkillRequests: any[] = [];
+  if (isAdmin) {
+    const { data: joinRequestsData } = await supabase
+      .from('community_join_requests')
+      .select(`
+        id,
+        created_at,
+        profile:profiles!community_join_requests_profile_id_fkey (
+          id,
+          full_name,
+          display_name,
+          username,
+          avatar_url
+        )
+      `)
+      .eq('community_id', community.id)
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: false });
+
+    pendingJoinRequests = joinRequestsData || [];
+
+    const { data: skillRequestsData } = await supabase
+      .from('skill_level_requests')
+      .select(`
+        id,
+        created_at,
+        current_level,
+        requested_level,
+        profile:profiles!skill_level_requests_profile_id_fkey (
+          id,
+          full_name,
+          display_name,
+          username,
+          avatar_url
+        )
+      `)
+      .eq('community_id', community.id)
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: false });
+
+    pendingSkillRequests = skillRequestsData || [];
+  }
+
   // 9. Fetch current user's claim requests in this community
   const { data: myClaimsData } = await supabase
     .from('guest_claim_requests')
@@ -273,6 +320,8 @@ export default async function CommunityDashboardPage({
         pendingClaims={pendingClaims}
         myClaimedGuestIds={myClaimedGuestIds}
         callerProfile={profile}
+        pendingJoinRequests={pendingJoinRequests}
+        pendingSkillRequests={pendingSkillRequests}
       />
     </div>
   );

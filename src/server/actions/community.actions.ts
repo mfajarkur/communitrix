@@ -98,9 +98,13 @@ export async function createCommunityAction(input: {
   }
 }
 
+export type JoinCommunityResult =
+  | { status: 'JOINED'; community: { id: string; slug: string; name: string }; member: any }
+  | { status: 'PENDING'; community: { id: string; slug: string; name: string }; request: any };
+
 export async function joinCommunityAction(input: {
   joinCode: string;
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<JoinCommunityResult>> {
   try {
     // 1. Ensure user is authenticated and has a profile
     await requireProfile();
@@ -114,10 +118,12 @@ export async function joinCommunityAction(input: {
       };
     }
 
-    // 3. Call the RPC join_community
+    // 3. Call the RPC request_join_community — grants membership immediately for communities
+    // that haven't opted into approval, or creates a PENDING request for ones that have. The
+    // caller distinguishes the two via result.status.
     const supabase = await createClient();
-    const { data: member, error } = await supabase
-      .rpc('join_community', {
+    const { data: result, error } = await supabase
+      .rpc('request_join_community', {
         p_join_code: input.joinCode.trim().toUpperCase(),
       });
 
@@ -143,6 +149,13 @@ export async function joinCommunityAction(input: {
           message: error.message,
         };
       }
+      if (error.message?.includes('already a member')) {
+        return {
+          ok: false,
+          code: 'CONFLICT',
+          message: error.message,
+        };
+      }
       return {
         ok: false,
         code: 'UNKNOWN',
@@ -150,14 +163,7 @@ export async function joinCommunityAction(input: {
       };
     }
 
-    // Fetch the community slug for client-side redirection
-    const { data: community } = await supabase
-      .from('communities')
-      .select('slug, name')
-      .eq('id', member.community_id)
-      .single();
-
-    return { ok: true, data: { member, community } };
+    return { ok: true, data: result as JoinCommunityResult };
   } catch (error: any) {
     if (error.message?.includes('redirect')) throw error;
     return {
@@ -261,6 +267,7 @@ export async function updateCommunityInfoAction(input: {
   defaultSport?: string;
   bannerUrl?: string;
   cpResetPolicy?: 'never' | 'seasonal';
+  requireJoinApproval?: boolean;
 }): Promise<ActionResult<any>> {
   try {
     await requireCommunityAdmin(input.communityId);
@@ -276,6 +283,20 @@ export async function updateCommunityInfoAction(input: {
     }
 
     const adminClient = createAdminClient();
+
+    // require_join_approval always lives in settings jsonb (no dedicated column) — merge it in
+    // alongside whatever else is being saved, same read-then-spread pattern the description
+    // fallback below uses for its own settings write.
+    if (input.requireJoinApproval !== undefined) {
+      const { data: currentComm } = await adminClient
+        .from('communities')
+        .select('settings')
+        .eq('id', input.communityId)
+        .maybeSingle();
+      const existingSettings = currentComm?.settings && typeof currentComm.settings === 'object' ? currentComm.settings : {};
+      updates.settings = { ...existingSettings, require_join_approval: input.requireJoinApproval };
+    }
+
     let { data, error } = await adminClient
       .from('communities')
       .update(updates)
@@ -294,7 +315,11 @@ export async function updateCommunityInfoAction(input: {
         .maybeSingle();
 
       const existingSettings = currentComm?.settings && typeof currentComm.settings === 'object' ? currentComm.settings : {};
-      updates.settings = { ...existingSettings, description: input.description?.trim() };
+      updates.settings = {
+        ...existingSettings,
+        description: input.description?.trim(),
+        ...(input.requireJoinApproval !== undefined ? { require_join_approval: input.requireJoinApproval } : {}),
+      };
 
       const fallbackRes = await adminClient
         .from('communities')

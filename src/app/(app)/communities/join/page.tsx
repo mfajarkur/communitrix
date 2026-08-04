@@ -29,12 +29,21 @@ export default function JoinCommunityPage() {
     const result = await joinCommunityAction({ joinCode: trimmedCode });
 
     if (result.ok) {
-      setSuccess(`Successfully joined ${result.data.community.name}! Redirecting...`);
-      // Redirect to the newly joined community's dashboard
-      setTimeout(() => {
-        router.push(`/c/${result.data.community.slug}`);
-        router.refresh();
-      }, 1500);
+      if (result.data.status === 'JOINED') {
+        setSuccess(`Successfully joined ${result.data.community.name}! Redirecting...`);
+        // Redirect to the newly joined community's dashboard
+        setTimeout(() => {
+          router.push(`/c/${result.data.community.slug}`);
+          router.refresh();
+        }, 1500);
+      } else {
+        // PENDING — this community requires admin approval before membership is granted, so
+        // there's nowhere to redirect into yet.
+        setSuccess(
+          `Request sent to join ${result.data.community.name}. You'll get access once a community admin approves it.`
+        );
+        setIsSubmitting(false);
+      }
     } else {
       setIsSubmitting(false);
       setError(result.message);
