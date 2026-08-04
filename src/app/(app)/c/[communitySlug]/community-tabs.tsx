@@ -25,6 +25,7 @@ import {
   User,
   LogOut,
   Flame,
+  ArrowLeft,
   Filter,
   MapPin,
   Clock,
@@ -213,36 +214,40 @@ export default function CommunityTabs({
           pattern. The global bottom nav now owns "where am I / how do I leave
           entirely", so this only needs to say which community and give one
           quick way back to the list. */}
-      <div className="flex items-center gap-2 pb-3">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-orange-50/40 to-white border border-orange-100/70 px-3 py-3 mb-3 flex items-center gap-3">
         <Link
           href="/communities"
-          className="shrink-0 text-xs font-bold text-zinc-500 hover:text-orange-600 transition-colors"
+          className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-zinc-200 text-zinc-500 hover:text-orange-600 hover:border-orange-200 shadow-sm transition-all cursor-pointer"
+          title="Back to Communities"
         >
-          ← Communities
+          <ArrowLeft className="h-4 w-4" />
         </Link>
-        <span className="text-zinc-300">/</span>
         <img
           src={bannerImage}
           alt={communityName}
-          className="h-[30px] w-[30px] rounded-lg object-cover shrink-0 border border-zinc-100"
+          className="h-11 w-11 rounded-xl object-cover shrink-0 ring-2 ring-white shadow-sm border border-orange-100"
         />
-        <h1 className="text-sm font-black tracking-tight text-zinc-900 truncate">{communityName}</h1>
-        <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-black tracking-wider uppercase shrink-0 ${
-          role === 'ADMIN'
-            ? 'bg-orange-500 text-white'
-            : role === 'HOST'
-            ? 'bg-orange-50 text-orange-600 border border-orange-200'
-            : 'bg-zinc-100 text-zinc-600'
-        }`}>
-          {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
-          {role}
-        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base font-black tracking-tight text-zinc-900 truncate">{communityName}</h1>
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 mt-0.5 text-[9px] font-black tracking-wider uppercase ${
+            role === 'ADMIN'
+              ? 'bg-orange-500 text-white'
+              : role === 'HOST'
+              ? 'bg-orange-50 text-orange-600 border border-orange-200'
+              : 'bg-zinc-100 text-zinc-600'
+          }`}>
+            {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
+            {role}
+          </span>
+        </div>
       </div>
 
       {/* Top tab strip — moved here from a fixed bottom bar so only the global
-          Profile/Community/Activities nav ever occupies the bottom of the screen. */}
-      <nav className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-zinc-100 mb-4 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 py-1.5">
-        <div className="flex items-center justify-around max-w-md sm:max-w-xl mx-auto">
+          Profile/Community/Activities nav ever occupies the bottom of the screen.
+          Segmented-control style (filled pill on the active tab) to read as the
+          same "nav" language as the global dock below. */}
+      <nav className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-zinc-100 mb-4 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 py-2">
+        <div className="flex items-center gap-1 max-w-md sm:max-w-xl mx-auto bg-zinc-100/80 rounded-2xl p-1">
           {([
             { tab: 'home' as const, label: 'Home', Icon: Home },
             { tab: 'sessions' as const, label: 'Sessions', Icon: Calendar },
@@ -252,15 +257,14 @@ export default function CommunityTabs({
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
-              className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer relative ${
-                activeTab === tab ? 'text-orange-500 font-extrabold' : 'text-zinc-400 hover:text-zinc-600 font-medium'
+              className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all cursor-pointer ${
+                activeTab === tab ? 'bg-white text-orange-500 shadow-sm' : 'text-zinc-400 hover:text-zinc-600'
               }`}
             >
-              <Icon className={`h-5 w-5 ${activeTab === tab ? 'text-orange-500 scale-110' : ''} transition-transform`} />
-              <span className="text-[10px] mt-1 tracking-tight">{label}</span>
-              {activeTab === tab && (
-                <span className="absolute -bottom-1.5 h-1 w-6 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
-              )}
+              <Icon className={`h-[18px] w-[18px] ${activeTab === tab ? 'scale-105' : ''} transition-transform`} />
+              <span className={`text-[9px] mt-1 tracking-tight ${activeTab === tab ? 'font-extrabold' : 'font-medium'}`}>
+                {label}
+              </span>
             </button>
           ))}
         </div>
@@ -797,7 +801,7 @@ export default function CommunityTabs({
                 {isHostOrAdmin && (
                   <Link
                     href={`/c/${communitySlug}/sessions/new`}
-                    className="fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    className="fixed bottom-28 right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
                     title="Create New Session"
                   >
                     <Plus className="h-7 w-7" />

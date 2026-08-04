@@ -2,45 +2,56 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Building2, Swords } from 'lucide-react';
+import { User, UsersRound, CalendarClock } from 'lucide-react';
 
 const TABS = [
   { href: '/profile', label: 'Profile', icon: User, match: (p: string) => p.startsWith('/profile') },
   {
     href: '/communities',
     label: 'Community',
-    icon: Building2,
+    icon: UsersRound,
     // Stays highlighted while inside a specific community too, so the nav
     // keeps reinforcing "you're still in the Community space".
     match: (p: string) => p.startsWith('/communities') || p.startsWith('/c/'),
   },
-  { href: '/activities', label: 'Activities', icon: Swords, match: (p: string) => p.startsWith('/activities') },
+  { href: '/activities', label: 'Activities', icon: CalendarClock, match: (p: string) => p.startsWith('/activities') },
 ];
 
+// Fixed to the viewport (not a flex child of the scrollable shell) so it can never drift or
+// visibly shift mid-scroll on mobile browsers, regardless of viewport-height quirks in the
+// layout around it. (app)/layout.tsx reserves matching bottom clearance so page content never
+// sits underneath it.
 export default function BottomNav() {
   const pathname = usePathname();
 
   return (
     <nav
-      className="shrink-0 z-40 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-t border-zinc-800/80 backdrop-blur-xl shadow-2xl px-4 pt-2 select-none"
-      style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+      className="fixed bottom-0 left-0 right-0 z-40 px-3 pt-2 select-none"
+      style={{ paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))' }}
     >
-      <div className="max-w-2xl mx-auto flex items-center justify-around">
+      <div className="max-w-sm mx-auto flex items-center gap-1 rounded-[28px] bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800/80 backdrop-blur-xl shadow-2xl shadow-black/40 p-1.5">
         {TABS.map(({ href, label, icon: Icon, match }) => {
           const active = match(pathname);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center justify-center py-1.5 rounded-2xl transition-all cursor-pointer relative ${
-                active ? 'text-orange-500 font-extrabold' : 'text-zinc-400 hover:text-zinc-200 font-medium'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-2 rounded-3xl transition-all cursor-pointer"
             >
-              {active && (
-                <span className="absolute -top-2 h-1 w-8 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)]" />
-              )}
-              <Icon className={`h-6 w-6 ${active ? 'text-orange-500 scale-110' : ''} transition-transform`} />
-              <span className="text-[10px] mt-1 tracking-tight">{label}</span>
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+                  active ? 'bg-orange-500 shadow-lg shadow-orange-500/40 scale-105' : ''
+                }`}
+              >
+                <Icon className={`h-[18px] w-[18px] transition-colors ${active ? 'text-white' : 'text-zinc-500'}`} />
+              </span>
+              <span
+                className={`text-[10px] mt-1 tracking-tight transition-colors ${
+                  active ? 'text-orange-400 font-extrabold' : 'text-zinc-500 font-medium'
+                }`}
+              >
+                {label}
+              </span>
             </Link>
           );
         })}

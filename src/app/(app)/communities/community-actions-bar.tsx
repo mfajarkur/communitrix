@@ -44,7 +44,7 @@ export function NewCommunityFab({ usage }: { usage: CommunityUsage }) {
             setUpgradeKind('created');
           }
         }}
-        className="fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+        className="fixed bottom-28 right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
         title="New Community"
       >
         <Plus className="h-7 w-7" />
