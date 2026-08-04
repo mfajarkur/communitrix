@@ -64,7 +64,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div className="space-y-6">
       <Link
         href={`/c/${communitySlug}`}
         className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
@@ -82,7 +82,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
             {session.status === 'CANCELLED' ? 'Cancelled' : 'Ended'}
           </span>
         </div>
-        <h1 className="text-2xl font-black tracking-tight">{session.name}</h1>
+        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">{session.name}</h1>
         <div className="flex flex-wrap items-center gap-4 text-xs text-white/60 font-semibold pt-1">
           <span className="inline-flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5" /> {standings.length} players
@@ -102,7 +102,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
       <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-100 flex items-center gap-2">
           <Trophy className="h-4 w-4 text-orange-500" />
-          <h2 className="text-sm font-black uppercase tracking-wide text-zinc-900">Final Leaderboard</h2>
+          <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Final Leaderboard</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -169,10 +169,10 @@ export default function SessionResults({ communitySlug, session, rounds, matches
 
       {/* Round-by-round match history */}
       <div className="space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wide text-zinc-900">Match History</h2>
+        <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Match History</h2>
         {rounds.map((round) => (
           <div key={round.id} className="space-y-3">
-            <h3 className="text-xs font-black uppercase tracking-wider text-zinc-500 px-1">Round {round.round_number}</h3>
+            <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight px-1">Round {round.round_number}</h3>
             <div className="space-y-4">
               {matches
                 .filter((m) => m.round_number === round.round_number)

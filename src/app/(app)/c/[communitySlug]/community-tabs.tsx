@@ -426,7 +426,7 @@ export default function CommunityTabs({
                             {activeSportName}
                           </span>
                         </div>
-                        <h3 className="text-xl font-black tracking-tight text-zinc-900 mt-1">
+                        <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight mt-1">
                           Wall of Fame {activeSportName}
                         </h3>
                         <p className="text-xs text-zinc-500 font-medium leading-relaxed">
@@ -597,7 +597,7 @@ export default function CommunityTabs({
               <div className="space-y-6 relative pb-16">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+                    <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">
                       Game Sessions
                     </h2>
                     <p className="text-xs text-zinc-500 mt-0.5">
@@ -608,7 +608,7 @@ export default function CommunityTabs({
                   {isHostOrAdmin && (
                     <Link
                       href={`/c/${communitySlug}/sessions/new`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
                     >
                       <Plus className="h-4 w-4" />
                       New Session
@@ -686,7 +686,7 @@ export default function CommunityTabs({
                     {isHostOrAdmin && (
                       <Link
                         href={`/c/${communitySlug}/sessions/new`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-white text-xs font-bold"
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
                       >
                         <Plus className="h-4 w-4" />
                         Create First Session
@@ -704,7 +704,7 @@ export default function CommunityTabs({
                   <div className="space-y-6">
                     {groupedSessionsByDate.map((group) => (
                       <div key={group.dateLabel} className="space-y-3">
-                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-800 tracking-tight pt-1">
+                        <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight pt-1">
                           {group.dateLabel}
                         </h3>
 
@@ -797,7 +797,7 @@ export default function CommunityTabs({
                 {isHostOrAdmin && (
                   <Link
                     href={`/c/${communitySlug}/sessions/new`}
-                    className="fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    className="fixed bottom-24 right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
                     title="Create New Session"
                   >
                     <Plus className="h-7 w-7" />
@@ -834,6 +834,11 @@ export default function CommunityTabs({
             return (
               <div className="grid gap-6 grid-cols-1">
                 <div className="space-y-6">
+                  <div>
+                    <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Members</h2>
+                    <p className="text-xs text-zinc-500 mt-0.5">Admins, hosts, and players in this community.</p>
+                  </div>
+
                   {/* Search Bar */}
                   <div className="relative">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
@@ -859,7 +864,7 @@ export default function CommunityTabs({
                   {/* ADMINS SECTION */}
                   <div className="space-y-3.5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Admins</h3>
+                      <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight">Admins</h3>
                       {isAdmin && (
                         <button
                           onClick={() => {
@@ -918,7 +923,7 @@ export default function CommunityTabs({
                   {(hostsList.length > 0 || isAdmin) && (
                     <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-100/60">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">Hosts</h3>
+                        <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight">Hosts</h3>
                         {isAdmin && (
                           <button
                             onClick={() => {
@@ -970,7 +975,7 @@ export default function CommunityTabs({
 
                   {/* MEMBERS SECTION */}
                   <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-100/60">
-                    <h3 className="text-sm font-extrabold text-zinc-900 tracking-tight">
+                    <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight">
                       Members · {generalMembers.length}
                     </h3>
 
@@ -1087,7 +1092,7 @@ export default function CommunityTabs({
                   {isHostOrAdmin ? (
                     <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm space-y-4">
                       <div>
-                        <h3 className="font-bold text-[#111827]">Add Guest Player</h3>
+                        <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight">Add Guest Player</h3>
                         <p className="text-xs text-zinc-500 mt-1">
                           Register quick guest profiles for sessions without account verification emails.
                         </p>
@@ -1133,7 +1138,7 @@ export default function CommunityTabs({
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">
+                    <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">
                       {selectedLeaderboardSport} ELO Standings
                     </h2>
                     <p className="text-xs text-zinc-500 mt-0.5">
@@ -1343,7 +1348,7 @@ export default function CommunityTabs({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl space-y-5 border border-zinc-100 text-[#111827]">
             <div className="flex items-center justify-between">
-              <h3 className="font-black text-base uppercase tracking-widest text-orange-500 font-sans">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 font-sans">
                 Claim Guest Profile
               </h3>
               <button
@@ -1402,7 +1407,7 @@ export default function CommunityTabs({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-zinc-100 text-[#111827]">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h3 className="font-extrabold text-base text-zinc-900 flex items-center gap-2">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 flex items-center gap-2">
                 <Shield className="h-5 w-5 text-orange-500" />
                 Manage {targetRoleToAdd === 'ADMIN' ? 'Admins' : 'Hosts'}
               </h3>

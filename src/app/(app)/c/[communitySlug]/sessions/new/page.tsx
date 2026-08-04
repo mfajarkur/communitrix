@@ -56,7 +56,7 @@ export default async function NewSessionPage({
   })).sort((a, b) => a.fullName.localeCompare(b.fullName));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 px-4 py-8">
+    <div className="space-y-6">
       <Link
         href={`/c/${communitySlug}?tab=sessions`}
         className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
@@ -65,8 +65,8 @@ export default async function NewSessionPage({
       </Link>
 
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-white">New Match Session</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
+        <h1 className="text-lg font-extrabold tracking-tight text-zinc-900">New Match Session</h1>
+        <p className="text-xs text-zinc-500 mt-0.5">
           Configure matchmaking parameters, select player attendance, and open the courts.
         </p>
       </div>

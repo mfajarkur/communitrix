@@ -572,7 +572,7 @@ export default function LiveBoardWrapper({
                       {isHostOrAdmin && isCompleted && (
                         <Link
                           href={`/c/${communitySlug}/sessions/${sessionId}/m/${m.id}`}
-                          className="block text-center text-xs font-bold py-2 mt-2 bg-zinc-100 hover:bg-zinc-200/80 rounded-xl border border-zinc-200/60 transition-all text-zinc-700"
+                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 mt-2 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition-all cursor-pointer shadow-sm w-full"
                         >
                           Edit Score
                         </Link>
@@ -607,8 +607,8 @@ export default function LiveBoardWrapper({
       ) : (
         <div className="space-y-6 animate-in fade-in duration-200">
           <div>
-            <h2 className="text-xl font-black uppercase tracking-tight text-[#111827]">Leaderboard Standings</h2>
-            <p className="text-xs text-zinc-500 mt-1">
+            <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Leaderboard Standings</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
               <span className="font-bold text-zinc-700 uppercase">{sessionMeta.format}</span>
               <span className="mx-1.5 text-zinc-300">•</span>
               <span className="font-bold text-orange-600 uppercase">{sessionMeta.sport}</span>

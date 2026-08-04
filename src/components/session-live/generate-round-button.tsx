@@ -30,7 +30,7 @@ export default function GenerateRoundButton({
         type="button"
         onClick={onGenerate}
         disabled={disabled || isGenerating || isEndingSession}
-        className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
+        className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer disabled:opacity-50"
       >
         {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         <span>+ Generate Next Round (Round {nextRoundNumber})</span>

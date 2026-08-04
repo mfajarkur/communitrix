@@ -496,7 +496,7 @@ export default function ScorerForm({
           <div className="w-full max-w-sm p-6 rounded-2xl bg-white border border-zinc-100 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="text-center space-y-1">
               <CheckCircle2 className="h-8 w-8 text-orange-500 mx-auto" />
-              <h3 className="text-lg font-extrabold tracking-tight text-[#111827] mt-2">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 mt-2">
                 {initialStatus === 'COMPLETED' ? 'Confirm Amendment' : 'Confirm Match Score'}
               </h3>
               <p className="text-xs text-zinc-500">
@@ -565,7 +565,7 @@ export default function ScorerForm({
           <div className="w-full max-w-sm p-6 rounded-2xl bg-white border border-zinc-100 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="text-center space-y-1">
               <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
-              <h3 className="text-lg font-extrabold tracking-tight text-[#111827] mt-2">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 mt-2">
                 Void Match
               </h3>
               <p className="text-xs text-zinc-500">

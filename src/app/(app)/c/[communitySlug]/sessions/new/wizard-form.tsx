@@ -1708,7 +1708,7 @@ export default function WizardForm({
       {step === 1 && (
         <div className="space-y-6 animate-in fade-in duration-200">
           <div>
-            <h2 className="text-xl font-black uppercase tracking-tight text-[#111827]">
+            <h2 className="text-lg font-black uppercase tracking-tight text-zinc-900">
               1. Choose Game Type
             </h2>
             <p className="text-xs text-zinc-500 mt-1">
@@ -1852,7 +1852,7 @@ export default function WizardForm({
             <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">
               Selected Format
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-wide">
+            <h2 className="text-lg font-black uppercase tracking-tight text-white">
               {config.gameType.replace('_', ' ')} ({config.sport})
             </h2>
           </div>
@@ -2099,7 +2099,7 @@ export default function WizardForm({
           {/* Confirm Button */}
           <button
             type="submit"
-            className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all cursor-pointer shadow-md"
+            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
           >
             Confirm Configuration
           </button>
@@ -2113,7 +2113,7 @@ export default function WizardForm({
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Summary Header Card */}
           <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-5 sm:p-6 text-white shadow-md text-center space-y-2">
-            <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white">
+            <h2 className="text-lg font-black uppercase tracking-tight text-white">
               {config.activityName}
             </h2>
             <div className="flex items-center justify-center gap-6 sm:gap-8 text-xs text-zinc-400 font-medium pt-1">
@@ -2236,7 +2236,7 @@ export default function WizardForm({
                   <button
                     type="submit"
                     disabled={!player1NameInput.trim() || !player2NameInput.trim() || isAddingGuest}
-                    className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                    className="w-full py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     {isAddingGuest ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -2279,7 +2279,7 @@ export default function WizardForm({
                   <button
                     type="submit"
                     disabled={!manualInputName.trim() || isAddingGuest}
-                    className="px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
+                    className="px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     {isAddingGuest ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -2299,7 +2299,7 @@ export default function WizardForm({
                   type="button"
                   onClick={handleAddYourself}
                   disabled={registeredPlayers.some((p) => p.id === currentProfile.id)}
-                  className="w-full py-3 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
+                  className="w-full py-2.5 rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
                 >
                   + ADD YOURSELF ({currentProfile.name})
                 </button>
@@ -2308,7 +2308,7 @@ export default function WizardForm({
 
             {/* Player List Counter Header */}
             <div className="pt-4 border-t border-zinc-100 text-center space-y-1">
-              <h3 className="text-lg sm:text-xl font-black uppercase tracking-wide text-[#111827]">
+              <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight">
                 {config.gameType.includes('TEAM_')
                   ? `Team Roster (${isGuestDemoMode ? registeredPlayers.length : fixedTeams.length})`
                   : `Player Roster (${registeredPlayers.length})`}
@@ -2443,7 +2443,7 @@ export default function WizardForm({
             type="button"
             onClick={handleProceedFromRegistration}
             disabled={registeredPlayers.length < 4 || isSubmitting}
-            className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all disabled:opacity-40 cursor-pointer shadow-md flex items-center justify-center gap-2"
+            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-sm"
           >
             {isSubmitting ? (
               <>
@@ -2622,10 +2622,10 @@ export default function WizardForm({
         <div className="space-y-6 animate-in fade-in duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-black uppercase tracking-tight text-[#111827]">
+              <h2 className="text-lg font-black uppercase tracking-tight text-zinc-900">
                 Leaderboard Standings
               </h2>
-              <p className="text-xs text-zinc-500 mt-1">
+              <p className="text-xs text-zinc-500 mt-0.5">
                 Ranked by <span className="font-bold text-orange-600 uppercase">{config.leaderboardRankedBy}</span>
                 <span className="mx-1.5 text-zinc-300">•</span>
                 <span className="font-bold text-zinc-700 uppercase">{config.gameType.replace('_', ' ')}</span>
@@ -2654,7 +2654,7 @@ export default function WizardForm({
           <button
             onClick={handleStartRealSession}
             disabled={isSubmitting}
-            className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-black uppercase tracking-widest transition-all disabled:opacity-50 cursor-pointer shadow-md flex items-center justify-center gap-2"
+            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-sm"
           >
             {isSubmitting ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -2675,7 +2675,7 @@ export default function WizardForm({
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-xl font-black uppercase tracking-wide">
+              <h3 className="text-sm font-black uppercase tracking-widest text-white">
                 End Match Session? ⚡
               </h3>
               <p className="text-xs text-zinc-400 font-light leading-relaxed">

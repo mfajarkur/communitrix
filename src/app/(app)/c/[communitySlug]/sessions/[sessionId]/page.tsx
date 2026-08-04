@@ -191,7 +191,7 @@ export default async function SessionLiveBoardPage({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div className="space-y-6">
       <Link
         href={`/c/${communitySlug}`}
         className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
@@ -201,7 +201,7 @@ export default async function SessionLiveBoardPage({
 
       {/* Clean, simple header matching Quick Match */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111827]">
+        <h1 className="text-lg font-extrabold tracking-tight text-zinc-900">
           {session.session_name}
         </h1>
       </div>

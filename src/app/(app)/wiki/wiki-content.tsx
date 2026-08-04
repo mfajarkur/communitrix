@@ -108,8 +108,8 @@ export default function WikiContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-extrabold tracking-tight text-[#111827]">Communitrix Wiki & Rulebook</h2>
-        <p className="text-xs text-zinc-500 mt-1">
+        <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Communitrix Wiki & Rulebook</h2>
+        <p className="text-xs text-zinc-500 mt-0.5">
           Panduan resmi kalkulasi ELO, Effective Team Rating, format turnamen, dan aturan main.
         </p>
       </div>
@@ -146,7 +146,7 @@ export default function WikiContent() {
             return (
               <div key={sec.id} className="p-6 rounded-3xl border border-zinc-100 bg-zinc-50 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-zinc-200/60 pb-3">
-                  <h3 className="text-base font-extrabold text-zinc-900 flex items-center gap-2">
+                  <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight flex items-center gap-2">
                     <IconComp className="h-5 w-5 text-orange-500 shrink-0" />
                     <span>{sec.title}</span>
                   </h3>

@@ -105,7 +105,7 @@ export default async function MatchScorerPage({
           <span className="text-xs font-bold uppercase tracking-widest text-orange-500">
             Court {match.court_number} • Round {match.round_number}
           </span>
-          <h1 className="text-2xl font-extrabold tracking-tight mt-1 text-[#111827]">Courtside Scorer</h1>
+          <h1 className="text-lg font-extrabold tracking-tight mt-1 text-zinc-900">Courtside Scorer</h1>
           <p className="text-xs text-zinc-500 mt-0.5">
             Tap the scores to adjust, view the Elo preview below, and send the score.
           </p>

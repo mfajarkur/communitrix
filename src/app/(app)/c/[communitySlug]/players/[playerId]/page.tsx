@@ -7,7 +7,7 @@ import {
   Activity,
   Trophy,
   Award,
-  ChevronLeft,
+  ArrowLeft,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
@@ -144,14 +144,14 @@ export default async function PlayerProfilePage({
   const displayName = getDisplayName(player);
 
   return (
-    <div className="space-y-8 bg-white">
+    <div className="space-y-6 bg-white">
       {/* Back button */}
       <div>
         <Link
           href={`/c/${communitySlug}?tab=leaderboard`}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-550 hover:text-orange-500 transition-colors bg-zinc-50 border border-zinc-200/60 rounded-lg px-3 py-1.5 shadow-sm"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-orange-600 transition-colors"
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back to Standings
         </Link>
       </div>
@@ -173,7 +173,7 @@ export default async function PlayerProfilePage({
           <div className="min-w-0">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <h2 className="text-xl font-extrabold text-[#111827] leading-tight truncate">
+                <h2 className="text-lg font-extrabold tracking-tight text-zinc-900 leading-tight truncate">
                   {displayName}
                 </h2>
                 {memberRecord && (
@@ -302,7 +302,7 @@ export default async function PlayerProfilePage({
         return (
           <div className="p-6 rounded-2xl border border-zinc-100 bg-zinc-55/70 shadow-sm space-y-4">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+              <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
                 <TrendingUp className="h-4.5 w-4.5 text-orange-500" />
                 ELO Rating Trend History
               </h3>

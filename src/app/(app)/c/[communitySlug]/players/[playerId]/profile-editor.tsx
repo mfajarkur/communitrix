@@ -104,7 +104,7 @@ export default function ProfileEditor({ fullName, avatarUrl }: ProfileEditorProp
             </button>
 
             <div className="text-center space-y-1">
-              <h3 className="text-lg font-extrabold tracking-tight text-[#111827]">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900">
                 Edit Profile
               </h3>
               <p className="text-xs text-zinc-500">
