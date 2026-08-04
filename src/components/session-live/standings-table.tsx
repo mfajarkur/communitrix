@@ -95,7 +95,7 @@ export default function StandingsTable({ standings }: Props) {
                 </td>
                 <td className="py-2 text-right pr-1 font-black text-sm text-[#111827] whitespace-nowrap">
                   {s.totalPoints}
-                  {s.byePoints && s.byePoints > 0 && (
+                  {(s.byePoints ?? 0) > 0 && (
                     <span
                       title={
                         s.byeIsPlaceholder

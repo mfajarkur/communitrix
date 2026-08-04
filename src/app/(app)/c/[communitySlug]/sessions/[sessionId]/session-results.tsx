@@ -142,18 +142,18 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                   </td>
                   <td className="py-2 text-right pr-4 font-black text-zinc-900 whitespace-nowrap">
                     {s.totalPoints}
-                    {s.byePoints && s.byePoints > 0 && (
+                    {(s.byePoints ?? 0) > 0 && (
                       <span
                         title={
                           s.byeIsPlaceholder
-                            ? 'Temporary placeholder score (no actual matches played yet)'
-                            : 'Dynamic bye points based on player average'
+                            ? `Includes ${s.byePoints} placeholder point${s.byePoints === 1 ? '' : 's'} for a round not yet played (no match history yet)`
+                            : `Includes ${s.byePoints} bye point${s.byePoints === 1 ? '' : 's'} (estimated from this player's average, for a round they sat out)`
                         }
-                        className={`text-[10px] font-bold ml-1 ${
-                          s.byeIsPlaceholder ? 'text-zinc-400' : 'text-amber-600'
+                        className={`text-[9px] font-bold ml-1 px-1 py-0.5 rounded uppercase tracking-wide ${
+                          s.byeIsPlaceholder ? 'text-zinc-500 bg-zinc-100' : 'text-amber-700 bg-amber-100'
                         }`}
                       >
-                        ({s.byeIsPlaceholder ? '~' : '+'}{s.byePoints})
+                        {s.byePoints} bye
                       </span>
                     )}
                   </td>
