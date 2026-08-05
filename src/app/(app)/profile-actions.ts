@@ -14,6 +14,7 @@ export type ProfileWithCommunities = {
     display_name: string | null;
     username: string | null;
     avatar_url: string | null;
+    banner_url: string | null;
     gender: 'MALE' | 'FEMALE' | null;
   };
   communities: Array<{
@@ -99,6 +100,43 @@ export async function uploadAvatar(formData: FormData): Promise<{ url: string } 
 
   const { data } = adminClient.storage.from('avatars').getPublicUrl(fileName);
   return { url: data.publicUrl };
+}
+
+// Mirrors uploadAvatar, but self-only (no admin gate needed — unlike communities' equivalent)
+// and does the upload + DB write in one call rather than the two-step upload-then-RPC chain
+// uploadAvatar/updateProfile use, matching the simpler pattern uploadCommunityAvatarAction
+// already established. Writes profiles.banner_url directly — profiles_update_self RLS already
+// allows any column on the caller's own row, no RPC needed.
+export async function uploadProfileBanner(formData: FormData): Promise<{ url: string } | { error: string }> {
+  const supabase = await createClient();
+  const file = formData.get('banner') as File;
+  if (!file || file.size === 0) return { error: 'No file provided' };
+  if (file.size > 5 * 1024 * 1024) return { error: 'File size must be under 5MB' };
+
+  const profile = await requireProfile();
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const detectedType = detectImageType(bytes);
+  if (!detectedType) return { error: 'File must be a valid JPEG, PNG, or WEBP image' };
+
+  const contentType = detectedType === 'jpeg' ? 'image/jpeg' : `image/${detectedType}`;
+  const fileName = `banner-${profile.id}-${Date.now()}.${detectedType === 'jpeg' ? 'jpg' : detectedType}`;
+
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
+    .from('avatars')
+    .upload(fileName, bytes, { upsert: true, contentType });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const { data: publicUrlData } = adminClient.storage.from('avatars').getPublicUrl(fileName);
+  const bannerUrl = publicUrlData.publicUrl;
+
+  const { error: updateError } = await supabase.from('profiles').update({ banner_url: bannerUrl }).eq('id', profile.id);
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath('/', 'layout');
+  return { url: bannerUrl };
 }
 
 export async function updatePasswordAction(password: string): Promise<{ success: boolean; error?: string }> {

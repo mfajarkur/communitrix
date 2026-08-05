@@ -26,6 +26,7 @@ import AvatarCropModal from '../avatar-crop-modal';
 import EloTrendChart from './elo-trend-chart';
 import SettingsSheet from './settings-sheet';
 import HelpSheet from './help-sheet';
+import BannerEditor from './banner-editor';
 
 type Props = {
   profileData: ProfileWithCommunities;
@@ -55,6 +56,7 @@ function Badge({ icon: Icon, label, className }: { icon: typeof Crown; label: st
 
 export default function ProfileView({ profileData, communityStats, eloTrendsByCommunity }: Props) {
   const [avatarUrl, setAvatarUrl] = useState(profileData.profile.avatar_url ?? '');
+  const [bannerUrl, setBannerUrl] = useState(profileData.profile.banner_url ?? '');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -117,7 +119,16 @@ export default function ProfileView({ profileData, communityStats, eloTrendsByCo
   return (
     <div className="space-y-5">
       <div className="rounded-3xl overflow-hidden border border-orange-200/60 shadow-sm bg-zinc-950">
-        <div className="h-20 sm:h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600" />
+        <div className="relative h-20 sm:h-24">
+          {bannerUrl ? (
+            <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600" />
+          )}
+          <div className="absolute top-2 right-2 z-10">
+            <BannerEditor onSaved={setBannerUrl} />
+          </div>
+        </div>
 
         <div className="px-5 sm:px-6 pb-6 -mt-12 sm:-mt-14 flex flex-col items-center text-center">
           <div className="w-full flex justify-end gap-1.5 -mt-1 mb-1">

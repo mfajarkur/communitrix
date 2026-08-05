@@ -440,14 +440,21 @@ export default function CommunityTabs({
                     </div>
 
                     {/* Stacked photo cards, alternating sides — each player's own profile
-                        picture full-bleed behind a gradient fade, category label (light,
-                        uppercase, tracked-out) / name (black weight, large) / stat (bold,
-                        orange) stacked on the dark side. */}
+                        BANNER photo (falling back to their circular avatar if they haven't set
+                        one) full-bleed behind a real CSS mask-image fade, so the photo itself
+                        dissolves into the card's dark background instead of a separate
+                        translucent rectangle sitting on top of it ("seperti ditempel"). Category
+                        label (light, uppercase, tracked-out) / name (black weight, large) / stat
+                        (bold, orange) stacked on the dark side. */}
                     <div className="space-y-3">
                       {starItems.map((item, idx) => {
                         const profile = item.player?.profile;
                         if (!profile) return null;
                         const photoLeft = idx % 2 === 0;
+                        const photoUrl = profile.banner_url || getAvatarUrl(profile);
+                        const maskImage = photoLeft
+                          ? 'linear-gradient(to right, black 0%, black 55%, transparent 92%)'
+                          : 'linear-gradient(to left, black 0%, black 55%, transparent 92%)';
 
                         return (
                           <div
@@ -455,16 +462,10 @@ export default function CommunityTabs({
                             className="relative overflow-hidden rounded-2xl h-32 sm:h-36 bg-zinc-950 shadow-sm"
                           >
                             <img
-                              src={getAvatarUrl(profile)}
+                              src={photoUrl}
                               alt={getDisplayName(profile)}
-                              className={`absolute inset-y-0 ${photoLeft ? 'left-0' : 'right-0'} w-[46%] h-full object-cover`}
-                            />
-                            <div
-                              className={
-                                photoLeft
-                                  ? 'absolute inset-0 bg-gradient-to-r from-transparent from-30% via-zinc-950/75 via-60% to-zinc-950'
-                                  : 'absolute inset-0 bg-gradient-to-l from-transparent from-30% via-zinc-950/75 via-60% to-zinc-950'
-                              }
+                              style={{ maskImage, WebkitMaskImage: maskImage }}
+                              className={`absolute inset-y-0 ${photoLeft ? 'left-0' : 'right-0'} w-[58%] h-full object-cover brightness-90`}
                             />
                             <div
                               className={`absolute inset-y-0 ${photoLeft ? 'right-0' : 'left-0'} w-[58%] flex flex-col justify-center p-4 ${

@@ -18,6 +18,7 @@ interface MemberProfileRow {
   gender: string | null;
   is_guest: boolean;
   avatar_url: string | null;
+  banner_url: string | null;
 }
 interface ActiveMemberRow {
   role: string;
@@ -110,7 +111,8 @@ export default async function CommunityDashboardPage({
           username,
           gender,
           is_guest,
-          avatar_url
+          avatar_url,
+          banner_url
         )
       `)
       .eq('community_id', community.id)
@@ -140,7 +142,8 @@ export default async function CommunityDashboardPage({
           username,
           gender,
           is_guest,
-          avatar_url
+          avatar_url,
+          banner_url
         )
       `)
       .eq('community_id', community.id)
