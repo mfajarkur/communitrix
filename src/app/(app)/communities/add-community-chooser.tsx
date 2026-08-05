@@ -11,9 +11,9 @@ import UpgradeModal from './upgrade-modal';
 type Mode = 'choose' | 'find';
 
 // The single shared "add a community" surface — rendered full-width, chrome-free by
-// /communities/page.tsx (the fallback landing page), and wrapped in dialog chrome by
-// add-community-modal.tsx (the "+" popup inside a community). Two modes: pick Create or Find,
-// then Find becomes an inline search — no separate route for the search step.
+// /communities/page.tsx (the fallback landing page), and embedded in
+// community-switcher-modal.tsx (the "Switch" popup inside a community). Two modes: pick Create
+// or Find, then Find becomes an inline search — no separate route for the search step.
 export default function AddCommunityChooser({ usage }: { usage: CommunityUsage }) {
   const [mode, setMode] = useState<Mode>('choose');
   const [query, setQuery] = useState('');

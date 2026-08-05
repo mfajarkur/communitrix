@@ -4,10 +4,10 @@ import UsageChips from './usage-chips';
 import AddCommunityChooser from './add-community-chooser';
 
 // The single membership-list-with-badges view is gone — this is now the same Create/Find
-// surface the "+" button opens as a popup (community-nav.tsx's AddCommunityModal), just
+// surface the "Switch Community" button opens as a popup (community-switcher-modal.tsx), just
 // full-width with no dialog chrome. Reached via direct URL, or by /c's zero-communities
-// fallback; switching between communities you're already in happens via the switcher chips
-// inside community-nav.tsx, not by browsing a list here.
+// fallback; switching between communities you're already in happens via that same popup's
+// quick-switch grid, not by browsing a list here.
 export default async function CommunitiesPage() {
   await requireProfile();
   const usage = await getMyCommunityUsage();
