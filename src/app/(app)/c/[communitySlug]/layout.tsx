@@ -2,6 +2,10 @@ import { requireProfile } from '@/server/guards';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { ActiveTabProvider } from './active-tab-context';
+import CommunityNav from './community-nav';
+
+export const dynamic = 'force-dynamic';
 
 export default async function CommunityLayout({
   children,
@@ -59,5 +63,36 @@ export default async function CommunityLayout({
     );
   }
 
-  return <div className="bg-white">{children}</div>;
+  // Own communities list, for the switcher chips in CommunityNav — a separate, lighter query
+  // from page.tsx's own community fetch, since this layout stays mounted across community
+  // switches while page.tsx (and its heavier queries) reload underneath.
+  const { data: myMemberships } = await supabase
+    .from('community_members')
+    .select('community:communities(id, name, slug, logo_url)')
+    .eq('profile_id', profile.id)
+    .eq('is_active', true)
+    .order('joined_at', { ascending: false });
+
+  const myCommunities = (myMemberships || [])
+    .map((m: any) => (Array.isArray(m.community) ? m.community[0] : m.community))
+    .filter((c: any): c is { id: string; name: string; slug: string; logo_url: string | null } => !!c);
+
+  const role: 'ADMIN' | 'HOST' | 'MEMBER' =
+    member.role === 'ADMIN' ? 'ADMIN' : member.role === 'HOST' ? 'HOST' : 'MEMBER';
+  const bannerImage = community.logo_url || '/community_banner_placeholder.png';
+
+  return (
+    <div className="bg-white">
+      <ActiveTabProvider>
+        <CommunityNav
+          communitySlug={communitySlug}
+          communityName={community.name}
+          bannerImage={bannerImage}
+          role={role}
+          myCommunities={myCommunities}
+        />
+        {children}
+      </ActiveTabProvider>
+    </div>
+  );
 }

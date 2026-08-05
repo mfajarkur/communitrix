@@ -42,6 +42,7 @@ import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/mem
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
 import { requestSkillLevelAction, resolveSkillLevelRequestAction, type SkillLevel } from '@/server/actions/skill.actions';
 import { LAST_COMMUNITY_COOKIE } from '@/lib/constants';
+import { useActiveTab } from './active-tab-context';
 
 const SKILL_LEVEL_LABEL: Record<string, string> = {
   BEGINNER: 'Beginner',
@@ -59,7 +60,6 @@ interface CommunityTabsProps {
   community?: any;
   communityId: string;
   communitySlug: string;
-  communityName: string;
   defaultSport: string;
   isAdmin: boolean;
   isHostOrAdmin?: boolean;
@@ -76,14 +76,12 @@ interface CommunityTabsProps {
   callerProfile?: any;
   pendingJoinRequests?: any[];
   pendingSkillRequests?: any[];
-  myCommunities?: { id: string; name: string; slug: string; logo_url: string | null }[];
 }
 
 export default function CommunityTabs({
   community,
   communityId,
   communitySlug,
-  communityName,
   defaultSport,
   isAdmin,
   isHostOrAdmin = false,
@@ -100,9 +98,8 @@ export default function CommunityTabs({
   callerProfile,
   pendingJoinRequests = [],
   pendingSkillRequests = [],
-  myCommunities = [],
 }: CommunityTabsProps) {
-  const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'members' | 'leaderboard'>('home');
+  const { activeTab, setActiveTab: handleTabChange } = useActiveTab();
   const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
     defaultSport === 'TENNIS' ? 'TENNIS' : 'PADEL'
   );
@@ -131,32 +128,12 @@ export default function CommunityTabs({
 
   const [copiedCode, setCopiedCode] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get('tab');
-      if (tab && ['home', 'sessions', 'members', 'leaderboard', 'dashboard'].includes(tab)) {
-        if (tab === 'dashboard') setActiveTab('home');
-        else setActiveTab(tab as any);
-      }
-    }
-  }, []);
-
   // Remembers "the community I was just looking at" so the bottom nav's Community tab can jump
   // straight back into it next time, instead of always landing on the /communities list first
   // (see src/app/(app)/c/page.tsx, the redirect route that reads this cookie).
   useEffect(() => {
     document.cookie = `${LAST_COMMUNITY_COOKIE}=${communitySlug}; path=/; max-age=${60 * 60 * 24 * 180}; SameSite=Lax`;
   }, [communitySlug]);
-
-  const handleTabChange = (tab: 'home' | 'sessions' | 'members' | 'leaderboard') => {
-    setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('tab', tab);
-      window.history.replaceState(null, '', url.pathname + url.search);
-    }
-  };
 
   const handleCopyCode = () => {
     if (community?.code && typeof navigator !== 'undefined') {
@@ -337,97 +314,6 @@ export default function CommunityTabs({
   const bannerImage = community?.logo_url || '/community_banner_placeholder.png';
   return (
     <>
-      {/* Community switcher (parent) + section tabs (child), merged into one shape and pinned
-          together — replaces two separate floating controls (a switcher card and a standalone
-          sticky tab strip) that used to sit one after another with a gap between them. The
-          switcher row is the "parent" (which community am I in, and a one-tap way to jump to
-          another one — /communities itself stays reachable via the trailing "+" chip); the tab
-          row directly beneath it, separated only by a thin divider, is the "child" (which
-          section of THIS community). Both scroll together as one sticky unit so the full
-          "where am I" hierarchy — main nav above, this below — never scrolls out of view. */}
-      <div className="sticky top-0 z-30 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 pt-2 pb-3 bg-white/95 backdrop-blur-sm border-b border-zinc-100 mb-4">
-        <div className="rounded-2xl bg-gradient-to-r from-orange-50 via-orange-50/40 to-white border border-orange-100/70 shadow-sm overflow-hidden">
-          {/* Parent: community switcher */}
-          <div className="overflow-x-auto scrollbar-thin p-2">
-            <div className="flex items-center gap-2 w-max">
-              <div className="shrink-0 flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl bg-white shadow-sm border border-orange-200">
-                <img
-                  src={bannerImage}
-                  alt=""
-                  className="h-9 w-9 rounded-lg object-cover shrink-0 ring-2 ring-orange-100"
-                />
-                <div className="min-w-0">
-                  <p className="text-sm font-black tracking-tight text-zinc-900 truncate max-w-[140px]">{communityName}</p>
-                  <span className={`inline-flex items-center gap-1 text-[8px] font-black tracking-wider uppercase ${
-                    role === 'ADMIN' ? 'text-orange-600' : role === 'HOST' ? 'text-orange-500' : 'text-zinc-500'
-                  }`}>
-                    {role === 'ADMIN' ? <Shield className="h-2 w-2" /> : <User className="h-2 w-2" />}
-                    {role}
-                  </span>
-                </div>
-              </div>
-
-              {myCommunities
-                .filter((c) => c.slug !== communitySlug)
-                .map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/c/${c.slug}`}
-                    title={c.name}
-                    className="shrink-0"
-                  >
-                    {c.logo_url ? (
-                      <img
-                        src={c.logo_url}
-                        alt={c.name}
-                        className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm hover:border-orange-300 hover:scale-105 transition-all"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-[11px] uppercase border-2 border-white shadow-sm hover:border-orange-300 hover:scale-105 transition-all">
-                        {c.name.slice(0, 2)}
-                      </div>
-                    )}
-                  </Link>
-                ))}
-
-              <Link
-                href="/communities"
-                title="All Communities"
-                className="shrink-0 h-9 w-9 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 hover:text-orange-600 border-2 border-white shadow-sm transition-all"
-              >
-                <Plus className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Child: section tabs — same shape, directly beneath, only a thin divider between
-              them so the pair reads as one parent/child unit instead of two controls. */}
-          <div className="border-t border-orange-100/70 p-2">
-            <div className="flex items-center gap-1 bg-white/70 rounded-xl p-1">
-              {([
-                { tab: 'home' as const, label: 'Home', Icon: Home },
-                { tab: 'sessions' as const, label: 'Sessions', Icon: Calendar },
-                { tab: 'members' as const, label: 'Members', Icon: Users },
-                { tab: 'leaderboard' as const, label: 'Rank', Icon: Trophy },
-              ]).map(({ tab, label, Icon }) => (
-                <button
-                  key={tab}
-                  onClick={() => handleTabChange(tab)}
-                  className={`flex-1 flex flex-col items-center justify-center py-2 rounded-lg transition-all cursor-pointer ${
-                    activeTab === tab ? 'bg-white text-orange-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
-                  }`}
-                >
-                  <Icon className={`h-[18px] w-[18px] ${activeTab === tab ? 'scale-105' : ''} transition-transform`} />
-                  <span className={`text-[9px] mt-1 tracking-tight ${activeTab === tab ? 'font-extrabold' : 'font-medium'}`}>
-                    {label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="space-y-6 bg-white min-h-[500px]">
 
         {/* TAB CONTENTS */}

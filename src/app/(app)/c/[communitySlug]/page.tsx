@@ -87,7 +87,6 @@ export default async function CommunityDashboardPage({
   const emptyRows = Promise.resolve({ data: [] as any[] });
 
   const [
-    { data: myMemberships },
     { data: members },
     { data: allRankings },
     { data: cpData },
@@ -99,15 +98,6 @@ export default async function CommunityDashboardPage({
     { data: skillRequestsData },
     { data: myClaimsData },
   ] = await Promise.all([
-    // Every community the caller is an active member of — feeds the header's community switcher
-    // (community-tabs.tsx), which needs the caller's full roster of communities, not just this one.
-    supabase
-      .from('community_members')
-      .select('community:communities(id, name, slug, logo_url)')
-      .eq('profile_id', profile.id)
-      .eq('is_active', true)
-      .order('joined_at', { ascending: false }),
-
     // Active members list
     adminClient
       .from('community_members')
@@ -259,10 +249,6 @@ export default async function CommunityDashboardPage({
       .eq('status', 'PENDING'),
   ]);
 
-  const myCommunities = (myMemberships || [])
-    .map((m: any) => (Array.isArray(m.community) ? m.community[0] : m.community))
-    .filter((c: any): c is { id: string; name: string; slug: string; logo_url: string | null } => !!c);
-
   const activeMembers = (members || []) as unknown as ActiveMemberRow[];
   const rawRankings = (allRankings || []) as unknown as RankingRow[];
 
@@ -331,7 +317,6 @@ export default async function CommunityDashboardPage({
         community={community}
         communityId={community.id}
         communitySlug={communitySlug}
-        communityName={community.name}
         defaultSport={community.default_sport}
         isAdmin={isAdmin}
         isHostOrAdmin={isHostOrAdmin}
@@ -348,7 +333,6 @@ export default async function CommunityDashboardPage({
         callerProfile={profile}
         pendingJoinRequests={pendingJoinRequests}
         pendingSkillRequests={pendingSkillRequests}
-        myCommunities={myCommunities}
       />
     </div>
   );
