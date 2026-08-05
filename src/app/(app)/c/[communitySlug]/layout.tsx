@@ -73,18 +73,11 @@ export default async function CommunityLayout({
 
   const role: 'ADMIN' | 'HOST' | 'MEMBER' =
     member.role === 'ADMIN' ? 'ADMIN' : member.role === 'HOST' ? 'HOST' : 'MEMBER';
-  const bannerImage = community.logo_url || '/community_banner_placeholder.png';
 
   return (
     <div className="bg-white">
       <ActiveTabProvider>
-        <CommunityNav
-          communitySlug={communitySlug}
-          communityName={community.name}
-          bannerImage={bannerImage}
-          role={role}
-          myCommunities={myCommunities}
-        />
+        <CommunityNav communitySlug={communitySlug} role={role} myCommunities={myCommunities} />
         {children}
       </ActiveTabProvider>
     </div>
