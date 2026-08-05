@@ -52,7 +52,8 @@ export default async function CommunityDashboardPage({
   const supabase = await createClient();
   const adminClient = createAdminClient();
 
-  // 1. Fetch community details
+  // 1. Fetch community details — everything below needs community.id, so this has to resolve
+  // first.
   const { data: community } = await supabase
     .from('communities')
     .select('*')
@@ -63,7 +64,8 @@ export default async function CommunityDashboardPage({
     notFound();
   }
 
-  // 2. Fetch current caller member role
+  // 2. Fetch current caller member role — also has to resolve first, since whether the caller is
+  // an admin decides which of the queries below even run.
   const { data: callerMember } = await supabase
     .from('community_members')
     .select('*')
@@ -77,73 +79,191 @@ export default async function CommunityDashboardPage({
   }
 
   const isAdmin = callerMember.role === 'ADMIN';
+  const isHostOrAdmin = callerMember.role === 'ADMIN' || callerMember.role === 'HOST';
 
-  // Every community the caller is an active member of — feeds the header's community switcher
-  // (community-tabs.tsx), which needs the caller's full roster of communities, not just this one.
-  const { data: myMemberships } = await supabase
-    .from('community_members')
-    .select('community:communities(id, name, slug, logo_url)')
-    .eq('profile_id', profile.id)
-    .eq('is_active', true)
-    .order('joined_at', { ascending: false });
+  // 3. Everything else only depends on community.id/profile.id/isAdmin, all already known —
+  // fired as one batch instead of one-after-another (was 11 sequential round-trips here alone,
+  // each paying full network latency; this page's slow load was that, not "a lot of content").
+  const emptyRows = Promise.resolve({ data: [] as any[] });
+
+  const [
+    { data: myMemberships },
+    { data: members },
+    { data: allRankings },
+    { data: cpData },
+    { data: sessions },
+    { count: activeSessionsCount },
+    { count: totalMatchesCount },
+    { data: claimsData },
+    { data: joinRequestsData },
+    { data: skillRequestsData },
+    { data: myClaimsData },
+  ] = await Promise.all([
+    // Every community the caller is an active member of — feeds the header's community switcher
+    // (community-tabs.tsx), which needs the caller's full roster of communities, not just this one.
+    supabase
+      .from('community_members')
+      .select('community:communities(id, name, slug, logo_url)')
+      .eq('profile_id', profile.id)
+      .eq('is_active', true)
+      .order('joined_at', { ascending: false }),
+
+    // Active members list
+    adminClient
+      .from('community_members')
+      .select(`
+        role,
+        is_active,
+        joined_at,
+        skill_level,
+        profile:profiles (
+          id,
+          full_name,
+          display_name,
+          username,
+          gender,
+          is_guest,
+          avatar_url
+        )
+      `)
+      .eq('community_id', community.id)
+      .eq('is_active', true)
+      .order('joined_at', { ascending: true }),
+
+    // All player rankings for this community (PADEL and TENNIS)
+    adminClient
+      .from('player_rankings')
+      .select(`
+        id,
+        profile_id,
+        sport,
+        elo_rating,
+        elo_peak,
+        total_matches,
+        total_wins,
+        total_losses,
+        total_draws,
+        points_for,
+        points_against,
+        is_provisional,
+        profile:profiles (
+          id,
+          full_name,
+          display_name,
+          username,
+          gender,
+          is_guest,
+          avatar_url
+        )
+      `)
+      .eq('community_id', community.id)
+      .order('elo_rating', { ascending: false }),
+
+    // Total CP per player for this community
+    supabase.from('community_points').select('profile_id, points_awarded').eq('community_id', community.id),
+
+    // Sessions history
+    supabase
+      .from('sessions')
+      .select('*, session_players(id, status)')
+      .eq('community_id', community.id)
+      .order('created_at', { ascending: false }),
+
+    // Stats: count active sessions
+    supabase
+      .from('sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('community_id', community.id)
+      .eq('status', 'ACTIVE'),
+
+    // Stats: count total completed matches in the community
+    supabase
+      .from('matches')
+      .select('*', { count: 'exact', head: true })
+      .eq('community_id', community.id)
+      .eq('status', 'COMPLETED'),
+
+    // Pending claim requests (Admin only)
+    isAdmin
+      ? supabase
+          .from('guest_claim_requests')
+          .select(`
+            id,
+            created_at,
+            guest_profile:profiles!guest_claim_requests_guest_profile_id_fkey (
+              id,
+              full_name,
+              display_name
+            ),
+            requester_profile:profiles!guest_claim_requests_requester_profile_id_fkey (
+              id,
+              full_name,
+              display_name,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('community_id', community.id)
+          .eq('status', 'PENDING')
+          .order('created_at', { ascending: false })
+      : emptyRows,
+
+    // Pending join requests (Admin only)
+    isAdmin
+      ? supabase
+          .from('community_join_requests')
+          .select(`
+            id,
+            created_at,
+            profile:profiles!community_join_requests_profile_id_fkey (
+              id,
+              full_name,
+              display_name,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('community_id', community.id)
+          .eq('status', 'PENDING')
+          .order('created_at', { ascending: false })
+      : emptyRows,
+
+    // Pending skill level requests (Admin only)
+    isAdmin
+      ? supabase
+          .from('skill_level_requests')
+          .select(`
+            id,
+            created_at,
+            current_level,
+            requested_level,
+            profile:profiles!skill_level_requests_profile_id_fkey (
+              id,
+              full_name,
+              display_name,
+              username,
+              avatar_url
+            )
+          `)
+          .eq('community_id', community.id)
+          .eq('status', 'PENDING')
+          .order('created_at', { ascending: false })
+      : emptyRows,
+
+    // Current user's own pending claim requests in this community
+    supabase
+      .from('guest_claim_requests')
+      .select('guest_profile_id, status')
+      .eq('community_id', community.id)
+      .eq('requester_profile_id', profile.id)
+      .eq('status', 'PENDING'),
+  ]);
 
   const myCommunities = (myMemberships || [])
     .map((m: any) => (Array.isArray(m.community) ? m.community[0] : m.community))
     .filter((c: any): c is { id: string; name: string; slug: string; logo_url: string | null } => !!c);
 
-  // 3. Fetch active members list
-  const { data: members } = await adminClient
-    .from('community_members')
-    .select(`
-      role,
-      is_active,
-      joined_at,
-      skill_level,
-      profile:profiles (
-        id,
-        full_name,
-        display_name,
-        username,
-        gender,
-        is_guest,
-        avatar_url
-      )
-    `)
-    .eq('community_id', community.id)
-    .eq('is_active', true)
-    .order('joined_at', { ascending: true });
-
   const activeMembers = (members || []) as unknown as ActiveMemberRow[];
-
-  // 4. Fetch all player rankings for this community (PADEL and TENNIS)
-  const { data: allRankings } = await adminClient
-    .from('player_rankings')
-    .select(`
-      id,
-      profile_id,
-      sport,
-      elo_rating,
-      elo_peak,
-      total_matches,
-      total_wins,
-      total_losses,
-      total_draws,
-      points_for,
-      points_against,
-      is_provisional,
-      profile:profiles (
-        id,
-        full_name,
-        display_name,
-        username,
-        gender,
-        is_guest,
-        avatar_url
-      )
-    `)
-    .eq('community_id', community.id)
-    .order('elo_rating', { ascending: false });
-
   const rawRankings = (allRankings || []) as unknown as RankingRow[];
 
   const buildLeaderboard = (sportName: string) => {
@@ -193,123 +313,16 @@ export default async function CommunityDashboardPage({
     TENNIS: tennisLeaderboard,
   };
 
-  // Fetch total CP per player for this community
-  const { data: cpData } = await supabase
-    .from('community_points')
-    .select('profile_id, points_awarded')
-    .eq('community_id', community.id);
-
   const cpMap: Record<string, number> = {};
-  (cpData || []).forEach((row) => {
+  (cpData || []).forEach((row: any) => {
     cpMap[row.profile_id] = (cpMap[row.profile_id] || 0) + Number(row.points_awarded || 0);
   });
 
-  // 5. Fetch sessions history
-  const { data: sessions } = await supabase
-    .from('sessions')
-    .select('*, session_players(id, status)')
-    .eq('community_id', community.id)
-    .order('created_at', { ascending: false });
-
   const activeSessions = sessions || [];
-
-  // 6. Fetch stats: count active sessions
-  const { count: activeSessionsCount } = await supabase
-    .from('sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('community_id', community.id)
-    .eq('status', 'ACTIVE');
-
-  // 7. Fetch stats: count total completed matches in the community
-  const { count: totalMatchesCount } = await supabase
-    .from('matches')
-    .select('*', { count: 'exact', head: true })
-    .eq('community_id', community.id)
-    .eq('status', 'COMPLETED');
-
-  // 8. Fetch pending claim requests for this community (Admin Only)
-  const isHostOrAdmin = callerMember.role === 'ADMIN' || callerMember.role === 'HOST';
-  let pendingClaims: any[] = [];
-  if (isAdmin) {
-    const { data: claimsData } = await supabase
-      .from('guest_claim_requests')
-      .select(`
-        id,
-        created_at,
-        guest_profile:profiles!guest_claim_requests_guest_profile_id_fkey (
-          id,
-          full_name,
-          display_name
-        ),
-        requester_profile:profiles!guest_claim_requests_requester_profile_id_fkey (
-          id,
-          full_name,
-          display_name,
-          username,
-          avatar_url
-        )
-      `)
-      .eq('community_id', community.id)
-      .eq('status', 'PENDING')
-      .order('created_at', { ascending: false });
-
-    pendingClaims = claimsData || [];
-  }
-
-  // 8b. Fetch pending join requests and skill level requests for this community (Admin Only)
-  let pendingJoinRequests: any[] = [];
-  let pendingSkillRequests: any[] = [];
-  if (isAdmin) {
-    const { data: joinRequestsData } = await supabase
-      .from('community_join_requests')
-      .select(`
-        id,
-        created_at,
-        profile:profiles!community_join_requests_profile_id_fkey (
-          id,
-          full_name,
-          display_name,
-          username,
-          avatar_url
-        )
-      `)
-      .eq('community_id', community.id)
-      .eq('status', 'PENDING')
-      .order('created_at', { ascending: false });
-
-    pendingJoinRequests = joinRequestsData || [];
-
-    const { data: skillRequestsData } = await supabase
-      .from('skill_level_requests')
-      .select(`
-        id,
-        created_at,
-        current_level,
-        requested_level,
-        profile:profiles!skill_level_requests_profile_id_fkey (
-          id,
-          full_name,
-          display_name,
-          username,
-          avatar_url
-        )
-      `)
-      .eq('community_id', community.id)
-      .eq('status', 'PENDING')
-      .order('created_at', { ascending: false });
-
-    pendingSkillRequests = skillRequestsData || [];
-  }
-
-  // 9. Fetch current user's claim requests in this community
-  const { data: myClaimsData } = await supabase
-    .from('guest_claim_requests')
-    .select('guest_profile_id, status')
-    .eq('community_id', community.id)
-    .eq('requester_profile_id', profile.id)
-    .eq('status', 'PENDING');
-
-  const myClaimedGuestIds = (myClaimsData || []).map((c) => c.guest_profile_id);
+  const pendingClaims = claimsData || [];
+  const pendingJoinRequests = joinRequestsData || [];
+  const pendingSkillRequests = skillRequestsData || [];
+  const myClaimedGuestIds = (myClaimsData || []).map((c: any) => c.guest_profile_id);
 
   return (
     <div className="space-y-6">
