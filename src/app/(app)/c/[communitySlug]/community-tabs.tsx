@@ -328,25 +328,31 @@ export default function CommunityTabs({
                 const starItems = [
                   {
                     key: 'topElo',
-                    badge: 'Elo',
+                    badge: 'Highest Elo',
                     player: activeSportStars.topElo,
                     value: `${Math.round(Number(activeSportStars.topElo?.elo_rating || 1000))}`,
                   },
                   {
                     key: 'mostWins',
-                    badge: 'Wins',
+                    badge: 'Most Wins',
                     player: activeSportStars.mostWins,
                     value: `${activeSportStars.mostWins?.total_wins || 0}`,
                   },
                   {
                     key: 'topCp',
-                    badge: 'CP',
+                    badge: 'Top CP',
                     player: activeSportStars.topCp,
                     value: `${Math.round(cpMap[activeSportStars.topCp?.profile?.id] || 0)}`,
                   },
                   {
+                    key: 'mostMatches',
+                    badge: 'Most Sessions',
+                    player: activeSportStars.mostMatches,
+                    value: `${activeSportStars.mostMatches?.total_matches || 0}`,
+                  },
+                  {
                     key: 'mostImproved',
-                    badge: 'Growth',
+                    badge: 'Most Improved',
                     player: activeSportStars.mostImproved,
                     value: `+${Math.max(
                       1,
@@ -394,41 +400,40 @@ export default function CommunityTabs({
                       )}
                     </div>
 
-                    {/* Vertical panels, edge-to-edge (no gap between them, matching the
-                        reference) — each player's own profile BANNER photo (falling back to
-                        their avatar) fading via a real CSS mask-image into the panel's dark
-                        background at the bottom, name rotated along the left edge (spine-style,
-                        via writing-mode rather than a transform hack so it doesn't need manual
-                        width/offset math), and the actual achievement number — not a rank — big
-                        and orange at the bottom, with a short category label above it. */}
+                    {/* Vertical panels, edge-to-edge — each player's own profile BANNER photo (falling back to
+                        their avatar) fading via a CSS mask-image & gradient into the panel's dark background at the bottom,
+                        first name rotated bold & big along the left edge, and achievement number at the bottom with title. */}
                     <div className="flex overflow-hidden rounded-2xl shadow-sm">
                       {starItems.map((item) => {
                         const profile = item.player?.profile;
                         if (!profile) return null;
                         const photoUrl = profile.banner_url || getAvatarUrl(profile);
+                        const fullDisplayName = getDisplayName(profile) || '';
+                        const firstName = fullDisplayName.trim().split(/\s+/)[0] || fullDisplayName;
 
                         return (
-                          <div key={item.key} className="relative flex-1 min-w-0 h-64 sm:h-72 bg-zinc-950">
+                          <div key={item.key} className="relative flex-1 min-w-0 h-80 sm:h-96 bg-zinc-950">
                             <img
                               src={photoUrl}
-                              alt={getDisplayName(profile)}
+                              alt={fullDisplayName}
                               style={{
-                                maskImage: 'linear-gradient(to bottom, black 0%, black 42%, transparent 82%)',
-                                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 42%, transparent 82%)',
+                                maskImage: 'linear-gradient(to bottom, black 0%, black 25%, transparent 92%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 25%, transparent 92%)',
                               }}
                               className="absolute inset-0 w-full h-full object-cover brightness-90"
                             />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent pointer-events-none" />
                             <p
-                              className="absolute left-1 top-2 bottom-16 text-[8px] font-bold uppercase tracking-wider text-white/85 whitespace-nowrap"
+                              className="absolute left-1.5 top-3 text-xs sm:text-sm font-black uppercase tracking-wider text-white/90 whitespace-nowrap drop-shadow-sm"
                               style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
                             >
-                              {getDisplayName(profile)}
+                              {firstName}
                             </p>
-                            <div className="absolute inset-x-0 bottom-2 px-1 text-center">
-                              <p className="text-[7px] sm:text-[8px] font-bold uppercase tracking-widest text-white/60">
+                            <div className="absolute inset-x-0 bottom-2.5 px-0.5 text-center z-10">
+                              <p className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight text-white/70 line-clamp-1">
                                 {item.badge}
                               </p>
-                              <p className="text-xl sm:text-2xl font-black text-orange-500 leading-none mt-0.5">
+                              <p className="text-xl sm:text-2xl font-black text-orange-500 leading-none mt-1">
                                 {item.value}
                               </p>
                             </div>
