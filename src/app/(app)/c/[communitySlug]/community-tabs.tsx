@@ -32,7 +32,6 @@ import {
   UserPlus,
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
-import BannerImageEditor from './banner-image-editor';
 import EditCommunityInfoButton from './edit-community-info-button';
 import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
@@ -264,7 +263,6 @@ export default function CommunityTabs({
               <div className="relative overflow-hidden rounded-2xl bg-zinc-950 p-4 text-white shadow-sm border border-zinc-100 space-y-3">
                 {isAdmin && (
                   <div className="flex items-center justify-between gap-2">
-                    <BannerImageEditor communityId={communityId} communitySlug={communitySlug} />
                     <EditCommunityInfoButton
                       communityId={communityId}
                       communitySlug={communitySlug}

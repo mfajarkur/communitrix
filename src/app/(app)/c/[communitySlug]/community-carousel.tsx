@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Users, Shield, User, Share2, Check } from 'lucide-react';
 import CommunitySwitcherModal from './community-switcher-modal';
 import AvatarImageEditor from './avatar-image-editor';
+import BannerImageEditor from './banner-image-editor';
 
 type CommunityItem = {
   id: string;
@@ -66,9 +67,10 @@ export default function CommunityCarousel({
       />
       <div className="absolute inset-0 bg-gradient-to-t from-orange-600/95 via-orange-600/25 to-transparent" />
 
-      {/* Same semi-transparent overlay-button pattern as the Home tab's banner
-          (BannerImageEditor/EditCommunityInfoButton). */}
+      {/* Top-right button row: banner edit (admin-only), share (everyone), switch (everyone) —
+          same semi-transparent overlay-button pattern throughout. */}
       <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+        {role === 'ADMIN' && <BannerImageEditor communityId={current.id} communitySlug={current.slug} />}
         <button
           type="button"
           onClick={handleShare}

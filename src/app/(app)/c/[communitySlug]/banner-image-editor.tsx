@@ -10,6 +10,10 @@ type Props = {
   communitySlug: string;
 };
 
+// A normal-flow icon button (not self-positioned) so it can sit directly in the header card's
+// top-right button row (community-carousel.tsx) alongside Share/Switch, matching where the
+// admin-only avatar edit control also lives — moved here from the Home tab's "About" card, where
+// it was easy to miss since it wasn't co-located with the image it actually edits.
 export default function BannerImageEditor({ communityId, communitySlug }: Props) {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -54,36 +58,30 @@ export default function BannerImageEditor({ communityId, communitySlug }: Props)
   };
 
   return (
-    <>
-      <div className="absolute top-4 right-4 z-20">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-white bg-black/40 hover:bg-orange-500 transition-all px-3 py-1.5 rounded-xl backdrop-blur-md shadow-md border border-white/20 cursor-pointer group"
-          title="Change Community Badge/Banner Image"
-        >
-          {isUploading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Camera className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
-          )}
-          <span>{isUploading ? 'Uploading...' : 'Edit Badge'}</span>
-        </button>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isUploading}
+        title="Change Community Banner Image"
+        className="h-8 w-8 rounded-lg bg-black/30 hover:bg-black/50 text-white/95 backdrop-blur-sm transition-all cursor-pointer flex items-center justify-center"
+      >
+        {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+      </button>
 
-        {error && (
-          <div className="absolute right-0 top-10 bg-red-600 text-white text-[10px] p-2 rounded-lg shadow-lg whitespace-nowrap">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="absolute right-0 top-full mt-1 bg-red-600 text-white text-[10px] p-2 rounded-lg shadow-lg whitespace-nowrap z-20">
+          {error}
+        </div>
+      )}
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={handleFileSelect}
-        />
-      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
 
       {cropImageSrc && (
         <AvatarCropModal
@@ -100,6 +98,6 @@ export default function BannerImageEditor({ communityId, communitySlug }: Props)
           onCropComplete={handleCropSave}
         />
       )}
-    </>
+    </div>
   );
 }
