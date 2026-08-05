@@ -411,7 +411,7 @@ export default function CommunityTabs({
               key={tab}
               onClick={() => handleTabChange(tab)}
               className={`flex-1 flex flex-col items-center justify-center py-2 rounded-xl transition-all cursor-pointer ${
-                activeTab === tab ? 'bg-white text-orange-500 shadow-sm' : 'text-zinc-400 hover:text-zinc-600'
+                activeTab === tab ? 'bg-white text-orange-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-800'
               }`}
             >
               <Icon className={`h-[18px] w-[18px] ${activeTab === tab ? 'scale-105' : ''} transition-transform`} />
