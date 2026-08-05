@@ -400,40 +400,59 @@ export default function CommunityTabs({
                       )}
                     </div>
 
-                    {/* Vertical panels, edge-to-edge — each player's own profile BANNER photo (falling back to
-                        their avatar) fading via a CSS mask-image & gradient into the panel's dark background at the bottom,
-                        first name rotated bold & big along the left edge, and achievement number at the bottom with title. */}
+                    {/* Vertical panels, edge-to-edge — alternating black and orange gradient themes,
+                        enlarged 300% vertical name text, and reduced dark overlay for clearer photos. */}
                     <div className="flex overflow-hidden rounded-2xl shadow-sm">
-                      {starItems.map((item) => {
+                      {starItems.map((item, idx) => {
                         const profile = item.player?.profile;
                         if (!profile) return null;
                         const photoUrl = profile.banner_url || getAvatarUrl(profile);
                         const fullDisplayName = getDisplayName(profile) || '';
                         const firstName = fullDisplayName.trim().split(/\s+/)[0] || fullDisplayName;
+                        const isOrangeTheme = idx % 2 !== 0;
 
                         return (
-                          <div key={item.key} className="relative flex-1 min-w-0 h-80 sm:h-96 bg-zinc-950">
+                          <div
+                            key={item.key}
+                            className={`relative flex-1 min-w-0 h-80 sm:h-96 ${
+                              isOrangeTheme ? 'bg-orange-950' : 'bg-zinc-950'
+                            }`}
+                          >
                             <img
                               src={photoUrl}
                               alt={fullDisplayName}
                               style={{
-                                maskImage: 'linear-gradient(to bottom, black 0%, black 25%, transparent 92%)',
-                                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 25%, transparent 92%)',
+                                maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)',
                               }}
-                              className="absolute inset-0 w-full h-full object-cover brightness-90"
+                              className="absolute inset-0 w-full h-full object-cover brightness-95"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent pointer-events-none" />
+                            <div
+                              className={`absolute inset-0 bg-gradient-to-t pointer-events-none ${
+                                isOrangeTheme
+                                  ? 'from-orange-600 via-orange-600/40 to-transparent'
+                                  : 'from-zinc-950 via-zinc-950/40 to-transparent'
+                              }`}
+                            />
                             <p
-                              className="absolute left-1.5 top-3 text-xs sm:text-sm font-black uppercase tracking-wider text-white/90 whitespace-nowrap drop-shadow-sm"
+                              className="absolute left-2 top-3 text-2xl sm:text-3xl font-black uppercase tracking-wider text-white whitespace-nowrap drop-shadow-md"
                               style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
                             >
                               {firstName}
                             </p>
                             <div className="absolute inset-x-0 bottom-2.5 px-0.5 text-center z-10">
-                              <p className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight text-white/70 line-clamp-1">
+                              <p
+                                className={`text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight line-clamp-1 ${
+                                  isOrangeTheme ? 'text-orange-100' : 'text-white/75'
+                                }`}
+                              >
                                 {item.badge}
                               </p>
-                              <p className="text-xl sm:text-2xl font-black text-orange-500 leading-none mt-1">
+                              <p
+                                className={`text-xl sm:text-2xl font-black leading-none mt-1 ${
+                                  isOrangeTheme ? 'text-white' : 'text-orange-500'
+                                }`}
+                              >
                                 {item.value}
                               </p>
                             </div>
