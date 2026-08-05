@@ -44,12 +44,6 @@ const ROLE_BADGE: Record<string, { label: string; icon: typeof Crown; className:
   MEMBER: { label: 'Member', icon: Users, className: 'bg-zinc-100 text-zinc-600 border border-zinc-200' },
 };
 
-const SKILL_BADGE: Record<string, { label: string; icon: typeof Star; className: string }> = {
-  BEGINNER: { label: 'Beginner', icon: Star, className: 'bg-zinc-100 text-zinc-600 border border-zinc-200' },
-  INTERMEDIATE: { label: 'Intermediate', icon: Star, className: 'bg-gradient-to-r from-blue-400 to-blue-600 text-white shadow-sm shadow-blue-500/30' },
-  ADVANCED: { label: 'Advanced', icon: Flame, className: 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-sm shadow-orange-500/30' },
-};
-
 function Badge({ icon: Icon, label, className }: { icon: typeof Crown; label: string; className: string }) {
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide ${className}`}>
@@ -225,7 +219,6 @@ function CommunityStatsCard({
   eloTrends: Partial<Record<Sport, EloTrend>>;
 }) {
   const roleBadge = ROLE_BADGE[stats.role] ?? ROLE_BADGE.MEMBER;
-  const skillBadge = stats.skillLevel ? SKILL_BADGE[stats.skillLevel] : null;
   const sportsPlayed = SPORT_ORDER.filter((sport) => stats.bySport[sport] !== undefined);
   const initials = stats.communityName.slice(0, 2).toUpperCase();
 
@@ -250,7 +243,6 @@ function CommunityStatsCard({
           <p className="font-black text-sm text-zinc-900 truncate group-hover:underline">{stats.communityName}</p>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <Badge icon={roleBadge.icon} label={roleBadge.label} className={roleBadge.className} />
-            {skillBadge && <Badge icon={skillBadge.icon} label={skillBadge.label} className={skillBadge.className} />}
           </div>
         </div>
         {stats.cpTotal > 0 && (

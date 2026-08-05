@@ -23,7 +23,6 @@ interface ActiveMemberRow {
   role: string;
   is_active: boolean;
   joined_at: string;
-  skill_level: string | null;
   profile: MemberProfileRow | null;
 }
 interface RankingRow {
@@ -95,7 +94,6 @@ export default async function CommunityDashboardPage({
     { count: totalMatchesCount },
     { data: claimsData },
     { data: joinRequestsData },
-    { data: skillRequestsData },
     { data: myClaimsData },
   ] = await Promise.all([
     // Active members list
@@ -105,7 +103,6 @@ export default async function CommunityDashboardPage({
         role,
         is_active,
         joined_at,
-        skill_level,
         profile:profiles (
           id,
           full_name,
@@ -218,28 +215,6 @@ export default async function CommunityDashboardPage({
           .order('created_at', { ascending: false })
       : emptyRows,
 
-    // Pending skill level requests (Admin only)
-    isAdmin
-      ? supabase
-          .from('skill_level_requests')
-          .select(`
-            id,
-            created_at,
-            current_level,
-            requested_level,
-            profile:profiles!skill_level_requests_profile_id_fkey (
-              id,
-              full_name,
-              display_name,
-              username,
-              avatar_url
-            )
-          `)
-          .eq('community_id', community.id)
-          .eq('status', 'PENDING')
-          .order('created_at', { ascending: false })
-      : emptyRows,
-
     // Current user's own pending claim requests in this community
     supabase
       .from('guest_claim_requests')
@@ -278,7 +253,6 @@ export default async function CommunityDashboardPage({
           points_for: 0,
           points_against: 0,
           is_provisional: true,
-          skill_rating_official: 1.0,
           profile: m.profile,
         };
       })
@@ -307,7 +281,6 @@ export default async function CommunityDashboardPage({
   const activeSessions = sessions || [];
   const pendingClaims = claimsData || [];
   const pendingJoinRequests = joinRequestsData || [];
-  const pendingSkillRequests = skillRequestsData || [];
   const myClaimedGuestIds = (myClaimsData || []).map((c: any) => c.guest_profile_id);
 
   return (
@@ -332,7 +305,6 @@ export default async function CommunityDashboardPage({
         myClaimedGuestIds={myClaimedGuestIds}
         callerProfile={profile}
         pendingJoinRequests={pendingJoinRequests}
-        pendingSkillRequests={pendingSkillRequests}
       />
     </div>
   );

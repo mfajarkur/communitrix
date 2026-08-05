@@ -17,7 +17,6 @@ export type CommunityStats = {
   communitySlug: string;
   logoUrl: string | null;
   role: string;
-  skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | null;
   cpTotal: number;
   bySport: Partial<Record<Sport, PerSportStats>>;
 };
@@ -36,7 +35,6 @@ export async function getMyStatsByCommunity(): Promise<CommunityStats[]> {
     .select(`
       community_id,
       role,
-      skill_level,
       community:communities!community_members_community_id_fkey ( id, name, slug, logo_url )
     `)
     .eq('profile_id', profile.id)
@@ -92,7 +90,6 @@ export async function getMyStatsByCommunity(): Promise<CommunityStats[]> {
       communitySlug: community?.slug || '',
       logoUrl: community?.logo_url ?? null,
       role: m.role,
-      skillLevel: m.skill_level ?? null,
       cpTotal: Math.round(cpByCommunity[m.community_id] || 0),
       bySport,
     };

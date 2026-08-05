@@ -18,10 +18,6 @@ const wikiSections = [
         subtitle: 'Margin of Victory (MoV) & K-Factor',
         text: 'Kemenangan dengan margin skor lebih besar memberi bonus pengali ELO secara linear — dari ×1.0 (menang tipis) hingga ×1.5 (menang telak, saat margin skor mencapai skor target sesi). K-Factor bernilai 48 untuk Pemain Baru (Provisional < 10 pertandingan) agar rating cepat menyesuaikan, dan 24 untuk Pemain Mapan (Settled ≥ 10 pertandingan).',
       },
-      {
-        subtitle: 'Skill Rating (Estimasi Otomatis, Bukan Nilai Admin)',
-        text: 'Skill Rating yang tampil di leaderboard bukan nilai yang dinilai manual oleh Admin — ini murni angka estimasi yang dihitung otomatis dari ELO Rating pemain saat ini, sekadar untuk memberi gambaran cepat level pemain pada skala 1.00–7.00. Angka ini otomatis naik-turun mengikuti pergerakan ELO, dan saat ini belum ada mekanisme peninjauan otomatis (review flag) yang berjalan di sistem.',
-      },
     ],
   },
   {

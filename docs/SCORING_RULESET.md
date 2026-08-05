@@ -95,7 +95,7 @@ The community management system enforces a strict 3-tier permission model:
 
 ---
 
-## 5. Elo & Skill Rating Adjustments
+## 5. Elo Adjustments
 
 Formula version 2 (`carry_rule_enabled = true` in `rating_formula_versions`) is the currently-active version — every match created since is scored with 5.1 and 5.1a below. Matches created before formula version 2 shipped keep scoring under the raw-average, flat-split formula forever (even on replay after a void/amend), per `matches.formula_version`.
 
@@ -109,10 +109,13 @@ $$\text{skew} = \min\left(\frac{|\text{Elo}_{\text{high}} - \text{Elo}_{\text{lo
 $$\text{lowerShare} = \begin{cases} 0.5 + 0.1 \times \text{skew} & \text{team won} \\ 1 - (0.5 + 0.15 \times \text{skew}) & \text{team lost or drew} \end{cases}$$
 The lower-rated partner receives `teamDelta × lowerShare`; the higher-rated partner receives the remainder (`teamDelta - lowerDelta`, not independently rounded, so the pair always sums exactly to `teamDelta` and the zero-sum invariant across all 4 players holds regardless of rounding). Singles matches are unaffected — there's no partner to split with.
 
-### 5.2 Skill Rating — WON'T BUILD (display-only estimate ships instead)
-The admin-judgment Skill Rating system described in `communitrix-elo-adjustment-brief.md` Patch 6 (an admin-assigned $1.00$–$7.00$ value, plus `review_flagged`/`review_flagged_at` drift and carry-overperformance review triggers) was never built, and — as of this decision — never will be. Confirmed directly against the live database that none of it exists (`player_rankings` has no `review_flagged`, `review_flagged_at`, or `skill_rating_official` column). This is a deliberate product decision, not a backlog item; see the brief's own top-of-file correction and section 7.
+### 5.2 Skill attribute — removed entirely (migration `0039`)
+Two separate things previously named "skill" both existed and both are gone as of `0039_remove_skill_level.sql`, per explicit product decision (no skill attribute on players at all):
 
-What ships instead, permanently: the "Skill Rating" shown on community leaderboards (`community-tabs.tsx`) is a **client-side derived display value**, computed on the fly from the player's current `elo_rating` — `1.0 + max(0, (elo_rating - 800) / 250)` — with no admin input, no stored column, and no review-flagging of any kind. Treat it as a cosmetic Elo-to-1–7-scale conversion, not a separate rating system.
+- **`community_members.skill_level`** (BEGINNER/INTERMEDIATE/ADVANCED) — a stored, self-reported + admin-approved player badge, with its own `skill_level_requests` table and `request_skill_level`/`resolve_skill_level_request` RPCs. Column, table, and both RPCs are dropped.
+- **The derived "Skill Rating"** (a client-side-only $1.00$–$7.00$ number computed from `elo_rating` — `1.0 + max(0, (elo_rating - 800) / 250)` — shown as a leaderboard column/sort option) — never had a DB footprint, removed UI-side only.
+
+Neither ever factored into matchmaking, round generation, or Elo calculation — confirmed by inspection before removal. `player_rankings.skill_rating_official`/`skill_rating_set_by_admin_id`/`skill_rating_assessed_at`/`elo_at_last_assessment`/`review_flagged` (the admin-judgment Skill Rating system described in `communitrix-elo-adjustment-brief.md` Patch 6) were already dead — never applied to the live database (see §7 below) — `0039` drops them from the migration history too, with `if exists` guards, for cleanliness.
 
 ### 5.3 Session Delta Cap — removed
 An earlier draft defined `SESSION_DELTA_CAP = 60` (intended to cap a player's total Elo swing within a single session) but never enforced it anywhere. The constant has been deleted from `src/lib/elo/constants.ts` — there is no per-session delta cap, by deliberate decision, not oversight.
