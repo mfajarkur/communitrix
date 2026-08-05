@@ -108,13 +108,24 @@ export default function LiveBoardWrapper({
   sessionConfig,
   sessionMeta,
   rounds,
-  matches,
+  matches: matchesProp,
   sessionPlayers,
   standings,
 }: LiveBoardWrapperProps) {
   const router = useRouter();
   const supabase = createClient();
   const { showStatus, clearStatus } = useStatusRibbon();
+
+  // Local copy so a just-submitted score can be shown optimistically the instant the request
+  // succeeds, instead of waiting on router.refresh()'s server round-trip (a real network+re-
+  // render cost, easily ~2s) even though the button's own submitting animation already ended.
+  // Re-synced from the prop whenever fresh server data lands (router.refresh() completing, or a
+  // Realtime event from another host), which naturally reconciles/corrects the optimistic guess
+  // with the real thing (e.g. once Elo deltas are computed) — see submitScore below.
+  const [matches, setMatches] = useState<Match[]>(matchesProp);
+  useEffect(() => {
+    setMatches(matchesProp);
+  }, [matchesProp]);
 
   const [viewMode, setViewMode] = useState<'MATCHES' | 'LEADERBOARD'>('MATCHES');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -235,6 +246,23 @@ export default function LiveBoardWrapper({
         });
         if (result.data?.alreadyScored) {
           setError('Someone else already submitted a score for this match — showing their result instead.');
+        } else {
+          // Optimistic: we already know the score that was just accepted, so show it (and mark
+          // the match complete) right now rather than waiting for refreshBoard()'s round-trip.
+          // Elo/CP deltas aren't known yet — those still arrive once the refresh below lands.
+          setMatches((prev) =>
+            prev.map((m) =>
+              m.id === matchId
+                ? {
+                    ...m,
+                    status: 'COMPLETED',
+                    team_a_score: scoreA,
+                    team_b_score: scoreB,
+                    winner_side: scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : null,
+                  }
+                : m
+            )
+          );
         }
         refreshBoard();
       } else {
