@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { Users, Shield, User } from 'lucide-react';
 import CommunitySwitcherModal from './community-switcher-modal';
+import AvatarImageEditor from './avatar-image-editor';
 
-type CommunityItem = { id: string; name: string; slug: string; logo_url: string | null };
+type CommunityItem = { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null };
 
-// The community identity card: banner, name, role — same "badge" look as before. Switching to
-// another community is one button ("Switch Community") instead of stepping through arrows one
-// at a time — it opens a grid of every other community (community-switcher-modal.tsx) to jump
+// The community identity card: banner, profile picture, name, role. Switching to another
+// community is one button ("Switch Community") instead of stepping through arrows one at a
+// time — it opens a grid of every other community (community-switcher-modal.tsx) to jump
 // straight to the target, plus the existing Create/Find flow for adding another.
 export default function CommunityCarousel({
   myCommunities,
@@ -47,14 +48,27 @@ export default function CommunityCarousel({
         Switch
       </button>
 
-      <div className="absolute inset-x-0 bottom-0 p-4">
-        <p className="text-base font-black text-white tracking-tight drop-shadow-sm truncate">{current.name}</p>
-        <span className={`inline-flex items-center gap-1 text-[9px] font-black tracking-wider uppercase mt-0.5 ${
-          role === 'ADMIN' ? 'text-orange-200' : role === 'HOST' ? 'text-orange-100' : 'text-white/80'
-        }`}>
-          {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
-          {role}
-        </span>
+      {/* Bottom-left: circular profile picture (proportional to the card, ~1/3 of its height)
+          next to the name/role — the two used to be siblings of an absolutely-positioned text
+          block alone; now a flex row so the avatar sits directly beside the name instead of
+          needing its own separate positioning. */}
+      <div className="absolute inset-x-0 bottom-0 p-4 flex items-end gap-3">
+        <AvatarImageEditor
+          communityId={current.id}
+          communitySlug={current.slug}
+          avatarUrl={current.avatar_url}
+          name={current.name}
+          isAdmin={role === 'ADMIN'}
+        />
+        <div className="min-w-0 pb-0.5">
+          <p className="text-base font-black text-white tracking-tight drop-shadow-sm truncate">{current.name}</p>
+          <span className={`inline-flex items-center gap-1 text-[9px] font-black tracking-wider uppercase mt-0.5 ${
+            role === 'ADMIN' ? 'text-orange-200' : role === 'HOST' ? 'text-orange-100' : 'text-white/80'
+          }`}>
+            {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
+            {role}
+          </span>
+        </div>
       </div>
 
       <CommunitySwitcherModal

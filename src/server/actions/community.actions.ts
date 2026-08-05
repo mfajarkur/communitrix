@@ -345,13 +345,94 @@ export async function uploadCommunityLogoAction(formData: FormData) {
   return { success: true, url: logoUrl };
 }
 
+// Mirrors uploadCommunityLogoAction exactly (same ADMIN-only check, same magic-byte file
+// validation, same 'avatars' storage bucket) but writes the separate avatar_url column — the
+// circular profile picture shown bottom-left of the header card (community-carousel.tsx),
+// distinct from logo_url (the wide header banner/"badge").
+export async function uploadCommunityAvatarAction(formData: FormData) {
+  const supabase = await createClient();
+  const communityId = formData.get('community_id') as string;
+  const communitySlug = formData.get('community_slug') as string;
+  const file = formData.get('avatar') as File;
+
+  if (!communityId || !file || file.size === 0) {
+    return { error: 'Invalid parameters or file missing' };
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    return { error: 'File size must be under 5MB' };
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: 'Authentication required' };
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) {
+    return { error: 'Profile not found' };
+  }
+
+  const { data: member } = await supabase
+    .from('community_members')
+    .select('role')
+    .eq('community_id', communityId)
+    .eq('profile_id', profile.id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (!member || member.role !== 'ADMIN') {
+    return { error: 'Only community administrators can change the profile picture.' };
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const detectedType = detectImageType(bytes);
+  if (!detectedType) {
+    return { error: 'File must be a valid JPEG, PNG, or WEBP image' };
+  }
+  const contentType = detectedType === 'jpeg' ? 'image/jpeg' : `image/${detectedType}`;
+  const fileName = `community-avatar-${communityId}-${Date.now()}.${detectedType === 'jpeg' ? 'jpg' : detectedType}`;
+
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
+    .from('avatars')
+    .upload(fileName, bytes, { upsert: true, contentType });
+
+  if (uploadError) {
+    return { error: uploadError.message };
+  }
+
+  const { data: publicUrlData } = adminClient.storage.from('avatars').getPublicUrl(fileName);
+  const avatarUrl = publicUrlData.publicUrl;
+
+  const { error: updateError } = await adminClient
+    .from('communities')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', communityId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  if (communitySlug) {
+    revalidatePath(`/c/${communitySlug}`);
+  }
+  revalidatePath('/', 'layout');
+
+  return { success: true, url: avatarUrl };
+}
+
 export async function updateCommunityInfoAction(input: {
   communityId: string;
   communitySlug: string;
   name?: string;
   description?: string;
   defaultSport?: string;
-  bannerUrl?: string;
   cpResetPolicy?: 'never' | 'seasonal';
   requireJoinApproval?: boolean;
   isPublic?: boolean;
@@ -363,7 +444,6 @@ export async function updateCommunityInfoAction(input: {
     const updates: Record<string, any> = {};
     if (input.name !== undefined) updates.name = input.name.trim();
     if (input.defaultSport !== undefined) updates.default_sport = input.defaultSport.trim();
-    if (input.bannerUrl !== undefined) updates.banner_url = input.bannerUrl.trim();
     if (input.cpResetPolicy !== undefined) updates.cp_reset_policy = input.cpResetPolicy;
     if (input.isPublic !== undefined) updates.is_public = input.isPublic;
     if (input.regenerateInviteToken) updates.invite_token = crypto.randomUUID();

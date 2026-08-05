@@ -23,7 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { reorderCommunitiesAction } from '@/server/actions/community.actions';
 
-type CommunityItem = { id: string; name: string; slug: string; logo_url: string | null };
+type CommunityItem = { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null };
 
 function SortableRow({ community, isDefault }: { community: CommunityItem; isDefault: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: community.id });
@@ -46,10 +46,10 @@ function SortableRow({ community, isDefault }: { community: CommunityItem; isDef
         <GripVertical className="h-4 w-4" />
       </button>
 
-      {community.logo_url ? (
-        <img src={community.logo_url} alt="" className="h-10 w-10 rounded-xl object-cover shrink-0" />
+      {community.avatar_url || community.logo_url ? (
+        <img src={community.avatar_url || community.logo_url || ''} alt="" className="h-10 w-10 rounded-full object-cover shrink-0" />
       ) : (
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-xs uppercase shrink-0">
+        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-xs uppercase shrink-0">
           {community.name.slice(0, 2)}
         </div>
       )}

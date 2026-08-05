@@ -8,7 +8,7 @@ import { getMyCommunityUsage, type CommunityUsage } from '@/server/actions/commu
 import AddCommunityChooser from '@/app/(app)/communities/add-community-chooser';
 import ReorderCommunitiesModal from './reorder-communities-modal';
 
-type CommunityItem = { id: string; name: string; slug: string; logo_url: string | null };
+type CommunityItem = { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null };
 
 // Replaces the old arrow-by-arrow carousel navigation: one button on the community card opens
 // this, showing every OTHER community as a tappable grid (jump straight there, no stepping
@@ -83,14 +83,14 @@ export default function CommunitySwitcherModal({
                 onClick={() => handleSwitch(c.slug)}
                 className="group flex flex-col items-center gap-1.5 cursor-pointer"
               >
-                {c.logo_url ? (
+                {c.avatar_url || c.logo_url ? (
                   <img
-                    src={c.logo_url}
+                    src={c.avatar_url || c.logo_url || ''}
                     alt=""
-                    className="h-14 w-14 rounded-2xl object-cover shadow-sm border border-zinc-100 group-hover:border-orange-300 group-hover:scale-105 transition-all"
+                    className="h-14 w-14 rounded-full object-cover shadow-sm border border-zinc-100 group-hover:border-orange-300 group-hover:scale-105 transition-all"
                   />
                 ) : (
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-sm uppercase shadow-sm group-hover:scale-105 transition-all">
+                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-sm uppercase shadow-sm group-hover:scale-105 transition-all">
                     {c.name.slice(0, 2)}
                   </div>
                 )}

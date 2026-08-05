@@ -8,7 +8,7 @@ import CommunityCarousel from './community-carousel';
 interface CommunityNavProps {
   communitySlug: string;
   role: 'ADMIN' | 'HOST' | 'MEMBER';
-  myCommunities: { id: string; name: string; slug: string; logo_url: string | null }[];
+  myCommunities: { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null }[];
 }
 
 // Rendered by layout.tsx, a sibling of {children} (page.tsx) rather than a piece of it — so it
@@ -28,8 +28,9 @@ export default function CommunityNav({ communitySlug, role, myCommunities }: Com
 
   return (
     <div className="sticky top-0 z-30 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8 pt-2 pb-3 bg-white/95 backdrop-blur-sm border-b border-zinc-100 mb-4 space-y-2">
-      {/* Parent: one community shown full-size at a time — swipe or use the arrows to move
-          through the user's drag-reordered list (community-carousel.tsx). */}
+      {/* Parent: the current community's identity card — banner, profile picture, name, role
+          (community-carousel.tsx). The "Switch" button opens a popup to jump directly to any
+          other community (community-switcher-modal.tsx). */}
       <CommunityCarousel myCommunities={myCommunities} currentSlug={communitySlug} role={role} />
 
       {/* Child: section tabs — a separate, lighter pill bar directly beneath, not sharing the
