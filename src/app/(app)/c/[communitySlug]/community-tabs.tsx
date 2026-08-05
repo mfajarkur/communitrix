@@ -323,55 +323,37 @@ export default function CommunityTabs({
 
                 if (!activeSportStars) return null;
 
+                // Just the 4 most important categories — the original 6 made each narrow
+                // vertical panel too crowded once laid out edge-to-edge (see below).
                 const starItems = [
                   {
                     key: 'topElo',
-                    badge: 'Elo Leader',
+                    badge: 'Elo',
                     player: activeSportStars.topElo,
-                    stat: `${Math.round(Number(activeSportStars.topElo?.elo_rating || 1000))} Elo`,
+                    value: `${Math.round(Number(activeSportStars.topElo?.elo_rating || 1000))}`,
                   },
                   {
                     key: 'mostWins',
-                    badge: 'Most Wins',
+                    badge: 'Wins',
                     player: activeSportStars.mostWins,
-                    stat: `${activeSportStars.mostWins?.total_wins || 0} Wins`,
+                    value: `${activeSportStars.mostWins?.total_wins || 0}`,
                   },
                   {
                     key: 'topCp',
-                    badge: 'CP Points Champion',
+                    badge: 'CP',
                     player: activeSportStars.topCp,
-                    stat: `${Math.round(cpMap[activeSportStars.topCp?.profile?.id] || 0)} CP Points`,
-                  },
-                  {
-                    key: 'topWinRate',
-                    badge: 'Win Rate Leader',
-                    player: activeSportStars.topWinRate,
-                    stat: `${
-                      activeSportStars.topWinRate?.total_matches > 0
-                        ? Math.round(
-                            (activeSportStars.topWinRate.total_wins /
-                              activeSportStars.topWinRate.total_matches) *
-                              100
-                          )
-                        : 0
-                    }% Win Rate`,
-                  },
-                  {
-                    key: 'mostMatches',
-                    badge: 'Most Matches Played',
-                    player: activeSportStars.mostMatches,
-                    stat: `${activeSportStars.mostMatches?.total_matches || 0} Matches`,
+                    value: `${Math.round(cpMap[activeSportStars.topCp?.profile?.id] || 0)}`,
                   },
                   {
                     key: 'mostImproved',
-                    badge: 'Most Improved',
+                    badge: 'Growth',
                     player: activeSportStars.mostImproved,
-                    stat: `+${Math.max(
+                    value: `+${Math.max(
                       1,
                       Math.round(
                         Number(activeSportStars.mostImproved?.elo_rating || 1000) - 1000
                       )
-                    )} Elo`,
+                    )}`,
                   },
                 ];
 
@@ -412,47 +394,42 @@ export default function CommunityTabs({
                       )}
                     </div>
 
-                    {/* Stacked photo cards, alternating sides — each player's own profile
-                        BANNER photo (falling back to their circular avatar if they haven't set
-                        one) full-bleed behind a real CSS mask-image fade, so the photo itself
-                        dissolves into the card's dark background instead of a separate
-                        translucent rectangle sitting on top of it ("seperti ditempel"). Category
-                        label (light, uppercase, tracked-out) / name (black weight, large) / stat
-                        (bold, orange) stacked on the dark side. */}
-                    <div className="space-y-3">
-                      {starItems.map((item, idx) => {
+                    {/* Vertical panels, edge-to-edge (no gap between them, matching the
+                        reference) — each player's own profile BANNER photo (falling back to
+                        their avatar) fading via a real CSS mask-image into the panel's dark
+                        background at the bottom, name rotated along the left edge (spine-style,
+                        via writing-mode rather than a transform hack so it doesn't need manual
+                        width/offset math), and the actual achievement number — not a rank — big
+                        and orange at the bottom, with a short category label above it. */}
+                    <div className="flex overflow-hidden rounded-2xl shadow-sm">
+                      {starItems.map((item) => {
                         const profile = item.player?.profile;
                         if (!profile) return null;
-                        const photoLeft = idx % 2 === 0;
                         const photoUrl = profile.banner_url || getAvatarUrl(profile);
-                        const maskImage = photoLeft
-                          ? 'linear-gradient(to right, black 0%, black 55%, transparent 92%)'
-                          : 'linear-gradient(to left, black 0%, black 55%, transparent 92%)';
 
                         return (
-                          <div
-                            key={item.key}
-                            className="relative overflow-hidden rounded-2xl h-32 sm:h-36 bg-zinc-950 shadow-sm"
-                          >
+                          <div key={item.key} className="relative flex-1 min-w-0 h-64 sm:h-72 bg-zinc-950">
                             <img
                               src={photoUrl}
                               alt={getDisplayName(profile)}
-                              style={{ maskImage, WebkitMaskImage: maskImage }}
-                              className={`absolute inset-y-0 ${photoLeft ? 'left-0' : 'right-0'} w-[58%] h-full object-cover brightness-90`}
+                              style={{
+                                maskImage: 'linear-gradient(to bottom, black 0%, black 42%, transparent 82%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 42%, transparent 82%)',
+                              }}
+                              className="absolute inset-0 w-full h-full object-cover brightness-90"
                             />
-                            <div
-                              className={`absolute inset-y-0 ${photoLeft ? 'right-0' : 'left-0'} w-[58%] flex flex-col justify-center p-4 ${
-                                photoLeft ? 'items-end text-right' : 'items-start text-left'
-                              }`}
+                            <p
+                              className="absolute left-1 top-2 bottom-16 text-[8px] font-bold uppercase tracking-wider text-white/85 whitespace-nowrap"
+                              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
                             >
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
+                              {getDisplayName(profile)}
+                            </p>
+                            <div className="absolute inset-x-0 bottom-2 px-1 text-center">
+                              <p className="text-[7px] sm:text-[8px] font-bold uppercase tracking-widest text-white/60">
                                 {item.badge}
                               </p>
-                              <h4 className="text-lg sm:text-xl font-black uppercase text-white tracking-tight leading-tight mt-1 truncate max-w-full">
-                                {getDisplayName(profile)}
-                              </h4>
-                              <p className="text-xs sm:text-sm font-extrabold uppercase text-orange-500 tracking-wide mt-1.5">
-                                {item.stat}
+                              <p className="text-xl sm:text-2xl font-black text-orange-500 leading-none mt-0.5">
+                                {item.value}
                               </p>
                             </div>
                           </div>
