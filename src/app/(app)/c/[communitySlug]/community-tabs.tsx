@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import EditCommunityInfoButton from './edit-community-info-button';
-import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profile';
+import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
@@ -343,28 +343,25 @@ export default function CommunityTabs({
                 const starItems = [
                   {
                     key: 'topElo',
-                    badge: '🏆 Peringkat 1 ELO',
+                    badge: 'Elo Leader',
                     player: activeSportStars.topElo,
-                    stat: `${Math.round(Number(activeSportStars.topElo?.elo_rating || 1000))} ELO`,
-                    subStat: `${activeSportStars.topElo?.total_wins || 0} Wins`,
+                    stat: `${Math.round(Number(activeSportStars.topElo?.elo_rating || 1000))} Elo`,
                   },
                   {
                     key: 'mostWins',
-                    badge: '🥇 Juara 1 Terbanyak',
+                    badge: 'Most Wins',
                     player: activeSportStars.mostWins,
-                    stat: `${activeSportStars.mostWins?.total_wins || 0} Kemenangan`,
-                    subStat: `${activeSportStars.mostWins?.total_matches || 0} Match Played`,
+                    stat: `${activeSportStars.mostWins?.total_wins || 0} Wins`,
                   },
                   {
                     key: 'topCp',
-                    badge: '💎 CP Tertinggi',
+                    badge: 'CP Points Champion',
                     player: activeSportStars.topCp,
                     stat: `${Math.round(cpMap[activeSportStars.topCp?.profile?.id] || 0)} CP Points`,
-                    subStat: 'Community Champion',
                   },
                   {
                     key: 'topWinRate',
-                    badge: '🔥 Win Rate Tertinggi',
+                    badge: 'Win Rate Leader',
                     player: activeSportStars.topWinRate,
                     stat: `${
                       activeSportStars.topWinRate?.total_matches > 0
@@ -375,29 +372,23 @@ export default function CommunityTabs({
                           )
                         : 0
                     }% Win Rate`,
-                    subStat: `${activeSportStars.topWinRate?.total_wins || 0}W - ${
-                      (activeSportStars.topWinRate?.total_matches || 0) -
-                      (activeSportStars.topWinRate?.total_wins || 0)
-                    }L`,
                   },
                   {
                     key: 'mostMatches',
-                    badge: '⚔️ Match Terbanyak',
+                    badge: 'Most Matches Played',
                     player: activeSportStars.mostMatches,
-                    stat: `${activeSportStars.mostMatches?.total_matches || 0} Pertandingan`,
-                    subStat: 'Most Active Competitor',
+                    stat: `${activeSportStars.mostMatches?.total_matches || 0} Matches`,
                   },
                   {
                     key: 'mostImproved',
-                    badge: '📈 Paling Improved (30 Hari)',
+                    badge: 'Most Improved',
                     player: activeSportStars.mostImproved,
                     stat: `+${Math.max(
                       1,
                       Math.round(
                         Number(activeSportStars.mostImproved?.elo_rating || 1000) - 1000
                       )
-                    )} ELO Delta`,
-                    subStat: 'Highest ELO Growth',
+                    )} Elo`,
                   },
                 ];
 
@@ -448,47 +439,46 @@ export default function CommunityTabs({
                       )}
                     </div>
 
-                    {/* 6 STAR Cards Grid - Sketch Layout */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                      {starItems.map((item) => {
+                    {/* Stacked photo cards, alternating sides — each player's own profile
+                        picture full-bleed behind a gradient fade, category label (light,
+                        uppercase, tracked-out) / name (black weight, large) / stat (bold,
+                        orange) stacked on the dark side. */}
+                    <div className="space-y-3">
+                      {starItems.map((item, idx) => {
                         const profile = item.player?.profile;
                         if (!profile) return null;
+                        const photoLeft = idx % 2 === 0;
 
                         return (
                           <div
                             key={item.key}
-                            className="overflow-hidden rounded-2xl border border-orange-200/80 bg-gradient-to-r from-orange-500/15 via-orange-500/5 to-white flex items-stretch shadow-xs hover:shadow-md hover:border-orange-400 transition-all group"
+                            className="relative overflow-hidden rounded-2xl h-32 sm:h-36 bg-zinc-950 shadow-sm"
                           >
-                            {/* Left Side: Square Photo */}
-                            <div className="w-20 sm:w-24 shrink-0 relative bg-zinc-200 border-r border-orange-200/60 flex items-center justify-center overflow-hidden">
-                              <img
-                                src={getAvatarUrl(profile)}
-                                alt={getDisplayName(profile)}
-                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </div>
-
-                            {/* Right Side: Details with Orange Gradient Shading */}
-                            <div className="p-3 flex-1 flex flex-col justify-center space-y-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md border border-orange-200/80 w-fit">
-                                  {item.badge}
-                                </span>
-                                {getPlayerGender(profile) === 'FEMALE' ? (
-                                  <span className="text-[8px] font-extrabold uppercase bg-pink-50 text-pink-600 border border-pink-200/80 px-1.5 py-0.2 rounded-full">
-                                    ♀️ Female
-                                  </span>
-                                ) : (
-                                  <span className="text-[8px] font-extrabold uppercase bg-blue-50 text-blue-600 border border-blue-200/80 px-1.5 py-0.2 rounded-full">
-                                    ♂️ Male
-                                  </span>
-                                )}
-                              </div>
-                              <h4 className="text-xs font-black text-zinc-900 truncate group-hover:text-orange-600 transition-colors">
+                            <img
+                              src={getAvatarUrl(profile)}
+                              alt={getDisplayName(profile)}
+                              className={`absolute inset-y-0 ${photoLeft ? 'left-0' : 'right-0'} w-[46%] h-full object-cover`}
+                            />
+                            <div
+                              className={
+                                photoLeft
+                                  ? 'absolute inset-0 bg-gradient-to-r from-transparent from-30% via-zinc-950/75 via-60% to-zinc-950'
+                                  : 'absolute inset-0 bg-gradient-to-l from-transparent from-30% via-zinc-950/75 via-60% to-zinc-950'
+                              }
+                            />
+                            <div
+                              className={`absolute inset-y-0 ${photoLeft ? 'right-0' : 'left-0'} w-[58%] flex flex-col justify-center p-4 ${
+                                photoLeft ? 'items-end text-right' : 'items-start text-left'
+                              }`}
+                            >
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75">
+                                {item.badge}
+                              </p>
+                              <h4 className="text-lg sm:text-xl font-black uppercase text-white tracking-tight leading-tight mt-1 truncate max-w-full">
                                 {getDisplayName(profile)}
                               </h4>
-                              <p className="text-[11px] font-extrabold text-orange-600">
-                                {item.stat} <span className="text-[9px] text-zinc-500 font-medium">({item.subStat})</span>
+                              <p className="text-xs sm:text-sm font-extrabold uppercase text-orange-500 tracking-wide mt-1.5">
+                                {item.stat}
                               </p>
                             </div>
                           </div>
