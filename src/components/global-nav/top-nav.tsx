@@ -32,18 +32,28 @@ export default function TopNav() {
 
   return (
     <nav
-      className="shrink-0 bg-zinc-950 border-b border-zinc-900 px-2 select-none"
+      className="shrink-0 bg-zinc-950 px-2 select-none"
       style={{ paddingTop: 'max(0.375rem, env(safe-area-inset-top))' }}
     >
-      <div className="max-w-7xl mx-auto flex items-center gap-1 py-1.5">
+      <div className="max-w-7xl mx-auto flex items-stretch gap-1 pt-1.5">
         {TABS.map(({ href, label, icon: Icon, match }) => {
           const active = match(pathname);
           return (
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                active ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/30' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              // "Folder" effect: the active tab's own background turns white — the same color
+              // as the page content directly beneath it (app layout.tsx's shell is bg-white) —
+              // and only its top corners round off, so it reads as one continuous surface
+              // rising up out of the page rather than a separate pill floating on the dark bar.
+              // The orange bar the design asks for is exactly the seam where that white tab
+              // meets the page: a solid border-b on the active tab, transparent (same thickness)
+              // on the inactive ones so every tab reserves identical height and nothing shifts
+              // when the active one changes.
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-t-xl border-b-[3px] transition-all cursor-pointer ${
+                active
+                  ? 'bg-white text-orange-600 border-orange-500'
+                  : 'text-zinc-400 border-transparent hover:text-white hover:bg-zinc-900'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
