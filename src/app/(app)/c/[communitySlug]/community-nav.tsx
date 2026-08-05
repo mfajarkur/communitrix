@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Calendar, Users, Trophy, Plus, Shield, User } from 'lucide-react';
 import { useActiveTab } from './active-tab-context';
+import AddCommunityModal from './add-community-modal';
 
 interface CommunityNavProps {
   communitySlug: string;
@@ -25,6 +27,7 @@ interface CommunityNavProps {
 export default function CommunityNav({ communitySlug, communityName, bannerImage, role, myCommunities }: CommunityNavProps) {
   const { activeTab, setActiveTab } = useActiveTab();
   const pathname = usePathname();
+  const [addOpen, setAddOpen] = useState(false);
 
   if (pathname !== `/c/${communitySlug}`) return null;
 
@@ -69,13 +72,14 @@ export default function CommunityNav({ communitySlug, communityName, bannerImage
                 </Link>
               ))}
 
-            <Link
-              href="/communities"
-              title="All Communities"
-              className="shrink-0 h-9 w-9 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 hover:text-orange-600 border-2 border-white shadow-sm transition-all"
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              title="Add a Community"
+              className="shrink-0 h-9 w-9 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 hover:text-orange-600 border-2 border-white shadow-sm transition-all cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -105,6 +109,8 @@ export default function CommunityNav({ communitySlug, communityName, bannerImage
           </div>
         </div>
       </div>
+
+      <AddCommunityModal open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
 }

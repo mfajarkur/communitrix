@@ -1,145 +1,28 @@
 import { requireProfile } from '@/server/guards';
-import { createClient } from '@/lib/supabase/server';
-import Link from 'next/link';
-import { Compass, Plus, ChevronRight, Shield, User, Users } from 'lucide-react';
 import { getMyCommunityUsage } from '@/server/actions/community.actions';
 import UsageChips from './usage-chips';
-import { JoinCodeButton, NewCommunityFab } from './community-actions-bar';
+import AddCommunityChooser from './add-community-chooser';
 
+// The single membership-list-with-badges view is gone — this is now the same Create/Find
+// surface the "+" button opens as a popup (community-nav.tsx's AddCommunityModal), just
+// full-width with no dialog chrome. Reached via direct URL, or by /c's zero-communities
+// fallback; switching between communities you're already in happens via the switcher chips
+// inside community-nav.tsx, not by browsing a list here.
 export default async function CommunitiesPage() {
-  const profile = await requireProfile();
-  const supabase = await createClient();
-
-  const [usage, { data: memberships }] = await Promise.all([
-    getMyCommunityUsage(),
-    supabase
-      .from('community_members')
-      .select(`
-        role,
-        community:communities (
-          id,
-          name,
-          slug,
-          join_code,
-          join_code_enabled,
-          default_sport
-        )
-      `)
-      .eq('profile_id', profile.id)
-      .eq('is_active', true),
-  ]);
-
-  const activeMemberships = memberships || [];
+  await requireProfile();
+  const usage = await getMyCommunityUsage();
 
   return (
-    <div className="space-y-6 bg-white">
+    <div className="space-y-6 bg-white max-w-lg mx-auto">
       <div className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">My Communities</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              Manage your organizations, view leaderboards, and launch sessions.
-            </p>
-          </div>
-          <JoinCodeButton usage={usage} />
+        <div>
+          <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Add a Community</h2>
+          <p className="text-xs text-zinc-500 mt-0.5">Create your own, or find a public one to join.</p>
         </div>
         <UsageChips usage={usage} />
       </div>
 
-      {activeMemberships.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-zinc-200 rounded-2xl bg-zinc-50">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400 mb-4">
-            <Users className="h-6 w-6" />
-          </div>
-          <h3 className="text-lg font-bold text-zinc-900">No communities found</h3>
-          <p className="text-sm text-zinc-500 max-w-sm mt-1 mb-6">
-            You are not part of any communities yet. Create a new one or join an existing community using a code.
-          </p>
-          <div className="flex gap-4">
-            <Link
-              href="/communities/join"
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 text-xs font-bold transition-all cursor-pointer shadow-sm"
-            >
-              <Compass className="h-4 w-4" />
-              Join Code
-            </Link>
-            <Link
-              href="/communities/new"
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              Create One
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="grid gap-6 grid-cols-1">
-          {activeMemberships.map((m: any) => {
-            const comm = m.community;
-            if (!comm) return null;
-            const isAdmin = m.role === 'ADMIN';
-            const bannerImage = comm.logo_url || '/community_banner_placeholder.png';
-
-            return (
-              <Link
-                href={`/c/${comm.slug}`}
-                key={comm.id}
-                className="group relative overflow-hidden rounded-2xl h-40 bg-zinc-950 flex flex-col justify-end p-5 text-white shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all border border-zinc-100"
-              >
-                <img
-                  src={bannerImage}
-                  alt={comm.name}
-                  className="absolute inset-0 w-full h-full object-cover opacity-50 select-none pointer-events-none group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-orange-600/95 via-orange-600/30 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-950/30 via-transparent to-transparent" />
-
-                <div className="relative z-10 space-y-3 w-full">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-white/15 border border-white/10 text-white shadow-sm">
-                      {comm.default_sport}
-                    </span>
-                    <span className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-[9px] font-black tracking-wider uppercase border border-white/20 shadow-sm ${
-                      m.role === 'ADMIN'
-                        ? 'bg-orange-500 text-white'
-                        : m.role === 'HOST'
-                        ? 'bg-white text-orange-600'
-                        : 'bg-white/80 text-zinc-800'
-                    }`}>
-                      {m.role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
-                      {m.role}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-black leading-tight text-white tracking-tight drop-shadow-sm font-sans">
-                      {comm.name}
-                    </h3>
-                    <p className="text-[10px] text-white/75">/c/{comm.slug}</p>
-                  </div>
-
-                  <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                    {isAdmin && comm.join_code_enabled ? (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white/90 bg-white/15 border border-white/10 px-2 py-0.5 rounded shadow-sm font-mono tracking-wider uppercase">
-                        Code: {comm.join_code}
-                      </span>
-                    ) : (
-                      <span />
-                    )}
-
-                    <span className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-white group-hover:translate-x-0.5 transition-transform">
-                      Enter
-                      <ChevronRight className="h-4 w-4" />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      <NewCommunityFab usage={usage} />
+      <AddCommunityChooser usage={usage} />
     </div>
   );
 }

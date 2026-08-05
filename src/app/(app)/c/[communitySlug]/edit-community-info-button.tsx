@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit3, X, Loader2, Trophy } from 'lucide-react';
+import { Edit3, X, Loader2, Trophy, Copy, Check, RefreshCw } from 'lucide-react';
 import { updateCommunityInfoAction } from '@/server/actions/community.actions';
 import { startNewCpSeasonAction } from '@/server/actions/session.actions';
 
@@ -13,6 +13,8 @@ type Props = {
     settings?: { description?: string | null; require_join_approval?: boolean | null } | null;
     default_sport: string;
     cp_reset_policy?: 'never' | 'seasonal' | null;
+    is_public?: boolean | null;
+    invite_token?: string | null;
   };
 };
 
@@ -31,8 +33,42 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
   const [editRequireJoinApproval, setEditRequireJoinApproval] = useState(
     community.settings?.require_join_approval === true
   );
+  const [editIsPublic, setEditIsPublic] = useState(community.is_public === true);
   const [isSaving, setIsSaving] = useState(false);
   const [isStartingSeason, setIsStartingSeason] = useState(false);
+  const [isRegeneratingLink, setIsRegeneratingLink] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [inviteToken, setInviteToken] = useState(community.invite_token || '');
+
+  const inviteLink = typeof window !== 'undefined' && inviteToken ? `${window.location.origin}/join/${inviteToken}` : '';
+
+  const handleCopyInviteLink = () => {
+    if (!inviteLink || typeof navigator === 'undefined') return;
+    navigator.clipboard.writeText(inviteLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const handleRegenerateLink = async () => {
+    if (!confirm('Regenerate the invite link? The old link will stop working immediately.')) return;
+    setIsRegeneratingLink(true);
+    try {
+      const res = await updateCommunityInfoAction({
+        communityId,
+        communitySlug,
+        regenerateInviteToken: true,
+      });
+      if (res.ok) {
+        setInviteToken(res.data.invite_token);
+      } else {
+        alert(res.message || 'Failed to regenerate invite link');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error regenerating invite link');
+    } finally {
+      setIsRegeneratingLink(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -44,6 +80,7 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
         defaultSport: editSport,
         cpResetPolicy: editCpResetPolicy,
         requireJoinApproval: editRequireJoinApproval,
+        isPublic: editIsPublic,
       });
       if (res.ok) {
         setIsOpen(false);
@@ -149,6 +186,61 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
                     className="h-5 w-5 shrink-0 accent-orange-500 cursor-pointer"
                   />
                 </label>
+              </div>
+
+              <div className="pt-1 border-t border-zinc-100">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <span>
+                    <span className="font-bold text-zinc-700 block">Community Visibility</span>
+                    <span className="text-[10px] text-zinc-400 font-medium block mt-0.5">
+                      {editIsPublic
+                        ? 'Public — anyone can find this community by searching its name.'
+                        : 'Private — only joinable via the invite link below.'}
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={editIsPublic}
+                    onChange={(e) => setEditIsPublic(e.target.checked)}
+                    className="h-5 w-5 shrink-0 accent-orange-500 cursor-pointer"
+                  />
+                </label>
+              </div>
+
+              <div className="pt-1 border-t border-zinc-100">
+                <label className="font-bold text-zinc-700 block mb-1">Invite Link</label>
+                <p className="text-[10px] text-zinc-400 font-medium mb-1.5">
+                  Anyone with this link can request to join, even if this community is private.
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    readOnly
+                    value={inviteLink}
+                    className="flex-1 min-w-0 p-2.5 bg-zinc-100 rounded-xl text-zinc-600 border border-transparent text-[11px] font-mono truncate focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyInviteLink}
+                    title="Copy link"
+                    className="shrink-0 p-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 transition-all cursor-pointer"
+                  >
+                    {linkCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRegenerateLink}
+                  disabled={isRegeneratingLink}
+                  className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500 hover:text-orange-600 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isRegeneratingLink ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" />
+                  )}
+                  Regenerate link (invalidates the old one)
+                </button>
               </div>
 
               <div className="pt-1 border-t border-zinc-100">

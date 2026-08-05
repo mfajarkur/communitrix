@@ -62,7 +62,7 @@ Record these as non-goals so the agent does not build them: cross-community glob
 ### 2.4 Role-Based Access Control (RBAC) Specification
 1. **MEMBER** (Lowest Level):
    - View community pages, feed, leaderboards, and player profiles.
-   - Share community join code and community profile links.
+   - Share the community's invite link (`/join/[invite_token]`) and community profile links. (As of migration `0038`, this replaces typed join codes as the primary way a second user reaches a community — see §5/§7 addendum below.)
 2. **HOST** (Middle Level):
    - All Member capabilities.
    - Create game sessions (`/c/[slug]/sessions/new`).
@@ -141,9 +141,10 @@ communitrix/
 │   │       ├── layout.tsx                 # requires auth; renders app shell
 │   │       ├── onboarding/page.tsx        # first-run: complete profile
 │   │       ├── communities/
-│   │       │   ├── page.tsx               # my communities
-│   │       │   ├── new/page.tsx
-│   │       │   └── join/page.tsx          # enter join code
+│   │       │   ├── page.tsx               # Create/Find a community (0038; no more member-list-with-badges)
+│   │       │   └── new/page.tsx
+│   │       │
+│   │       ├── join/[token]/page.tsx      # invite-link landing page (0038, replaces communities/join)
 │   │       │
 │   │       └── c/[communitySlug]/
 │   │           ├── layout.tsx             # loads community + my role → CommunityProvider
@@ -301,9 +302,16 @@ create table communities (
   default_sport sport_type not null default 'PADEL',
   settings      jsonb not null default '{}'::jsonb,
   created_by    uuid,                       -- profiles.id, FK added after profiles
-  created_at    timestamptz not null default now()
+  created_at    timestamptz not null default now(),
+  -- Added by 0038_community_visibility_and_invites.sql:
+  is_public     boolean not null default false,   -- public: discoverable via search_public_communities. private (default): invite-link only.
+  invite_token  uuid not null unique default gen_random_uuid()  -- backs /join/[invite_token]; regenerable by an admin to revoke old links
 );
+```
 
+> **0038 addendum — discovery model.** `join_code`/`join_code_enabled` and the original `join_community`/`request_join_community(text)` RPCs are left in place (unused by any UI now, not dropped). The active join paths are: `search_public_communities(p_query)` (returns `is_public = true` rows matching by name, excluding communities the caller already belongs to), `get_community_by_invite_token(p_token)` (resolves a community — public or private — by its invite token, powering `/join/[token]`), and a new `request_join_community(p_community_id, p_invite_token default null)` overload (authorized by `is_public = true or invite_token = p_invite_token`; branches JOINED vs PENDING on `settings.require_join_approval` exactly like the original overload). All three are `security definer`, since `communities_select` RLS (§6.3) stays member-only — this is the sanctioned bypass for showing safe fields to a non-member.
+
+```sql
 -- profiles is NOT keyed on auth.users. Guests have auth_user_id = null.
 create table profiles (
   id             uuid primary key default gen_random_uuid(),

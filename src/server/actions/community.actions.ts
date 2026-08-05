@@ -174,6 +174,70 @@ export async function joinCommunityAction(input: {
   }
 }
 
+export type PublicCommunityResult = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  default_sport: string;
+  member_count: number;
+};
+
+export async function searchPublicCommunitiesAction(query: string): Promise<ActionResult<PublicCommunityResult[]>> {
+  try {
+    await requireProfile();
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('search_public_communities', { p_query: query.trim() });
+
+    if (error) {
+      return { ok: false, code: 'UNKNOWN', message: error.message || 'Search failed.' };
+    }
+
+    return { ok: true, data: (data || []) as PublicCommunityResult[] };
+  } catch (error: any) {
+    return { ok: false, code: 'UNAUTHENTICATED', message: error.message || 'Authentication required.' };
+  }
+}
+
+// Shared join entry point for both the "Find Community" search results (public communities,
+// no token) and the /join/[token] invite landing page (public or private, token required for
+// private ones) — mirrors joinCommunityAction's error-mapping and JoinCommunityResult shape,
+// just authorized by community id + optional invite token instead of a typed join code.
+export async function requestJoinCommunityByIdAction(
+  communityId: string,
+  inviteToken?: string
+): Promise<ActionResult<JoinCommunityResult>> {
+  try {
+    await requireProfile();
+    const supabase = await createClient();
+    const { data: result, error } = await supabase.rpc('request_join_community', {
+      p_community_id: communityId,
+      p_invite_token: inviteToken || null,
+    });
+
+    if (error) {
+      if (error.message?.includes('Community not found') || error.code === 'P0002') {
+        return { ok: false, code: 'NOT_FOUND', message: 'Community not found.' };
+      }
+      if (error.message?.includes('Not authorized')) {
+        return { ok: false, code: 'FORBIDDEN', message: 'This community is not public and this invite link is not valid for it.' };
+      }
+      if (error.message?.includes('join limit reached')) {
+        return { ok: false, code: 'FORBIDDEN', message: error.message };
+      }
+      if (error.message?.includes('already a member')) {
+        return { ok: false, code: 'CONFLICT', message: error.message };
+      }
+      return { ok: false, code: 'UNKNOWN', message: error.message || 'An unexpected database error occurred.' };
+    }
+
+    return { ok: true, data: result as JoinCommunityResult };
+  } catch (error: any) {
+    if (error.message?.includes('redirect')) throw error;
+    return { ok: false, code: 'UNAUTHENTICATED', message: error.message || 'Authentication required.' };
+  }
+}
+
 export async function uploadCommunityLogoAction(formData: FormData) {
   const supabase = await createClient();
   const communityId = formData.get('community_id') as string;
@@ -268,6 +332,8 @@ export async function updateCommunityInfoAction(input: {
   bannerUrl?: string;
   cpResetPolicy?: 'never' | 'seasonal';
   requireJoinApproval?: boolean;
+  isPublic?: boolean;
+  regenerateInviteToken?: boolean;
 }): Promise<ActionResult<any>> {
   try {
     await requireCommunityAdmin(input.communityId);
@@ -277,6 +343,8 @@ export async function updateCommunityInfoAction(input: {
     if (input.defaultSport !== undefined) updates.default_sport = input.defaultSport.trim();
     if (input.bannerUrl !== undefined) updates.banner_url = input.bannerUrl.trim();
     if (input.cpResetPolicy !== undefined) updates.cp_reset_policy = input.cpResetPolicy;
+    if (input.isPublic !== undefined) updates.is_public = input.isPublic;
+    if (input.regenerateInviteToken) updates.invite_token = crypto.randomUUID();
 
     if (input.description !== undefined) {
       updates.description = input.description.trim();
