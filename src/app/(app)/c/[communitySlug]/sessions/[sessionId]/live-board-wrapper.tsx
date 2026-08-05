@@ -10,7 +10,7 @@ import {
 } from '@/server/actions/round.actions';
 import { finalizeSessionAction } from '@/server/actions/session.actions';
 import { setMatchSubstituteAction } from '@/server/actions/substitute.actions';
-import { HelpCircle, Loader2, ChevronDown, ChevronUp, Repeat, X } from 'lucide-react';
+import { HelpCircle, Loader2, ChevronDown, ChevronUp, Repeat, X, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
@@ -22,6 +22,7 @@ import StandingsTable from '@/components/session-live/standings-table';
 import { isFixedSumSessionConfig } from '@/lib/matchmaking/scoring-format';
 import { explainEloMatch } from '@/lib/elo/calculate';
 import { useStatusRibbon } from '@/components/status-ribbon/status-ribbon-provider';
+import ConfirmModal from '@/components/ui/confirm-modal';
 
 interface MatchPlayer {
   profile_id: string;
@@ -136,6 +137,7 @@ export default function LiveBoardWrapper({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmFinalizeMessage, setConfirmFinalizeMessage] = useState<string | null>(null);
 
   // Inline scoring (Quick Match-style tap-to-pick), staged locally per match until "Send Score"
   const [scoreDrafts, setScoreDrafts] = useState<Map<string, ScoreDraft>>(new Map());
@@ -306,7 +308,7 @@ export default function LiveBoardWrapper({
     }
   };
 
-  const handleFinalizeClick = async () => {
+  const handleFinalizeClick = () => {
     // Ending a session no longer requires every court to be scored first — finalize_session
     // (0033) auto-voids anything still unfinished instead of rejecting. Warn the host up front
     // so voided courts aren't a silent surprise.
@@ -315,7 +317,11 @@ export default function LiveBoardWrapper({
       unfinishedCount > 0
         ? `${unfinishedCount} match${unfinishedCount === 1 ? ' is' : 'es are'} still unscored and will be voided (won't count toward ratings or standings). End this session anyway?`
         : 'Are you sure you want to end this match session? This will finalize all ratings.';
-    if (!confirm(confirmMessage)) return;
+    setConfirmFinalizeMessage(confirmMessage);
+  };
+
+  const handleConfirmFinalize = async () => {
+    setConfirmFinalizeMessage(null);
     setIsFinalizing(true);
     setError(null);
     const statusId = showStatus('Finalizing session…');
@@ -808,6 +814,17 @@ export default function LiveBoardWrapper({
           />
         );
       })()}
+
+      <ConfirmModal
+        open={confirmFinalizeMessage !== null}
+        icon={Trophy}
+        title="End Match Session?"
+        message={confirmFinalizeMessage || ''}
+        confirmLabel="Yes, End"
+        isConfirming={isFinalizing}
+        onConfirm={handleConfirmFinalize}
+        onCancel={() => setConfirmFinalizeMessage(null)}
+      />
 
       {/* "Joki" Substitute Picker Modal — candidates are whoever is sitting out this round
           (sitOuts, above), since anyone already on another court can't also sub in here. */}

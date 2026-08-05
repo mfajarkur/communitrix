@@ -38,6 +38,7 @@ import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.a
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
 import { useActiveTab } from './active-tab-context';
+import ConfirmModal from '@/components/ui/confirm-modal';
 
 interface CommunityTabsProps {
   community?: any;
@@ -104,6 +105,8 @@ export default function CommunityTabs({
   const [sessionSportFilter, setSessionSportFilter] = useState<'ALL' | 'PADEL' | 'TENNIS'>('ALL');
 
   const [copiedCode, setCopiedCode] = useState(false);
+  const [pendingRemoveMember, setPendingRemoveMember] = useState<{ id: string; name: string } | null>(null);
+  const [confirmBatchRemoveOpen, setConfirmBatchRemoveOpen] = useState(false);
 
   const handleCopyCode = () => {
     if (community?.code && typeof navigator !== 'undefined') {
@@ -170,9 +173,12 @@ export default function CommunityTabs({
     }
   };
 
-  // Admin removes member from community
-  const handleRemoveMember = async (targetProfileId: string, memberName: string) => {
-    if (!confirm(`Are you sure you want to remove "${memberName}" from this community?`)) return;
+  // Admin removes member from community — triggered from a ConfirmModal (pendingRemoveMember
+  // holds who's about to be removed) rather than a native confirm().
+  const handleRemoveMember = async () => {
+    if (!pendingRemoveMember) return;
+    const { id: targetProfileId } = pendingRemoveMember;
+    setPendingRemoveMember(null);
     try {
       const result = await removeMemberAction({
         communityId,
@@ -222,7 +228,7 @@ export default function CommunityTabs({
   const handleBatchRemove = async () => {
     const count = selectedMemberIds.size;
     if (count === 0) return;
-    if (!confirm(`Remove ${count} selected member${count === 1 ? '' : 's'} from this community?`)) return;
+    setConfirmBatchRemoveOpen(false);
 
     setIsBatchRemoving(true);
     const failures: string[] = [];
@@ -844,7 +850,7 @@ export default function CommunityTabs({
                           {selectedMemberIds.size} selected
                         </span>
                         <button
-                          onClick={handleBatchRemove}
+                          onClick={() => setConfirmBatchRemoveOpen(true)}
                           disabled={selectedMemberIds.size === 0 || isBatchRemoving}
                           className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap"
                         >
@@ -953,7 +959,7 @@ export default function CommunityTabs({
                               </Link>
                               {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
                                 <button
-                                  onClick={() => handleRemoveMember(p.id, pName)}
+                                  onClick={() => setPendingRemoveMember({ id: p.id, name: pName })}
                                   className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
                                 >
                                   Remove
@@ -1033,7 +1039,7 @@ export default function CommunityTabs({
                                 </Link>
                                 {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
                                   <button
-                                    onClick={() => handleRemoveMember(p.id, pName)}
+                                    onClick={() => setPendingRemoveMember({ id: p.id, name: pName })}
                                     className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
                                   >
                                     Remove
@@ -1120,7 +1126,7 @@ export default function CommunityTabs({
                               ) : null)}
                               {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
                                 <button
-                                  onClick={() => handleRemoveMember(p.id, pName)}
+                                  onClick={() => setPendingRemoveMember({ id: p.id, name: pName })}
                                   className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
                                 >
                                   Remove
@@ -1626,6 +1632,27 @@ export default function CommunityTabs({
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={pendingRemoveMember !== null}
+        icon={UserMinus}
+        title="Remove Member?"
+        message={pendingRemoveMember ? `Are you sure you want to remove "${pendingRemoveMember.name}" from this community?` : ''}
+        confirmLabel="Yes, Remove"
+        onConfirm={handleRemoveMember}
+        onCancel={() => setPendingRemoveMember(null)}
+      />
+
+      <ConfirmModal
+        open={confirmBatchRemoveOpen}
+        icon={UserMinus}
+        title="Remove Selected Members?"
+        message={`Remove ${selectedMemberIds.size} selected member${selectedMemberIds.size === 1 ? '' : 's'} from this community?`}
+        confirmLabel="Yes, Remove"
+        isConfirming={isBatchRemoving}
+        onConfirm={handleBatchRemove}
+        onCancel={() => setConfirmBatchRemoveOpen(false)}
+      />
     </>
   );
 }

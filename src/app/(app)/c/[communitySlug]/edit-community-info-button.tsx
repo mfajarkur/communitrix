@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Edit3, X, Loader2, Trophy, Copy, Check, RefreshCw } from 'lucide-react';
 import { updateCommunityInfoAction } from '@/server/actions/community.actions';
 import { startNewCpSeasonAction } from '@/server/actions/session.actions';
+import ConfirmModal from '@/components/ui/confirm-modal';
 
 type Props = {
   communityId: string;
@@ -39,6 +40,8 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
   const [isRegeneratingLink, setIsRegeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [inviteToken, setInviteToken] = useState(community.invite_token || '');
+  const [confirmRegenerateOpen, setConfirmRegenerateOpen] = useState(false);
+  const [confirmNewSeasonOpen, setConfirmNewSeasonOpen] = useState(false);
 
   const inviteLink = typeof window !== 'undefined' && inviteToken ? `${window.location.origin}/join/${inviteToken}` : '';
 
@@ -50,7 +53,7 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
   };
 
   const handleRegenerateLink = async () => {
-    if (!confirm('Regenerate the invite link? The old link will stop working immediately.')) return;
+    setConfirmRegenerateOpen(false);
     setIsRegeneratingLink(true);
     try {
       const res = await updateCommunityInfoAction({
@@ -98,13 +101,7 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
   // Ends the current CP season (if any) and starts a fresh one — only meaningful once
   // cp_reset_policy is 'seasonal', since 'never' communities never look up a season at all.
   const handleStartNewSeason = async () => {
-    if (
-      !confirm(
-        'Start a new Community Points season? This ends the current season — CP already awarded stays on the record, but the leaderboard for the new season starts from zero.'
-      )
-    ) {
-      return;
-    }
+    setConfirmNewSeasonOpen(false);
     setIsStartingSeason(true);
     try {
       const res = await startNewCpSeasonAction(communityId, communitySlug);
@@ -230,7 +227,7 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
                 </div>
                 <button
                   type="button"
-                  onClick={handleRegenerateLink}
+                  onClick={() => setConfirmRegenerateOpen(true)}
                   disabled={isRegeneratingLink}
                   className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500 hover:text-orange-600 transition-all cursor-pointer disabled:opacity-50"
                 >
@@ -265,7 +262,7 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
                 {community.cp_reset_policy === 'seasonal' && (
                   <button
                     type="button"
-                    onClick={handleStartNewSeason}
+                    onClick={() => setConfirmNewSeasonOpen(true)}
                     disabled={isStartingSeason}
                     className="w-full mt-2.5 py-2 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-xs font-bold text-orange-700 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
@@ -299,6 +296,28 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmRegenerateOpen}
+        icon={RefreshCw}
+        title="Regenerate Invite Link?"
+        message="The old link will stop working immediately."
+        confirmLabel="Yes, Regenerate"
+        isConfirming={isRegeneratingLink}
+        onConfirm={handleRegenerateLink}
+        onCancel={() => setConfirmRegenerateOpen(false)}
+      />
+
+      <ConfirmModal
+        open={confirmNewSeasonOpen}
+        icon={Trophy}
+        title="Start New CP Season?"
+        message="This ends the current season — CP already awarded stays on the record, but the leaderboard for the new season starts from zero."
+        confirmLabel="Yes, Start New Season"
+        isConfirming={isStartingSeason}
+        onConfirm={handleStartNewSeason}
+        onCancel={() => setConfirmNewSeasonOpen(false)}
+      />
     </>
   );
 }
