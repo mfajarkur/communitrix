@@ -2698,24 +2698,6 @@ export default function WizardForm({
       {/* ========================================================= */}
       {step === 4 && (
         <div className="space-y-5 animate-in fade-in duration-200">
-          {/* Sitting Out / Bye Players Banner for Selected Round */}
-          {(() => {
-            const sitOutIds = roundSitOuts.get(selectedRound) || [];
-            if (sitOutIds.length === 0) return null;
-            const sitOutNames = sitOutIds
-              .map((id) => playerMap.get(id)?.name || 'Player')
-              .join(', ');
-
-            return (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-medium flex items-center gap-2">
-                <span className="font-extrabold uppercase text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded shrink-0">
-                  Sitting Out (Bye)
-                </span>
-                <span className="truncate font-bold text-amber-900">{sitOutNames}</span>
-              </div>
-            );
-          })()}
-
           {/* Match Cards List for Selected Round */}
           <div className="space-y-4">
             {(() => {

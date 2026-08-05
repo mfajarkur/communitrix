@@ -468,16 +468,6 @@ export default function LiveBoardWrapper({
 
       {viewMode === 'MATCHES' ? (
         <div className="space-y-5">
-          {/* Sitting Out / Bye Players Banner for Selected Round */}
-          {sitOuts.length > 0 && (
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-medium flex items-center gap-2">
-              <span className="font-extrabold uppercase text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded shrink-0">
-                Sitting Out (Bye)
-              </span>
-              <span className="truncate font-bold text-amber-900">{sitOuts.map((p) => p.name).join(', ')}</span>
-            </div>
-          )}
-
           {/* Match Cards List for Selected Round */}
           {totalRounds === 0 ? (
             <div className="text-center py-16 border border-dashed border-zinc-200 rounded-2xl bg-zinc-50/50 text-zinc-400 space-y-3">
@@ -820,8 +810,7 @@ export default function LiveBoardWrapper({
       })()}
 
       {/* "Joki" Substitute Picker Modal — candidates are whoever is sitting out this round
-          (the same pool the "Sitting Out (Bye)" banner already shows) since anyone already on
-          another court can't also sub in here. */}
+          (sitOuts, above), since anyone already on another court can't also sub in here. */}
       {subPickerFor && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-zinc-100 text-[#111827]">
