@@ -180,8 +180,6 @@ export default async function PlayerProfilePage({
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0 ${
                     memberRecord.role === 'ADMIN'
                       ? 'bg-orange-500/10 text-orange-600'
-                      : memberRecord.role === 'HOST'
-                      ? 'bg-orange-500/[0.04] text-orange-600/80'
                       : 'bg-zinc-100 text-zinc-500'
                   }`}>
                     {memberRecord.role === 'ADMIN' ? (

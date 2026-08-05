@@ -7,7 +7,7 @@ import CommunityCarousel from './community-carousel';
 
 interface CommunityNavProps {
   communitySlug: string;
-  role: 'ADMIN' | 'HOST' | 'MEMBER';
+  role: 'ADMIN' | 'MEMBER';
   myCommunities: { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null; invite_token: string }[];
 }
 

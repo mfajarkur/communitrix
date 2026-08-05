@@ -27,7 +27,7 @@ export default function CommunityCarousel({
 }: {
   myCommunities: CommunityItem[];
   currentSlug: string;
-  role: 'ADMIN' | 'HOST' | 'MEMBER';
+  role: 'ADMIN' | 'MEMBER';
 }) {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [justShared, setJustShared] = useState(false);
@@ -112,7 +112,7 @@ export default function CommunityCarousel({
         <div className="min-w-0 pb-0.5">
           <p className="text-base font-black text-white tracking-tight drop-shadow-sm truncate">{current.name}</p>
           <span className={`inline-flex items-center gap-1 text-[9px] font-black tracking-wider uppercase mt-0.5 ${
-            role === 'ADMIN' ? 'text-orange-200' : role === 'HOST' ? 'text-orange-100' : 'text-white/80'
+            role === 'ADMIN' ? 'text-orange-200' : 'text-white/80'
           }`}>
             {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
             {role}

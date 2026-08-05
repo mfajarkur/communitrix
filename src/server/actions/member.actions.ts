@@ -58,7 +58,7 @@ export async function addGuestPlayerAction(input: {
 export async function updateMemberRoleAction(input: {
   communityId: string;
   targetProfileId: string;
-  newRole: 'ADMIN' | 'HOST' | 'MEMBER';
+  newRole: 'ADMIN' | 'MEMBER';
   communitySlug?: string;
 }): Promise<ActionResult<any>> {
   try {

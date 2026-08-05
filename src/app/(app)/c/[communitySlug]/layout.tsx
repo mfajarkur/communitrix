@@ -71,8 +71,8 @@ export default async function CommunityLayout({
     .map((m: any) => (Array.isArray(m.community) ? m.community[0] : m.community))
     .filter((c: any): c is { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null; invite_token: string } => !!c);
 
-  const role: 'ADMIN' | 'HOST' | 'MEMBER' =
-    member.role === 'ADMIN' ? 'ADMIN' : member.role === 'HOST' ? 'HOST' : 'MEMBER';
+  const role: 'ADMIN' | 'MEMBER' =
+    member.role === 'ADMIN' ? 'ADMIN' : 'MEMBER';
 
   return (
     <div className="bg-white">

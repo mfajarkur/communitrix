@@ -102,7 +102,7 @@ export default function CommunityTabs({
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [isBatchRemoving, setIsBatchRemoving] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
-  const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | 'HOST' | null>(null);
+  const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const router = useRouter();
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
@@ -159,8 +159,8 @@ export default function CommunityTabs({
     }
   };
 
-  // Admin assigns role to member (ADMIN / HOST / MEMBER)
-  const handleUpdateRole = async (targetProfileId: string, newRole: 'ADMIN' | 'HOST' | 'MEMBER') => {
+  // Admin assigns role to member (ADMIN / MEMBER)
+  const handleUpdateRole = async (targetProfileId: string, newRole: 'ADMIN' | 'MEMBER') => {
     try {
       const result = await updateMemberRoleAction({
         communityId,
@@ -762,16 +762,9 @@ export default function CommunityTabs({
           {/* TAB 3: MEMBERS */}
           {activeTab === 'members' && (() => {
             const adminsList = members.filter((m) => m.role === 'ADMIN');
-            const hostsList = members.filter((m) => m.role === 'HOST');
             const generalMembers = members.filter((m) => m.role === 'MEMBER');
 
             const filteredAdmins = adminsList.filter((m) => {
-              if (!memberSearchQuery.trim()) return true;
-              const pName = getDisplayName(m.profile).toLowerCase();
-              return pName.includes(memberSearchQuery.toLowerCase());
-            });
-
-            const filteredHosts = hostsList.filter((m) => {
               if (!memberSearchQuery.trim()) return true;
               const pName = getDisplayName(m.profile).toLowerCase();
               return pName.includes(memberSearchQuery.toLowerCase());
@@ -789,7 +782,7 @@ export default function CommunityTabs({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h2 className="text-lg font-extrabold tracking-tight text-zinc-900">Members</h2>
-                      <p className="text-xs text-zinc-500 mt-0.5">Admins, hosts, and players in this community.</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Admins and players in this community.</p>
                     </div>
                     {isAdmin && (
                       <button
@@ -936,87 +929,6 @@ export default function CommunityTabs({
                       </div>
                     )}
                   </div>
-
-                  {/* HOSTS SECTION */}
-                  {(hostsList.length > 0 || isAdmin) && (
-                    <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-100/60">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight">Hosts</h3>
-                        {isAdmin && (
-                          <button
-                            onClick={() => {
-                              setRoleSearchQuery('');
-                              setTargetRoleToAdd('HOST');
-                            }}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-full border border-orange-200 transition-all cursor-pointer shadow-2xs"
-                          >
-                            <Plus className="h-3 w-3" /> Add Host
-                          </button>
-                        )}
-                      </div>
-
-                      {filteredHosts.length === 0 ? (
-                        <p className="text-xs text-zinc-400 py-2">No hosts assigned yet.</p>
-                      ) : (
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
-                          {filteredHosts.map((m: any) => {
-                            const p = m.profile;
-                            if (!p) return null;
-                            const pName = getDisplayName(p);
-                            return (
-                              <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
-                                <Link
-                                  href={`/c/${communitySlug}/players/${p.id}`}
-                                  onClick={(e) => {
-                                    if (memberSelectionMode && p.id !== callerProfile?.id) {
-                                      e.preventDefault();
-                                      toggleMemberSelected(p.id);
-                                    } else if (memberSelectionMode) {
-                                      e.preventDefault();
-                                    }
-                                  }}
-                                  className="flex flex-col items-center w-full"
-                                >
-                                  <div className="relative">
-                                    <img
-                                      src={getAvatarUrl(p)}
-                                      alt={pName}
-                                      className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs group-hover:scale-105 transition-transform ${
-                                        memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
-                                      }`}
-                                    />
-                                    <div className="absolute top-0 right-0 bg-amber-500 rounded-full p-1 text-white shadow-sm border-2 border-white">
-                                      <UserCheck className="h-3 w-3" />
-                                    </div>
-                                    {memberSelectionMode && p.id !== callerProfile?.id && (
-                                      <div
-                                        className={`absolute top-0 left-0 h-5 w-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
-                                          selectedMemberIds.has(p.id) ? 'bg-orange-500' : 'bg-white/90'
-                                        }`}
-                                      >
-                                        {selectedMemberIds.has(p.id) && <CheckCircle className="h-3.5 w-3.5 text-white" />}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
-                                    {pName}
-                                  </span>
-                                </Link>
-                                {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
-                                  <button
-                                    onClick={() => setPendingRemoveMember({ id: p.id, name: pName })}
-                                    className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
-                                  >
-                                    Remove
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* MEMBERS SECTION */}
                   <div className="space-y-3.5 pt-5 mt-2 border-t border-zinc-100/60">

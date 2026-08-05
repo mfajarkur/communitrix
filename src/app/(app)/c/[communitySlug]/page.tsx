@@ -79,7 +79,7 @@ export default async function CommunityDashboardPage({
   }
 
   const isAdmin = callerMember.role === 'ADMIN';
-  const isHostOrAdmin = callerMember.role === 'ADMIN' || callerMember.role === 'HOST';
+  const isHostOrAdmin = isAdmin;
 
   // 3. Everything else only depends on community.id/profile.id/isAdmin, all already known —
   // fired as one batch instead of one-after-another (was 11 sequential round-trips here alone,

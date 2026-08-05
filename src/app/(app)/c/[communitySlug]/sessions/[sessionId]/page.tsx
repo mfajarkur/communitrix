@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import LiveBoardWrapper from './live-board-wrapper';
 import SessionResults from './session-results';
+import SessionHostsBar from './session-hosts-bar';
 import { getDisplayName } from '@/lib/utils/profile';
 
 export default async function SessionLiveBoardPage({
@@ -27,7 +28,7 @@ export default async function SessionLiveBoardPage({
     notFound();
   }
 
-  // 2. Fetch User Membership Role
+  // 2. Fetch User Membership Role & Session Hosts
   const { data: membership } = await supabase
     .from('community_members')
     .select('role')
@@ -35,7 +36,22 @@ export default async function SessionLiveBoardPage({
     .eq('profile_id', profile.id)
     .maybeSingle();
 
-  const isHostOrAdmin = membership?.role === 'ADMIN' || membership?.role === 'HOST';
+  const { data: sessionHostsData } = await supabase
+    .from('session_hosts')
+    .select('profile_id, profile:profiles!session_hosts_profile_id_fkey(id, full_name, display_name, avatar_url)')
+    .eq('session_id', sessionId);
+
+  const { data: communityMembersData } = await supabase
+    .from('community_members')
+    .select('profile_id, profile:profiles!community_members_profile_id_fkey(id, full_name, display_name, avatar_url)')
+    .eq('community_id', session.community_id)
+    .eq('is_active', true);
+
+  const hostProfiles: any[] = (sessionHostsData || []).map((h: any) => h.profile).filter(Boolean);
+  const communityMemberProfiles: any[] = (communityMembersData || []).map((cm: any) => cm.profile).filter(Boolean);
+
+  const hostProfileIds = hostProfiles.map((h: any) => h.id);
+  const isHostOrAdmin = membership?.role === 'ADMIN' || hostProfileIds.includes(profile.id);
 
   // 3. Fetch ALL rounds (not just the latest) so both the round carousel (active sessions)
   // and the final results recap (ended sessions) can show full match history.
@@ -207,11 +223,18 @@ export default async function SessionLiveBoardPage({
         <ArrowLeft className="h-4 w-4" /> Back to Community
       </Link>
 
-      {/* Clean, simple header matching Quick Match */}
-      <div>
+      {/* Clean, simple header with SessionHostsBar */}
+      <div className="space-y-2">
         <h1 className="text-lg font-extrabold tracking-tight text-zinc-900">
           {session.session_name}
         </h1>
+        <SessionHostsBar
+          sessionId={sessionId}
+          communityId={session.community_id}
+          hosts={hostProfiles}
+          communityMembers={communityMemberProfiles}
+          isHostOrAdmin={isHostOrAdmin}
+        />
       </div>
 
       <LiveBoardWrapper
