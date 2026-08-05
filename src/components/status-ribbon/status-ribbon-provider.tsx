@@ -35,14 +35,12 @@ export function useStatusRibbon(): StatusRibbonContextValue {
 // Renders the actual ribbon bar — pulled out of StatusRibbonProvider so it can be placed
 // wherever the app shell's layout needs it (as a normal flex child, sized into the shell's own
 // h-dvh math) instead of as a sibling of the whole shell, which used to add its height on top
-// of a full viewport-height shell and get scrolled out of view. Hidden entirely on the post-
-// login homepage per product decision — everywhere else it always renders.
-const HOMEPAGE_PATH = '/communities';
-
+// of a full viewport-height shell and get scrolled out of view. Always renders, everywhere in
+// the authenticated app — including /communities, which IS the post-login landing page (an
+// earlier attempt to special-case "the homepage" hid it there specifically, which turned out to
+// be exactly wrong).
 export function StatusRibbonBar() {
   const { progress, visible, message } = useStatusRibbon();
-  const pathname = usePathname();
-  if (pathname === HOMEPAGE_PATH) return null;
   return <StatusRibbon progress={visible ? progress : 0} message={message} />;
 }
 
