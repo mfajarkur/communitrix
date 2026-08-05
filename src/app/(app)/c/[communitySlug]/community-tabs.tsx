@@ -435,7 +435,7 @@ export default function CommunityTabs({
                               }`}
                             />
                             <p
-                              className="absolute left-2 top-3 text-2xl sm:text-3xl font-black uppercase tracking-wider text-white whitespace-nowrap drop-shadow-md"
+                              className="absolute right-2 bottom-14 text-2xl sm:text-3xl font-black uppercase tracking-wider text-white whitespace-nowrap drop-shadow-md z-10"
                               style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
                             >
                               {firstName}
