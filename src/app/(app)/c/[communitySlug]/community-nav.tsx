@@ -8,7 +8,7 @@ import CommunityCarousel from './community-carousel';
 interface CommunityNavProps {
   communitySlug: string;
   role: 'ADMIN' | 'HOST' | 'MEMBER';
-  myCommunities: { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null }[];
+  myCommunities: { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null; invite_token: string }[];
 }
 
 // Rendered by layout.tsx, a sibling of {children} (page.tsx) rather than a piece of it — so it

@@ -62,14 +62,14 @@ export default async function CommunityLayout({
   // switches while page.tsx (and its heavier queries) reload underneath.
   const { data: myMemberships } = await supabase
     .from('community_members')
-    .select('community:communities(id, name, slug, logo_url, avatar_url)')
+    .select('community:communities(id, name, slug, logo_url, avatar_url, invite_token)')
     .eq('profile_id', profile.id)
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
 
   const myCommunities = (myMemberships || [])
     .map((m: any) => (Array.isArray(m.community) ? m.community[0] : m.community))
-    .filter((c: any): c is { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null } => !!c);
+    .filter((c: any): c is { id: string; name: string; slug: string; logo_url: string | null; avatar_url: string | null; invite_token: string } => !!c);
 
   const role: 'ADMIN' | 'HOST' | 'MEMBER' =
     member.role === 'ADMIN' ? 'ADMIN' : member.role === 'HOST' ? 'HOST' : 'MEMBER';
