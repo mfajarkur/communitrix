@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, Shield, User, Share2, Check } from 'lucide-react';
+import { Users, Shield, User, Share2, Check, Calendar, Flame } from 'lucide-react';
 import CommunitySwitcherModal from './community-switcher-modal';
 import AvatarImageEditor from './avatar-image-editor';
 import BannerImageEditor from './banner-image-editor';
+import { useActiveTab } from './active-tab-context';
 
 type CommunityItem = {
   id: string;
@@ -30,6 +31,7 @@ export default function CommunityCarousel({
 }) {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [justShared, setJustShared] = useState(false);
+  const { stats } = useActiveTab();
 
   const current = myCommunities.find((c) => c.slug === currentSlug) || myCommunities[0];
   const bannerImage = current?.logo_url || '/community_banner_placeholder.png';
@@ -115,6 +117,26 @@ export default function CommunityCarousel({
             {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
             {role}
           </span>
+
+          {/* Member/session/match counts — published by community-tabs.tsx via context (see
+              active-tab-context.tsx), kept small and quiet so the header stays clean rather than
+              turning into another stats block. */}
+          {stats && (
+            <div className="flex items-center gap-2.5 text-[9px] font-bold text-white/70 mt-1">
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-2.5 w-2.5" />
+                {stats.memberCount}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="h-2.5 w-2.5" />
+                {stats.sessionsCount}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Flame className="h-2.5 w-2.5" />
+                {stats.matchesCount}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

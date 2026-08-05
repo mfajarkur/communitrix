@@ -122,10 +122,10 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1 text-[10px] font-bold text-white/95 hover:text-white transition-all bg-black/30 hover:bg-black/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-sm cursor-pointer"
+        title="Edit Community Info"
+        className="shrink-0 h-7 w-7 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-500 hover:text-zinc-700 transition-all cursor-pointer flex items-center justify-center"
       >
-        <Edit3 className="h-3 w-3" />
-        Edit Info
+        <Edit3 className="h-3.5 w-3.5" />
       </button>
 
       {isOpen && (
@@ -146,12 +146,16 @@ export default function EditCommunityInfoButton({ communityId, communitySlug, co
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-zinc-700 block mb-1">Community Description</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-zinc-700">Community Description</label>
+                  <span className="text-[10px] text-zinc-400 font-medium">{editDescription.length}/160</span>
+                </div>
                 <textarea
                   rows={3}
+                  maxLength={160}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Describe your community..."
+                  placeholder="A short bio for your community — shown right below the header, like an Instagram bio."
                   className="w-full p-3 bg-zinc-100 rounded-xl text-zinc-900 border border-transparent focus:border-orange-500 focus:bg-white focus:outline-none"
                 />
               </div>

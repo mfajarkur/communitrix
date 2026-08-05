@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -24,7 +24,6 @@ import {
   CalendarDays,
   User,
   LogOut,
-  Flame,
   Filter,
   MapPin,
   Clock,
@@ -81,7 +80,13 @@ export default function CommunityTabs({
   callerProfile,
   pendingJoinRequests = [],
 }: CommunityTabsProps) {
-  const { activeTab, setActiveTab: handleTabChange } = useActiveTab();
+  const { activeTab, setActiveTab: handleTabChange, setStats } = useActiveTab();
+
+  // Publishes these counts up to community-carousel.tsx's header via the shared context — the
+  // header doesn't run its own stats query (see active-tab-context.tsx's comment).
+  useEffect(() => {
+    setStats({ memberCount, sessionsCount: sessions.length, matchesCount: totalMatchesCount });
+  }, [memberCount, sessions.length, totalMatchesCount, setStats]);
   const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
     defaultSport === 'TENNIS' ? 'TENNIS' : 'PADEL'
   );
@@ -262,46 +267,24 @@ export default function CommunityTabs({
           {/* TAB 1: HOME KOMUNITAS */}
           {activeTab === 'home' && (
             <div className="space-y-6">
-              {/* About card — banner image + info editing (admin only), sport/join code,
-                  quick stats. Name/role/breadcrumb now live in the compact header above
-                  instead of repeating here, but everything else from the old hero banner
-                  still lives here rather than disappearing. */}
-              <div className="relative overflow-hidden rounded-2xl bg-zinc-950 p-4 text-white shadow-sm border border-zinc-100 space-y-3">
-                {isAdmin && (
-                  <div className="flex items-center justify-between gap-2">
-                    <EditCommunityInfoButton
-                      communityId={communityId}
-                      communitySlug={communitySlug}
-                      community={community}
-                    />
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between text-[11px] text-white/90 font-medium">
-                  <p>
-                    Default Sport: <span className="font-extrabold uppercase">{defaultSport}</span>
-                  </p>
-                  {community?.code && (
-                    <p className="bg-white/15 px-2 py-0.5 rounded font-mono text-[9px] tracking-wider uppercase border border-white/10 shadow-sm">
-                      CODE: {community.code}
-                    </p>
+              {/* Short bio-style description — plain white background, black text, capped at
+                  160 characters like an Instagram bio. Replaces the old black "About card":
+                  default sport/join code and the member/session/match stats moved into the
+                  header above (community-carousel.tsx, via active-tab-context.tsx) instead of
+                  repeating here. */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm text-zinc-800 leading-relaxed flex-1 min-w-0">
+                  {(community?.description || community?.settings?.description || '').trim().slice(0, 160) || (
+                    <span className="text-zinc-400">No description yet.</span>
                   )}
-                </div>
-
-                <div className="flex items-center gap-3 text-[11px] text-white/90 font-semibold">
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5" />
-                    {memberCount} Members
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {sessions.length} Sessions
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Flame className="h-3.5 w-3.5" />
-                    {totalMatchesCount} Matches Scored
-                  </span>
-                </div>
+                </p>
+                {isAdmin && (
+                  <EditCommunityInfoButton
+                    communityId={communityId}
+                    communitySlug={communitySlug}
+                    community={community}
+                  />
+                )}
               </div>
 
               {/* Community STAR Section */}
@@ -393,49 +376,39 @@ export default function CommunityTabs({
                 ];
 
                 return (
-                  <div className="p-5 rounded-3xl bg-zinc-50 border border-zinc-100 shadow-xs space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200/80 pb-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
-                            WALL OF FAME
-                          </span>
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-600 border border-orange-200/80">
-                            {activeSportName}
-                          </span>
-                        </div>
-                        <h3 className="text-sm font-extrabold text-zinc-800 tracking-tight mt-1">
-                          Wall of Fame {activeSportName}
-                        </h3>
-                        <p className="text-xs text-zinc-500 font-medium leading-relaxed">
-                          Pemain berprestasi teratas dalam berbagai kategori performa komunitas.
-                        </p>
-                      </div>
-
-                      {/* Sport Selector if both Padel and Tennis have records */}
-                      {hasPadel && hasTennis && (
-                        <div className="inline-flex p-1 bg-zinc-200/60 rounded-xl border border-zinc-200 self-start sm:self-auto shrink-0">
+                  <div className="space-y-3">
+                    {/* One clean title — no box around this section at all now, so the photo
+                        cards below span exactly the same width as the header banner above
+                        instead of being inset inside a card. */}
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-base font-extrabold text-zinc-900 tracking-tight">Wall of Fame</h3>
+                      {hasPadel && hasTennis ? (
+                        <div className="inline-flex p-1 bg-zinc-100 rounded-xl border border-zinc-200 shrink-0">
                           <button
                             onClick={() => setStarSportTab('PADEL')}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+                            className={`px-3 py-1 rounded-lg text-[11px] font-black tracking-wider uppercase transition-all cursor-pointer ${
                               activeSportName === 'PADEL'
                                 ? 'bg-orange-500 text-white shadow-xs'
                                 : 'text-zinc-600 hover:text-zinc-900'
                             }`}
                           >
-                            🎾 Padel
+                            Padel
                           </button>
                           <button
                             onClick={() => setStarSportTab('TENNIS')}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+                            className={`px-3 py-1 rounded-lg text-[11px] font-black tracking-wider uppercase transition-all cursor-pointer ${
                               activeSportName === 'TENNIS'
                                 ? 'bg-orange-500 text-white shadow-xs'
                                 : 'text-zinc-600 hover:text-zinc-900'
                             }`}
                           >
-                            🎾 Tennis
+                            Tennis
                           </button>
                         </div>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-orange-50 text-orange-600 border border-orange-200 shrink-0">
+                          {activeSportName}
+                        </span>
                       )}
                     </div>
 
