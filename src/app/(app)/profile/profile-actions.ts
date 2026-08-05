@@ -11,31 +11,92 @@ export type PerSportStats = {
   peakElo: number | null;
 };
 
-export async function getMyPerSportStats(): Promise<Record<Sport, PerSportStats | null>> {
+export type CommunityStats = {
+  communityId: string;
+  communityName: string;
+  communitySlug: string;
+  logoUrl: string | null;
+  role: string;
+  skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | null;
+  cpTotal: number;
+  bySport: Partial<Record<Sport, PerSportStats>>;
+};
+
+// Same player_rankings/community_points/community_members sources as getMyPerSportStats and
+// getMyStatsHighlights (../profile-actions.ts), but kept broken out by community instead of
+// summed across every community the caller belongs to — a player active in 3 communities should
+// see 3 distinct cards, not one blended "Matches: 47" number that hides which community it
+// actually came from.
+export async function getMyStatsByCommunity(): Promise<CommunityStats[]> {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: rankings } = await supabase
-    .from('player_rankings')
-    .select('sport, total_matches, total_wins, elo_peak')
-    .eq('profile_id', profile.id);
+  const { data: memberships } = await supabase
+    .from('community_members')
+    .select(`
+      community_id,
+      role,
+      skill_level,
+      community:communities!community_members_community_id_fkey ( id, name, slug, logo_url )
+    `)
+    .eq('profile_id', profile.id)
+    .eq('is_active', true)
+    .order('joined_at', { ascending: false });
 
-  const rows = rankings || [];
-  const bySport: Record<Sport, PerSportStats | null> = { PADEL: null, TENNIS: null };
+  const activeMemberships = (memberships || []) as any[];
+  if (activeMemberships.length === 0) return [];
 
-  for (const sport of ['PADEL', 'TENNIS'] as Sport[]) {
-    const sportRows = rows.filter((r) => r.sport === sport);
-    if (sportRows.length === 0) continue;
+  const communityIds = activeMemberships.map((m) => m.community_id);
 
-    const totalMatches = sportRows.reduce((sum, r) => sum + (r.total_matches || 0), 0);
-    const totalWins = sportRows.reduce((sum, r) => sum + (r.total_wins || 0), 0);
-    const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 1000) / 10 : null;
-    const peakElo = Math.max(...sportRows.map((r) => Number(r.elo_peak) || 0));
+  const [{ data: rankings }, { data: cpRows }] = await Promise.all([
+    supabase
+      .from('player_rankings')
+      .select('community_id, sport, total_matches, total_wins, elo_peak')
+      .eq('profile_id', profile.id)
+      .in('community_id', communityIds),
+    supabase
+      .from('community_points')
+      .select('community_id, points_awarded')
+      .eq('profile_id', profile.id)
+      .in('community_id', communityIds),
+  ]);
 
-    bySport[sport] = { totalMatches, winRate, peakElo };
-  }
+  const cpByCommunity: Record<string, number> = {};
+  (cpRows || []).forEach((r) => {
+    cpByCommunity[r.community_id] = (cpByCommunity[r.community_id] || 0) + Number(r.points_awarded || 0);
+  });
 
-  return bySport;
+  return activeMemberships.map((m): CommunityStats => {
+    const communityRankings = (rankings || []).filter((r) => r.community_id === m.community_id);
+    const bySport: Partial<Record<Sport, PerSportStats>> = {};
+
+    for (const sport of ['PADEL', 'TENNIS'] as Sport[]) {
+      const sportRows = communityRankings.filter((r) => r.sport === sport);
+      if (sportRows.length === 0) continue;
+
+      const totalMatches = sportRows.reduce((sum, r) => sum + (r.total_matches || 0), 0);
+      const totalWins = sportRows.reduce((sum, r) => sum + (r.total_wins || 0), 0);
+      const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 1000) / 10 : null;
+      const peakElo = Math.max(...sportRows.map((r) => Number(r.elo_peak) || 0));
+
+      bySport[sport] = { totalMatches, winRate, peakElo };
+    }
+
+    // Supabase infers this embed as an array even though community_id -> communities is
+    // to-one — same pre-existing quirk worked around loosely elsewhere in this codebase.
+    const community = Array.isArray(m.community) ? m.community[0] : m.community;
+
+    return {
+      communityId: m.community_id,
+      communityName: community?.name || 'Community',
+      communitySlug: community?.slug || '',
+      logoUrl: community?.logo_url ?? null,
+      role: m.role,
+      skillLevel: m.skill_level ?? null,
+      cpTotal: Math.round(cpByCommunity[m.community_id] || 0),
+      bySport,
+    };
+  });
 }
 
 export type EloTrendPoint = { date: string; elo: number };

@@ -1,14 +1,14 @@
 import { requireProfile } from '@/server/guards';
 import { getMyProfileWithCommunities } from '../profile-actions';
-import { getMyPerSportStats, getMyEloTrend } from './profile-actions';
+import { getMyStatsByCommunity, getMyEloTrend } from './profile-actions';
 import ProfileView from './profile-view';
 
 export default async function ProfilePage() {
   await requireProfile();
 
-  const [profileData, perSportStats, tennisTrend, padelTrend] = await Promise.all([
+  const [profileData, communityStats, tennisTrend, padelTrend] = await Promise.all([
     getMyProfileWithCommunities(),
-    getMyPerSportStats(),
+    getMyStatsByCommunity(),
     getMyEloTrend('TENNIS'),
     getMyEloTrend('PADEL'),
   ]);
@@ -20,7 +20,7 @@ export default async function ProfilePage() {
   return (
     <ProfileView
       profileData={profileData}
-      perSportStats={perSportStats}
+      communityStats={communityStats}
       eloTrends={{ TENNIS: tennisTrend, PADEL: padelTrend }}
     />
   );

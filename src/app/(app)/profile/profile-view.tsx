@@ -1,10 +1,27 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, Loader2, Settings, HelpCircle, Target, TrendingUp, Trophy } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Camera,
+  Loader2,
+  Settings,
+  HelpCircle,
+  Target,
+  TrendingUp,
+  Trophy,
+  Crown,
+  Shield,
+  Users,
+  Star,
+  Flame,
+  Mars,
+  Venus,
+  ChevronRight,
+} from 'lucide-react';
 import { uploadAvatar, updateProfile } from '../profile-actions';
 import type { ProfileWithCommunities } from '../profile-actions';
-import type { PerSportStats, EloTrend, Sport } from './profile-actions';
+import type { CommunityStats, EloTrend, Sport, PerSportStats } from './profile-actions';
 import AvatarCropModal from '../avatar-crop-modal';
 import EloTrendChart from './elo-trend-chart';
 import SettingsSheet from './settings-sheet';
@@ -12,14 +29,35 @@ import HelpSheet from './help-sheet';
 
 type Props = {
   profileData: ProfileWithCommunities;
-  perSportStats: Record<Sport, PerSportStats | null>;
+  communityStats: CommunityStats[];
   eloTrends: Record<Sport, EloTrend>;
 };
 
 const SPORT_ORDER: Sport[] = ['TENNIS', 'PADEL'];
 const SPORT_LABEL: Record<Sport, string> = { TENNIS: 'Tennis', PADEL: 'Padel' };
 
-export default function ProfileView({ profileData, perSportStats, eloTrends }: Props) {
+const ROLE_BADGE: Record<string, { label: string; icon: typeof Crown; className: string }> = {
+  ADMIN: { label: 'Admin', icon: Crown, className: 'bg-gradient-to-r from-amber-400 to-amber-600 text-white shadow-sm shadow-amber-500/30' },
+  HOST: { label: 'Host', icon: Shield, className: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm shadow-blue-500/30' },
+  MEMBER: { label: 'Member', icon: Users, className: 'bg-zinc-100 text-zinc-600 border border-zinc-200' },
+};
+
+const SKILL_BADGE: Record<string, { label: string; icon: typeof Star; className: string }> = {
+  BEGINNER: { label: 'Beginner', icon: Star, className: 'bg-zinc-100 text-zinc-600 border border-zinc-200' },
+  INTERMEDIATE: { label: 'Intermediate', icon: Star, className: 'bg-gradient-to-r from-blue-400 to-blue-600 text-white shadow-sm shadow-blue-500/30' },
+  ADVANCED: { label: 'Advanced', icon: Flame, className: 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-sm shadow-orange-500/30' },
+};
+
+function Badge({ icon: Icon, label, className }: { icon: typeof Crown; label: string; className: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide ${className}`}>
+      <Icon className="h-2.5 w-2.5" />
+      {label}
+    </span>
+  );
+}
+
+export default function ProfileView({ profileData, communityStats, eloTrends }: Props) {
   const [avatarUrl, setAvatarUrl] = useState(profileData.profile.avatar_url ?? '');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -80,7 +118,10 @@ export default function ProfileView({ profileData, perSportStats, eloTrends }: P
     }
   };
 
-  const availableSports = SPORT_ORDER.filter((sport) => perSportStats[sport] !== null);
+  // A sport's trend chart is worth showing if it's been played in at least one community.
+  const availableSports = SPORT_ORDER.filter((sport) =>
+    communityStats.some((c) => c.bySport[sport] !== undefined)
+  );
 
   return (
     <div className="space-y-5">
@@ -136,7 +177,8 @@ export default function ProfileView({ profileData, perSportStats, eloTrends }: P
           {username && <p className="text-xs text-white/50 font-medium">@{username}</p>}
 
           {gender && (
-            <span className="mt-2 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-[10px] font-extrabold text-white/80">
+            <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-white/15 to-white/5 border border-white/20 text-[10px] font-extrabold text-white/90">
+              {gender === 'MALE' ? <Mars className="h-3 w-3" /> : <Venus className="h-3 w-3" />}
               {gender === 'MALE' ? 'Male' : 'Female'}
             </span>
           )}
@@ -145,32 +187,30 @@ export default function ProfileView({ profileData, perSportStats, eloTrends }: P
         </div>
       </div>
 
-      {availableSports.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-200 py-10 text-center text-sm text-zinc-400">
-          No matches played yet. Join a community and play a scored session to see your stats here.
+      {availableSports.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 px-1">Elo Trend · All Communities</h3>
+          {availableSports.map((sport) => (
+            <EloTrendChart key={sport} sport={SPORT_LABEL[sport]} trend={eloTrends[sport]} />
+          ))}
         </div>
-      ) : (
-        availableSports.map((sport) => {
-          const stats = perSportStats[sport]!;
-          return (
-            <div key={sport} className="space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 px-1">{SPORT_LABEL[sport]}</h3>
-
-              <div className="grid grid-cols-3 gap-2">
-                <StatTile icon={Target} label="Matches" value={String(stats.totalMatches)} />
-                <StatTile icon={TrendingUp} label="Win Rate" value={stats.winRate !== null ? `${stats.winRate}%` : '—'} />
-                <StatTile
-                  icon={Trophy}
-                  label="Peak Elo"
-                  value={stats.peakElo !== null ? String(Math.round(stats.peakElo)) : '—'}
-                />
-              </div>
-
-              <EloTrendChart sport={SPORT_LABEL[sport]} trend={eloTrends[sport]} />
-            </div>
-          );
-        })
       )}
+
+      <div className="space-y-3">
+        <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 px-1">Communities</h3>
+
+        {communityStats.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-zinc-200 py-10 text-center text-sm text-zinc-400">
+            No communities yet. Join one and play a scored session to see your stats here.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {communityStats.map((c) => (
+              <CommunityStatsCard key={c.communityId} stats={c} />
+            ))}
+          </div>
+        )}
+      </div>
 
       {cropImageSrc && (
         <AvatarCropModal
@@ -189,12 +229,86 @@ export default function ProfileView({ profileData, perSportStats, eloTrends }: P
   );
 }
 
-function StatTile({ icon: Icon, label, value }: { icon: typeof Target; label: string; value: string }) {
+function CommunityStatsCard({ stats }: { stats: CommunityStats }) {
+  const roleBadge = ROLE_BADGE[stats.role] ?? ROLE_BADGE.MEMBER;
+  const skillBadge = stats.skillLevel ? SKILL_BADGE[stats.skillLevel] : null;
+  const sportsPlayed = SPORT_ORDER.filter((sport) => stats.bySport[sport] !== undefined);
+  const initials = stats.communityName.slice(0, 2).toUpperCase();
+
   return (
-    <div className="rounded-xl border border-zinc-100 bg-white shadow-sm p-3 text-center space-y-1">
-      <Icon className="h-3.5 w-3.5 text-orange-500 mx-auto" />
-      <p className="text-lg font-black text-zinc-900 tabular-nums">{value}</p>
-      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">{label}</p>
+    <div className="rounded-2xl border border-zinc-100 bg-white shadow-sm overflow-hidden hover:shadow-md hover:border-orange-200 transition-all">
+      <Link
+        href={`/c/${stats.communitySlug}`}
+        className="flex items-center gap-3 p-4 pb-3 bg-gradient-to-br from-orange-50 via-white to-white border-b border-zinc-100 group"
+      >
+        {stats.logoUrl ? (
+          <img
+            src={stats.logoUrl}
+            alt=""
+            className="h-11 w-11 rounded-xl object-cover border border-zinc-200 shadow-xs shrink-0"
+          />
+        ) : (
+          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-sm shrink-0">
+            {initials}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="font-black text-sm text-zinc-900 truncate group-hover:underline">{stats.communityName}</p>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <Badge icon={roleBadge.icon} label={roleBadge.label} className={roleBadge.className} />
+            {skillBadge && <Badge icon={skillBadge.icon} label={skillBadge.label} className={skillBadge.className} />}
+          </div>
+        </div>
+        {stats.cpTotal > 0 && (
+          <div className="text-right shrink-0">
+            <p className="text-lg font-black text-amber-600 tabular-nums leading-none">{stats.cpTotal}</p>
+            <p className="text-[9px] font-bold uppercase text-zinc-400 mt-0.5">CP</p>
+          </div>
+        )}
+        <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-orange-400 transition-colors shrink-0" />
+      </Link>
+
+      <div className="p-4 space-y-3">
+        {sportsPlayed.length === 0 ? (
+          <p className="text-xs text-zinc-400 text-center py-2">No matches played yet in this community.</p>
+        ) : (
+          sportsPlayed.map((sport) => {
+            const sportStats = stats.bySport[sport] as PerSportStats;
+            return (
+              <div key={sport}>
+                <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1.5">
+                  {SPORT_LABEL[sport]}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  <MiniStat icon={Target} label="Matches" value={String(sportStats.totalMatches)} />
+                  <MiniStat
+                    icon={TrendingUp}
+                    label="Win Rate"
+                    value={sportStats.winRate !== null ? `${sportStats.winRate}%` : '—'}
+                  />
+                  <MiniStat
+                    icon={Trophy}
+                    label="Peak Elo"
+                    value={sportStats.peakElo !== null ? String(Math.round(sportStats.peakElo)) : '—'}
+                  />
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ icon: Icon, label, value }: { icon: typeof Target; label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-zinc-50 border border-zinc-100 p-2.5 text-center space-y-1">
+      <div className="h-6 w-6 rounded-full bg-orange-50 flex items-center justify-center mx-auto">
+        <Icon className="h-3 w-3 text-orange-500" />
+      </div>
+      <p className="text-base font-black text-zinc-900 tabular-nums">{value}</p>
+      <p className="text-[9px] font-bold uppercase tracking-wide text-zinc-400">{label}</p>
     </div>
   );
 }
