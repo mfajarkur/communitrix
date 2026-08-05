@@ -104,25 +104,20 @@ export type EloTrend = { startingElo: number; points: EloTrendPoint[] };
 
 const TREND_WINDOW_DAYS = 90;
 
-// Reconstructs a per-sport Elo trend from existing match history — no history
-// table needed. Same match_players -> matches -> sessions join already used
-// by the in-community player profile's sparkline (players/[playerId]/page.tsx),
-// extended to aggregate across every community the caller belongs to and
-// filtered to one sport client-side (mirrors that page's own pattern of
-// fetching broadly then filtering/sorting in JS, rather than relying on
-// PostgREST nested-embed filters that have no other precedent in this repo).
-export async function getMyEloTrend(sport: Sport): Promise<EloTrend> {
+// Reconstructs a per-community, per-sport Elo trend from existing match history — no history
+// table needed. Same match_players -> matches -> sessions join already used by the in-community
+// player profile's sparkline (players/[playerId]/page.tsx).
+//
+// Deliberately scoped to ONE community, never merged across several: player_rankings (and the
+// elo_before/elo_after this reads) is an independent rating pool per (community_id, sport) —
+// different starting point, different opponent pool, its own K-factor/provisional history. An
+// earlier version of this function pooled match history across every community the caller
+// belongs to into a single line, which doesn't mean anything real — a "drop" in that combined
+// line could just be the next data point landing in a different community's unrelated rating
+// scale, not the player actually getting worse.
+export async function getMyEloTrend(sport: Sport, communityId: string): Promise<EloTrend> {
   const profile = await requireProfile();
   const supabase = await createClient();
-
-  const { data: memberships } = await supabase
-    .from('community_members')
-    .select('community_id')
-    .eq('profile_id', profile.id)
-    .eq('is_active', true);
-
-  const communityIds = (memberships || []).map((m) => m.community_id);
-  if (communityIds.length === 0) return { startingElo: 1000, points: [] };
 
   const windowStart = new Date();
   windowStart.setDate(windowStart.getDate() - TREND_WINDOW_DAYS);
@@ -139,7 +134,7 @@ export async function getMyEloTrend(sport: Sport): Promise<EloTrend> {
       )
     `)
     .eq('profile_id', profile.id)
-    .in('community_id', communityIds);
+    .eq('community_id', communityId);
 
   const completed = ((rawHistory || []) as any[])
     .filter(

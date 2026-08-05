@@ -30,7 +30,9 @@ import HelpSheet from './help-sheet';
 type Props = {
   profileData: ProfileWithCommunities;
   communityStats: CommunityStats[];
-  eloTrends: Record<Sport, EloTrend>;
+  // Keyed by communityId, then sport — never a single merged trend across communities (see
+  // getMyEloTrend's own comment for why that doesn't mean anything real).
+  eloTrendsByCommunity: Record<string, Partial<Record<Sport, EloTrend>>>;
 };
 
 const SPORT_ORDER: Sport[] = ['TENNIS', 'PADEL'];
@@ -57,7 +59,7 @@ function Badge({ icon: Icon, label, className }: { icon: typeof Crown; label: st
   );
 }
 
-export default function ProfileView({ profileData, communityStats, eloTrends }: Props) {
+export default function ProfileView({ profileData, communityStats, eloTrendsByCommunity }: Props) {
   const [avatarUrl, setAvatarUrl] = useState(profileData.profile.avatar_url ?? '');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -117,11 +119,6 @@ export default function ProfileView({ profileData, communityStats, eloTrends }: 
       setUploadError(result.error);
     }
   };
-
-  // A sport's trend chart is worth showing if it's been played in at least one community.
-  const availableSports = SPORT_ORDER.filter((sport) =>
-    communityStats.some((c) => c.bySport[sport] !== undefined)
-  );
 
   return (
     <div className="space-y-5">
@@ -187,15 +184,6 @@ export default function ProfileView({ profileData, communityStats, eloTrends }: 
         </div>
       </div>
 
-      {availableSports.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 px-1">Elo Trend · All Communities</h3>
-          {availableSports.map((sport) => (
-            <EloTrendChart key={sport} sport={SPORT_LABEL[sport]} trend={eloTrends[sport]} />
-          ))}
-        </div>
-      )}
-
       <div className="space-y-3">
         <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 px-1">Communities</h3>
 
@@ -206,7 +194,7 @@ export default function ProfileView({ profileData, communityStats, eloTrends }: 
         ) : (
           <div className="space-y-3">
             {communityStats.map((c) => (
-              <CommunityStatsCard key={c.communityId} stats={c} />
+              <CommunityStatsCard key={c.communityId} stats={c} eloTrends={eloTrendsByCommunity[c.communityId] ?? {}} />
             ))}
           </div>
         )}
@@ -229,7 +217,13 @@ export default function ProfileView({ profileData, communityStats, eloTrends }: 
   );
 }
 
-function CommunityStatsCard({ stats }: { stats: CommunityStats }) {
+function CommunityStatsCard({
+  stats,
+  eloTrends,
+}: {
+  stats: CommunityStats;
+  eloTrends: Partial<Record<Sport, EloTrend>>;
+}) {
   const roleBadge = ROLE_BADGE[stats.role] ?? ROLE_BADGE.MEMBER;
   const skillBadge = stats.skillLevel ? SKILL_BADGE[stats.skillLevel] : null;
   const sportsPlayed = SPORT_ORDER.filter((sport) => stats.bySport[sport] !== undefined);
@@ -292,6 +286,11 @@ function CommunityStatsCard({ stats }: { stats: CommunityStats }) {
                     value={sportStats.peakElo !== null ? String(Math.round(sportStats.peakElo)) : '—'}
                   />
                 </div>
+                {eloTrends[sport] && (
+                  <div className="mt-2">
+                    <EloTrendChart sport={SPORT_LABEL[sport]} trend={eloTrends[sport]!} />
+                  </div>
+                )}
               </div>
             );
           })

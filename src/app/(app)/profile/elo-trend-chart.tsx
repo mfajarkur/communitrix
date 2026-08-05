@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import type { EloTrend } from './profile-actions';
 
@@ -14,6 +14,10 @@ type PeriodLabel = (typeof PERIODS)[number]['label'];
 
 export default function EloTrendChart({ sport, trend }: { sport: string; trend: EloTrend }) {
   const [period, setPeriod] = useState<PeriodLabel>('30D');
+  // A stable, instance-unique id — deriving this from `sport` alone (as it used to) collides
+  // once more than one chart for the same sport can render on a page at once (e.g. a player
+  // active in two communities playing the same sport, one chart per community).
+  const reactId = useId();
 
   const { referenceElo, points, currentElo } = useMemo(() => {
     const days = PERIODS.find((p) => p.label === period)!.days;
@@ -64,7 +68,7 @@ export default function EloTrendChart({ sport, trend }: { sport: string; trend: 
       : '';
   const referenceY = padding + plotHeight - ((referenceElo - minElo) / range) * plotHeight;
   const last = coords[coords.length - 1];
-  const gradientId = `eloGradient-${sport}`;
+  const gradientId = `eloGradient-${reactId}`;
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white shadow-sm p-4 space-y-3">
