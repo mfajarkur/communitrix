@@ -305,7 +305,7 @@ export interface PersistRoundInput {
 
 export async function persistRoundAction(
   input: PersistRoundInput
-): Promise<ActionResult<{ roundId: string }>> {
+): Promise<ActionResult<{ roundId: string; matches: { id: string; courtNumber: number }[] }>> {
   try {
     const supabase = await createClient();
 
@@ -350,6 +350,15 @@ export async function persistRoundAction(
       };
     }
 
+    // Real match ids, keyed by court — lets the caller optimistically render this round's
+    // cards (and immediately accept score taps against a real id) without waiting on a second
+    // router.refresh() round-trip just to learn what got created.
+    const { data: persistedMatches } = await supabase
+      .from('matches')
+      .select('id, court_number')
+      .eq('round_id', roundId)
+      .order('court_number', { ascending: true });
+
     const communitySlug = (session as any).community?.slug;
     if (communitySlug) {
       revalidatePath(`/c/${communitySlug}/sessions`);
@@ -357,7 +366,10 @@ export async function persistRoundAction(
 
     return {
       ok: true,
-      data: { roundId },
+      data: {
+        roundId,
+        matches: (persistedMatches || []).map((m) => ({ id: m.id, courtNumber: m.court_number })),
+      },
     };
   } catch (error: any) {
     if (error.message?.includes('redirect')) throw error;

@@ -107,7 +107,7 @@ export default function LiveBoardWrapper({
   isHostOrAdmin,
   sessionConfig,
   sessionMeta,
-  rounds,
+  rounds: roundsProp,
   matches: matchesProp,
   sessionPlayers,
   standings,
@@ -116,16 +116,22 @@ export default function LiveBoardWrapper({
   const supabase = createClient();
   const { showStatus, clearStatus } = useStatusRibbon();
 
-  // Local copy so a just-submitted score can be shown optimistically the instant the request
-  // succeeds, instead of waiting on router.refresh()'s server round-trip (a real network+re-
-  // render cost, easily ~2s) even though the button's own submitting animation already ended.
-  // Re-synced from the prop whenever fresh server data lands (router.refresh() completing, or a
-  // Realtime event from another host), which naturally reconciles/corrects the optimistic guess
-  // with the real thing (e.g. once Elo deltas are computed) — see submitScore below.
+  // Local copies so a just-submitted score or a just-generated round can be shown optimistically
+  // the instant the request succeeds, instead of waiting on router.refresh()'s server round-trip
+  // (a real network+re-render cost, easily ~2s) even though the button's own submitting
+  // animation already ended. Re-synced from the props whenever fresh server data lands
+  // (router.refresh() completing, or a Realtime event from another host), which naturally
+  // reconciles/corrects the optimistic guess with the real thing (e.g. once Elo deltas are
+  // computed) — see submitScore/handleGenerateClick below.
   const [matches, setMatches] = useState<Match[]>(matchesProp);
   useEffect(() => {
     setMatches(matchesProp);
   }, [matchesProp]);
+
+  const [rounds, setRounds] = useState<Round[]>(roundsProp);
+  useEffect(() => {
+    setRounds(roundsProp);
+  }, [roundsProp]);
 
   const [viewMode, setViewMode] = useState<'MATCHES' | 'LEADERBOARD'>('MATCHES');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -180,6 +186,10 @@ export default function LiveBoardWrapper({
     const playingIds = new Set(selectedRoundMatches.flatMap((m) => m.match_players.map((mp) => mp.profile_id)));
     return sessionPlayers.filter((p) => !playingIds.has(p.id));
   }, [selectedRoundMatches, sessionPlayers]);
+
+  // For filling in avatar/name on an optimistically-rendered round — generateNextRoundAction's
+  // preview only returns {id, name} per player, not avatar_url.
+  const sessionPlayerMap = useMemo(() => new Map(sessionPlayers.map((p) => [p.id, p])), [sessionPlayers]);
 
   const latestRoundMatches = useMemo(
     () => matches.filter((m) => m.round_number === latestRoundNumber),
@@ -389,7 +399,47 @@ export default function LiveBoardWrapper({
     clearStatus(statusId);
 
     if (persistResult.ok) {
-      router.refresh();
+      // Optimistic: render this round from the preview we already have (real match ids came
+      // back from persistRoundAction) instead of waiting on router.refresh()'s round-trip to
+      // find out what we just asked the server to create. Elo/formula_version don't matter yet
+      // — nothing in this round is scored — and get filled in for real once the refresh below
+      // reconciles.
+      const toMatchPlayer = (p: { id: string; name: string }, team: 'A' | 'B', slot: number): MatchPlayer => ({
+        profile_id: p.id,
+        team,
+        slot,
+        elo_before: null,
+        elo_delta: null,
+        elo_after: null,
+        k_factor: null,
+        elo_profile_id: null,
+        profile: {
+          full_name: sessionPlayerMap.get(p.id)?.name ?? p.name,
+          display_name: null,
+          avatar_url: sessionPlayerMap.get(p.id)?.avatarUrl ?? null,
+        },
+        elo_profile: null,
+      });
+
+      const newMatches: Match[] = preview.courts.map((c: any) => ({
+        id: persistResult.data.matches.find((pm) => pm.courtNumber === c.courtNumber)?.id ?? `temp-${c.courtNumber}`,
+        court_number: c.courtNumber,
+        round_number: preview.roundNumber,
+        round_id: persistResult.data.roundId,
+        team_a_score: null,
+        team_b_score: null,
+        status: 'SCHEDULED',
+        winner_side: null,
+        formula_version: 2,
+        match_players: [
+          ...c.teamA.map((p: any, i: number) => toMatchPlayer(p, 'A', i + 1)),
+          ...c.teamB.map((p: any, i: number) => toMatchPlayer(p, 'B', i + 1)),
+        ],
+      }));
+
+      setMatches((prev) => [...prev, ...newMatches]);
+      setRounds((prev) => [...prev, { id: persistResult.data.roundId, round_number: preview.roundNumber, status: 'ACTIVE' }]);
+      refreshBoard();
     } else {
       setError(persistResult.message);
     }
