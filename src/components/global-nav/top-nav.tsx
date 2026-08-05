@@ -42,17 +42,16 @@ export default function TopNav() {
             <Link
               key={href}
               href={href}
-              // "Folder" effect: the active tab's own background turns white — the same color
-              // as the page content directly beneath it (app layout.tsx's shell is bg-white) —
-              // and only its top corners round off, so it reads as one continuous surface
-              // rising up out of the page rather than a separate pill floating on the dark bar.
-              // The orange bar the design asks for is exactly the seam where that white tab
-              // meets the page: a solid border-b on the active tab, transparent (same thickness)
-              // on the inactive ones so every tab reserves identical height and nothing shifts
-              // when the active one changes.
+              // Active tab: solid orange fill, near-black text — the accent bar underneath is
+              // zinc-950 (not orange, which would vanish against an orange fill; not white,
+              // which wouldn't read against the dark nav bar either) so it echoes both the text
+              // color and the nav bar's own background, reading as the tab rooted back into the
+              // bar rather than reaching down into the page. Inactive tabs keep an identically-
+              // sized transparent border so every tab reserves the same height and nothing
+              // shifts when the active one changes.
               className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-t-xl border-b-[3px] transition-all cursor-pointer ${
                 active
-                  ? 'bg-white text-orange-600 border-orange-500'
+                  ? 'bg-orange-500 text-zinc-950 border-zinc-950 shadow-sm'
                   : 'text-zinc-400 border-transparent hover:text-white hover:bg-zinc-900'
               }`}
             >
