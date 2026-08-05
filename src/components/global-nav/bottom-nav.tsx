@@ -7,12 +7,16 @@ import { User, UsersRound, CalendarClock } from 'lucide-react';
 const TABS = [
   { href: '/profile', label: 'Profile', icon: User, match: (p: string) => p.startsWith('/profile') },
   {
-    href: '/communities',
+    // Jumps straight into a community (the /c redirect route below resolves to whichever one
+    // the user looked at last) instead of always landing on the /communities list first — the
+    // list is still reachable from the "+" chip in the in-community switcher, or by tapping this
+    // same tab again once already inside a community.
+    href: '/c',
     label: 'Community',
     icon: UsersRound,
-    // Stays highlighted while inside a specific community too, so the nav
-    // keeps reinforcing "you're still in the Community space".
-    match: (p: string) => p.startsWith('/communities') || p.startsWith('/c/'),
+    // Stays highlighted for the list page and any specific community too, so the nav keeps
+    // reinforcing "you're still in the Community space".
+    match: (p: string) => p === '/c' || p.startsWith('/c/') || p.startsWith('/communities'),
   },
   { href: '/activities', label: 'Activities', icon: CalendarClock, match: (p: string) => p.startsWith('/activities') },
 ];

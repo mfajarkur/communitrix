@@ -25,7 +25,6 @@ import {
   User,
   LogOut,
   Flame,
-  ArrowLeft,
   Filter,
   MapPin,
   Clock,
@@ -42,6 +41,7 @@ import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.a
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
 import { requestSkillLevelAction, resolveSkillLevelRequestAction, type SkillLevel } from '@/server/actions/skill.actions';
+import { LAST_COMMUNITY_COOKIE } from '@/lib/constants';
 
 const SKILL_LEVEL_LABEL: Record<string, string> = {
   BEGINNER: 'Beginner',
@@ -76,6 +76,7 @@ interface CommunityTabsProps {
   callerProfile?: any;
   pendingJoinRequests?: any[];
   pendingSkillRequests?: any[];
+  myCommunities?: { id: string; name: string; slug: string; logo_url: string | null }[];
 }
 
 export default function CommunityTabs({
@@ -99,6 +100,7 @@ export default function CommunityTabs({
   callerProfile,
   pendingJoinRequests = [],
   pendingSkillRequests = [],
+  myCommunities = [],
 }: CommunityTabsProps) {
   const [activeTab, setActiveTab] = useState<'home' | 'sessions' | 'members' | 'leaderboard'>('home');
   const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
@@ -139,6 +141,13 @@ export default function CommunityTabs({
       }
     }
   }, []);
+
+  // Remembers "the community I was just looking at" so the bottom nav's Community tab can jump
+  // straight back into it next time, instead of always landing on the /communities list first
+  // (see src/app/(app)/c/page.tsx, the redirect route that reads this cookie).
+  useEffect(() => {
+    document.cookie = `${LAST_COMMUNITY_COOKIE}=${communitySlug}; path=/; max-age=${60 * 60 * 24 * 180}; SameSite=Lax`;
+  }, [communitySlug]);
 
   const handleTabChange = (tab: 'home' | 'sessions' | 'members' | 'leaderboard') => {
     setActiveTab(tab);
@@ -328,36 +337,61 @@ export default function CommunityTabs({
   const bannerImage = community?.logo_url || '/community_banner_placeholder.png';
   return (
     <>
-      {/* Compact header — unconditional, shown on every tab, replacing the old
-          Home-only tall hero banner and the old per-tab "plain title + back"
-          pattern. The global bottom nav now owns "where am I / how do I leave
-          entirely", so this only needs to say which community and give one
-          quick way back to the list. */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-orange-50/40 to-white border border-orange-100/70 px-3 py-3 mb-3 flex items-center gap-3">
-        <Link
-          href="/communities"
-          className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-zinc-200 text-zinc-500 hover:text-orange-600 hover:border-orange-200 shadow-sm transition-all cursor-pointer"
-          title="Back to Communities"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <img
-          src={bannerImage}
-          alt={communityName}
-          className="h-11 w-11 rounded-xl object-cover shrink-0 ring-2 ring-white shadow-sm border border-orange-100"
-        />
-        <div className="min-w-0 flex-1">
-          <h1 className="text-base font-black tracking-tight text-zinc-900 truncate">{communityName}</h1>
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 mt-0.5 text-[9px] font-black tracking-wider uppercase ${
-            role === 'ADMIN'
-              ? 'bg-orange-500 text-white'
-              : role === 'HOST'
-              ? 'bg-orange-50 text-orange-600 border border-orange-200'
-              : 'bg-zinc-100 text-zinc-600'
-          }`}>
-            {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
-            {role}
-          </span>
+      {/* Community switcher — replaces the old lone "back to list" arrow. The current
+          community reads like the old header (logo + name + role); every other community the
+          caller belongs to gets a small tappable avatar so switching is one tap, no detour
+          through the /communities list — which stays reachable via the trailing "+" chip. Also
+          doubles as the visual home for "which community am I in", since the global bottom nav
+          only ever says "you're somewhere in Community". */}
+      <div className="relative overflow-x-auto scrollbar-thin rounded-2xl bg-gradient-to-r from-orange-50 via-orange-50/40 to-white border border-orange-100/70 p-2 mb-3">
+        <div className="flex items-center gap-2 w-max">
+          <div className="shrink-0 flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl bg-white shadow-sm border border-orange-200">
+            <img
+              src={bannerImage}
+              alt=""
+              className="h-9 w-9 rounded-lg object-cover shrink-0 ring-2 ring-orange-100"
+            />
+            <div className="min-w-0">
+              <p className="text-sm font-black tracking-tight text-zinc-900 truncate max-w-[140px]">{communityName}</p>
+              <span className={`inline-flex items-center gap-1 text-[8px] font-black tracking-wider uppercase ${
+                role === 'ADMIN' ? 'text-orange-600' : role === 'HOST' ? 'text-orange-500' : 'text-zinc-500'
+              }`}>
+                {role === 'ADMIN' ? <Shield className="h-2 w-2" /> : <User className="h-2 w-2" />}
+                {role}
+              </span>
+            </div>
+          </div>
+
+          {myCommunities
+            .filter((c) => c.slug !== communitySlug)
+            .map((c) => (
+              <Link
+                key={c.id}
+                href={`/c/${c.slug}`}
+                title={c.name}
+                className="shrink-0"
+              >
+                {c.logo_url ? (
+                  <img
+                    src={c.logo_url}
+                    alt={c.name}
+                    className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm hover:border-orange-300 hover:scale-105 transition-all"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-[11px] uppercase border-2 border-white shadow-sm hover:border-orange-300 hover:scale-105 transition-all">
+                    {c.name.slice(0, 2)}
+                  </div>
+                )}
+              </Link>
+            ))}
+
+          <Link
+            href="/communities"
+            title="All Communities"
+            className="shrink-0 h-9 w-9 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 hover:text-orange-600 border-2 border-white shadow-sm transition-all"
+          >
+            <Plus className="h-4 w-4" />
+          </Link>
         </div>
       </div>
 

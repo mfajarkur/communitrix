@@ -78,6 +78,19 @@ export default async function CommunityDashboardPage({
 
   const isAdmin = callerMember.role === 'ADMIN';
 
+  // Every community the caller is an active member of — feeds the header's community switcher
+  // (community-tabs.tsx), which needs the caller's full roster of communities, not just this one.
+  const { data: myMemberships } = await supabase
+    .from('community_members')
+    .select('community:communities(id, name, slug, logo_url)')
+    .eq('profile_id', profile.id)
+    .eq('is_active', true)
+    .order('joined_at', { ascending: false });
+
+  const myCommunities = (myMemberships || [])
+    .map((m: any) => (Array.isArray(m.community) ? m.community[0] : m.community))
+    .filter((c: any): c is { id: string; name: string; slug: string; logo_url: string | null } => !!c);
+
   // 3. Fetch active members list
   const { data: members } = await adminClient
     .from('community_members')
@@ -322,6 +335,7 @@ export default async function CommunityDashboardPage({
         callerProfile={profile}
         pendingJoinRequests={pendingJoinRequests}
         pendingSkillRequests={pendingSkillRequests}
+        myCommunities={myCommunities}
       />
     </div>
   );
