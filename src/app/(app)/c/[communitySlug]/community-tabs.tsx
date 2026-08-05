@@ -954,7 +954,7 @@ export default function CommunityTabs({
                 {isHostOrAdmin && (
                   <Link
                     href={`/c/${communitySlug}/sessions/new`}
-                    className="fixed bottom-28 right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-6 z-40 h-14 w-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
                     title="Create New Session"
                   >
                     <Plus className="h-7 w-7" />
@@ -1014,7 +1014,7 @@ export default function CommunityTabs({
                   </div>
 
                   {memberSelectionMode && (
-                    <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-40 flex justify-center px-4 pointer-events-none">
+                    <div className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4 pointer-events-none">
                       <div className="pointer-events-auto flex items-center gap-3 bg-zinc-900 text-white rounded-full shadow-lg px-4 py-2.5 max-w-full">
                         <span className="text-xs font-bold whitespace-nowrap">
                           {selectedMemberIds.size} selected
