@@ -7,8 +7,7 @@ import { generateNextRoundAction, persistRoundAction } from '@/server/actions/ro
 import { addGuestPlayerAction } from '@/server/actions/member.actions';
 import { saveQuickMatchStateAction } from '@/server/actions/personal-match.actions';
 import LeaderboardPoster from '@/components/leaderboard-poster';
-import RoundCarousel from '@/components/session-live/round-carousel';
-import LiveLeaderboardTabs from '@/components/session-live/live-leaderboard-tabs';
+import SessionViewTabs from '@/components/session-live/session-view-tabs';
 import GenerateRoundButton from '@/components/session-live/generate-round-button';
 import ScoreButtonPair from '@/components/session-live/score-button-pair';
 import StandingsTable from '@/components/session-live/standings-table';
@@ -1840,9 +1839,15 @@ export default function WizardForm({
     <div className="space-y-6 select-none font-sans">
       {/* Wizard Progress Navigation Header / Live Session 2-Tab Switcher */}
       {step >= 4 ? (
-        <LiveLeaderboardTabs
-          value={step === 5 ? 'LEADERBOARD' : 'MATCHES'}
-          onChange={(v: 'MATCHES' | 'LEADERBOARD') => setStep(v === 'LEADERBOARD' ? 5 : 4)}
+        <SessionViewTabs
+          viewMode={step === 5 ? 'LEADERBOARD' : 'MATCHES'}
+          onViewModeChange={(v: 'MATCHES' | 'LEADERBOARD') => setStep(v === 'LEADERBOARD' ? 5 : 4)}
+          rounds={Array.from({ length: totalRounds }, (_, i) => i + 1).map((rNum) => {
+            const roundMatchesList = matches.filter((m) => (m.roundNumber || 1) === rNum);
+            return { number: rNum, isCompleted: roundMatchesList.length > 0 && roundMatchesList.every((m) => m.isCompleted) };
+          })}
+          selectedRound={selectedRound}
+          onSelectRound={setSelectedRound}
         />
       ) : (
         <div className="flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
@@ -2693,15 +2698,6 @@ export default function WizardForm({
       {/* ========================================================= */}
       {step === 4 && (
         <div className="space-y-5 animate-in fade-in duration-200">
-          <RoundCarousel
-            rounds={Array.from({ length: totalRounds }, (_, i) => i + 1).map((rNum) => {
-              const roundMatchesList = matches.filter((m) => (m.roundNumber || 1) === rNum);
-              return { number: rNum, isCompleted: roundMatchesList.length > 0 && roundMatchesList.every((m) => m.isCompleted) };
-            })}
-            selectedRound={selectedRound}
-            onSelectRound={setSelectedRound}
-          />
-
           {/* Sitting Out / Bye Players Banner for Selected Round */}
           {(() => {
             const sitOutIds = roundSitOuts.get(selectedRound) || [];

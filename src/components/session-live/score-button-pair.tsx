@@ -18,7 +18,7 @@ type Props = {
 };
 
 // The pair of tap-to-score boxes + "vs" divider look, used inside a match card. Shared by Quick
-// Match and the community Live Board — see round-carousel.tsx for why this is extracted.
+// Match and the community Live Board — see session-view-tabs.tsx for why this is extracted.
 export default function ScoreButtonPair({
   scoreA,
   scoreB,

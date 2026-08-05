@@ -15,8 +15,7 @@ import Link from 'next/link';
 import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import ScorePickerModal from '@/components/score-picker-modal';
 import type { PosterStanding } from '@/components/leaderboard-poster';
-import RoundCarousel from '@/components/session-live/round-carousel';
-import LiveLeaderboardTabs from '@/components/session-live/live-leaderboard-tabs';
+import SessionViewTabs from '@/components/session-live/session-view-tabs';
 import GenerateRoundButton from '@/components/session-live/generate-round-button';
 import ScoreButtonPair from '@/components/session-live/score-button-pair';
 import StandingsTable from '@/components/session-live/standings-table';
@@ -453,22 +452,22 @@ export default function LiveBoardWrapper({
         </div>
       )}
 
-      <LiveLeaderboardTabs value={viewMode} onChange={setViewMode} />
+      <SessionViewTabs
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        rounds={rounds.map((r) => {
+          const roundMatchesList = matches.filter((m) => m.round_number === r.round_number);
+          return {
+            number: r.round_number,
+            isCompleted: roundMatchesList.length > 0 && roundMatchesList.every((m) => m.status === 'COMPLETED'),
+          };
+        })}
+        selectedRound={selectedRound}
+        onSelectRound={setSelectedRound}
+      />
 
       {viewMode === 'MATCHES' ? (
         <div className="space-y-5">
-          <RoundCarousel
-            rounds={rounds.map((r) => {
-              const roundMatchesList = matches.filter((m) => m.round_number === r.round_number);
-              return {
-                number: r.round_number,
-                isCompleted: roundMatchesList.length > 0 && roundMatchesList.every((m) => m.status === 'COMPLETED'),
-              };
-            })}
-            selectedRound={selectedRound}
-            onSelectRound={setSelectedRound}
-          />
-
           {/* Sitting Out / Bye Players Banner for Selected Round */}
           {sitOuts.length > 0 && (
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-medium flex items-center gap-2">

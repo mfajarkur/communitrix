@@ -14,7 +14,7 @@ type Props = {
 };
 
 // The full-width orange "+ Generate Next Round" button shared by Quick Match and the
-// community Live Board — see round-carousel.tsx for why this is extracted.
+// community Live Board — see session-view-tabs.tsx for why this is extracted.
 export default function GenerateRoundButton({
   nextRoundNumber,
   onGenerate,

@@ -21,7 +21,7 @@ type Props = {
 };
 
 // The ranked Rank/Player/M/W-L-T/D/P table with medal badges, shared by Quick Match and the
-// community Live Board — see round-carousel.tsx for why this is extracted. Columns are
+// community Live Board — see session-view-tabs.tsx for why this is extracted. Columns are
 // abbreviated (M/D/P) and tightly packed so the table fits without horizontal scroll on most
 // screens; the legend row below the table spells them out.
 export default function StandingsTable({ standings }: Props) {
