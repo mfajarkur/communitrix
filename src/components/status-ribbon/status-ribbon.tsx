@@ -13,7 +13,7 @@ export default function StatusRibbon({ progress, message }: StatusRibbonProps) {
       {/* Width still grows literally empty → full so users can gauge real progress speed — the
           shimmer sweeping across it is purely a "something is happening" cue on top of that. */}
       <div
-        className="absolute inset-y-0 left-0 overflow-hidden bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 transition-[width] duration-300 ease-out shadow-[0_0_10px_#f97316]"
+        className="absolute inset-y-0 left-0 overflow-hidden bg-gradient-to-r from-black via-orange-600 to-orange-500 transition-[width] duration-300 ease-out shadow-[0_0_10px_#f97316]"
         style={{ width: showBusy ? `${progress}%` : '0%' }}
       >
         {showBusy && (
