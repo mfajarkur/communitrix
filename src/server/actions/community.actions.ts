@@ -238,6 +238,28 @@ export async function requestJoinCommunityByIdAction(
   }
 }
 
+// Persists a drag-reordered community list (community-nav.tsx's reorder modal) — the switcher's
+// chip order and the /c redirect route's default community both read `sort_order` off
+// community_members. Goes through the reorder_communities RPC rather than a plain client update:
+// the UPDATE RLS policy on community_members only allows a community ADMIN to touch a row, so a
+// regular member has no column-scoped way to update even their own sort_order otherwise.
+export async function reorderCommunitiesAction(orderedCommunityIds: string[]): Promise<ActionResult<null>> {
+  try {
+    await requireProfile();
+    const supabase = await createClient();
+    const { error } = await supabase.rpc('reorder_communities', { p_community_ids: orderedCommunityIds });
+
+    if (error) {
+      return { ok: false, code: 'UNKNOWN', message: error.message || 'Failed to save the new order.' };
+    }
+
+    revalidatePath('/', 'layout');
+    return { ok: true, data: null };
+  } catch (error: any) {
+    return { ok: false, code: 'UNAUTHENTICATED', message: error.message || 'Authentication required.' };
+  }
+}
+
 export async function uploadCommunityLogoAction(formData: FormData) {
   const supabase = await createClient();
   const communityId = formData.get('community_id') as string;

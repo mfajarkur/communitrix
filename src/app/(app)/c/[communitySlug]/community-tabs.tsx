@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -38,7 +38,6 @@ import { getDisplayName, getPlayerGender, getAvatarUrl } from '@/lib/utils/profi
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
-import { LAST_COMMUNITY_COOKIE } from '@/lib/constants';
 import { useActiveTab } from './active-tab-context';
 
 interface CommunityTabsProps {
@@ -106,13 +105,6 @@ export default function CommunityTabs({
   const [sessionSportFilter, setSessionSportFilter] = useState<'ALL' | 'PADEL' | 'TENNIS'>('ALL');
 
   const [copiedCode, setCopiedCode] = useState(false);
-
-  // Remembers "the community I was just looking at" so the bottom nav's Community tab can jump
-  // straight back into it next time, instead of always landing on the /communities list first
-  // (see src/app/(app)/c/page.tsx, the redirect route that reads this cookie).
-  useEffect(() => {
-    document.cookie = `${LAST_COMMUNITY_COOKIE}=${communitySlug}; path=/; max-age=${60 * 60 * 24 * 180}; SameSite=Lax`;
-  }, [communitySlug]);
 
   const handleCopyCode = () => {
     if (community?.code && typeof navigator !== 'undefined') {

@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Calendar, Users, Trophy, Plus, Shield, User } from 'lucide-react';
+import { Home, Calendar, Users, Trophy, Plus, Shield, User, ListOrdered } from 'lucide-react';
 import { useActiveTab } from './active-tab-context';
 import AddCommunityModal from './add-community-modal';
+import ReorderCommunitiesModal from './reorder-communities-modal';
 
 interface CommunityNavProps {
   communitySlug: string;
@@ -28,6 +29,7 @@ export default function CommunityNav({ communitySlug, communityName, bannerImage
   const { activeTab, setActiveTab } = useActiveTab();
   const pathname = usePathname();
   const [addOpen, setAddOpen] = useState(false);
+  const [reorderOpen, setReorderOpen] = useState(false);
 
   if (pathname !== `/c/${communitySlug}`) return null;
 
@@ -72,6 +74,17 @@ export default function CommunityNav({ communitySlug, communityName, bannerImage
                 </Link>
               ))}
 
+            {myCommunities.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setReorderOpen(true)}
+                title="Reorder Communities"
+                className="shrink-0 h-9 w-9 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center text-zinc-500 hover:text-orange-600 border-2 border-white shadow-sm transition-all cursor-pointer"
+              >
+                <ListOrdered className="h-4 w-4" />
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setAddOpen(true)}
@@ -111,6 +124,7 @@ export default function CommunityNav({ communitySlug, communityName, bannerImage
       </div>
 
       <AddCommunityModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <ReorderCommunitiesModal open={reorderOpen} onClose={() => setReorderOpen(false)} communities={myCommunities} />
     </div>
   );
 }

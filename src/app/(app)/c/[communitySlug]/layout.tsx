@@ -65,7 +65,7 @@ export default async function CommunityLayout({
     .select('community:communities(id, name, slug, logo_url)')
     .eq('profile_id', profile.id)
     .eq('is_active', true)
-    .order('joined_at', { ascending: false });
+    .order('sort_order', { ascending: true });
 
   const myCommunities = (myMemberships || [])
     .map((m: any) => (Array.isArray(m.community) ? m.community[0] : m.community))
