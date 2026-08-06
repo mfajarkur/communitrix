@@ -152,10 +152,29 @@ export default async function CommunityDashboardPage({
     // Total CP per player for this community
     supabase.from('community_points').select('profile_id, points_awarded').eq('community_id', community.id),
 
-    // Sessions history
+    // Sessions history with details for medals calculation
     supabase
       .from('sessions')
-      .select('*, session_players(id, status)')
+      .select(`
+        id,
+        session_name,
+        sport,
+        format,
+        status,
+        created_at,
+        max_score_target,
+        bye_scoring_method,
+        session_players (
+          id,
+          profile_id,
+          status,
+          session_wins,
+          session_losses,
+          session_draws,
+          session_points_for,
+          session_points_against
+        )
+      `)
       .eq('community_id', community.id)
       .order('created_at', { ascending: false }),
 
@@ -281,6 +300,70 @@ export default async function CommunityDashboardPage({
     cpMap[row.profile_id] = (cpMap[row.profile_id] || 0) + Number(row.points_awarded || 0);
   });
 
+  const medalsMap: Record<string, { gold: number; silver: number; bronze: number }> = {};
+  (sessions || []).forEach((session: any) => {
+    if (session.status !== 'ENDED') return;
+    const players = (session.session_players || []).filter(
+      (sp: any) => sp.status === 'ACTIVE' || sp.status === 'WITHDRAWN'
+    );
+    if (players.length === 0) return;
+
+    const N = session.max_score_target || 7;
+    const halfN = Math.round(N / 2);
+    const byeMethod = session.bye_scoring_method || 'HALF_N';
+    const maxRealMatchesPlayed = players.reduce(
+      (max: number, p: any) => Math.max(max, (p.session_wins || 0) + (p.session_losses || 0) + (p.session_draws || 0)),
+      0
+    );
+
+    const computed = players
+      .map((p: any) => {
+        const wins = p.session_wins || 0;
+        const losses = p.session_losses || 0;
+        const ties = p.session_draws || 0;
+        const realMatchesPlayed = wins + losses + ties;
+        const matchesBehind = maxRealMatchesPlayed - realMatchesPlayed;
+
+        const rawByeScore =
+          byeMethod === 'HALF_N' || realMatchesPlayed === 0
+            ? halfN
+            : Math.round((p.session_points_for || 0) / realMatchesPlayed);
+        const byeScore = Math.max(0, Math.min(N, rawByeScore));
+        const byePoints = matchesBehind > 0 ? matchesBehind * byeScore : 0;
+
+        const totalPoints = (p.session_points_for || 0) + byePoints;
+        const diff = totalPoints - (p.session_points_against || 0);
+
+        return {
+          profile_id: p.profile_id,
+          wins,
+          diff,
+          totalPoints,
+        };
+      })
+      .sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        if (b.diff !== a.diff) return b.diff - a.diff;
+        return b.totalPoints - a.totalPoints;
+      });
+
+    if (computed[0]?.profile_id) {
+      const pId = computed[0].profile_id;
+      if (!medalsMap[pId]) medalsMap[pId] = { gold: 0, silver: 0, bronze: 0 };
+      medalsMap[pId].gold += 1;
+    }
+    if (computed[1]?.profile_id) {
+      const pId = computed[1].profile_id;
+      if (!medalsMap[pId]) medalsMap[pId] = { gold: 0, silver: 0, bronze: 0 };
+      medalsMap[pId].silver += 1;
+    }
+    if (computed[2]?.profile_id) {
+      const pId = computed[2].profile_id;
+      if (!medalsMap[pId]) medalsMap[pId] = { gold: 0, silver: 0, bronze: 0 };
+      medalsMap[pId].bronze += 1;
+    }
+  });
+
   const activeSessions = sessions || [];
   const pendingClaims = claimsData || [];
   const pendingJoinRequests = joinRequestsData || [];
@@ -304,6 +387,7 @@ export default async function CommunityDashboardPage({
         rankings={padelLeaderboard}
         rankingsBySport={rankingsBySport}
         cpMap={cpMap}
+        medalsMap={medalsMap}
         pendingClaims={pendingClaims}
         myClaimedGuestIds={myClaimedGuestIds}
         callerProfile={profile}

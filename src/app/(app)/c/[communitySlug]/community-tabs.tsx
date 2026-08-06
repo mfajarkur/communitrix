@@ -56,6 +56,7 @@ interface CommunityTabsProps {
   rankings: any[];
   rankingsBySport?: Record<string, any[]>;
   cpMap?: Record<string, number>;
+  medalsMap?: Record<string, { gold: number; silver: number; bronze: number }>;
   pendingClaims?: any[];
   myClaimedGuestIds?: string[];
   callerProfile?: any;
@@ -77,6 +78,7 @@ export default function CommunityTabs({
   rankings,
   rankingsBySport = {},
   cpMap = {},
+  medalsMap = {},
   pendingClaims = [],
   myClaimedGuestIds = [],
   callerProfile,
@@ -92,7 +94,7 @@ export default function CommunityTabs({
   const [selectedLeaderboardSport, setSelectedLeaderboardSport] = useState<'PADEL' | 'TENNIS'>(
     defaultSport === 'TENNIS' ? 'TENNIS' : 'PADEL'
   );
-  const [leaderboardSortBy, setLeaderboardSortBy] = useState<'elo' | 'cp' | 'winrate' | 'wins' | 'diff'>('elo');
+  const [leaderboardSortBy, setLeaderboardSortBy] = useState<'elo' | 'cp' | 'winrate' | 'wins' | 'gold'>('elo');
   const [leaderboardSearchQuery, setLeaderboardSearchQuery] = useState('');
   const [starSportTab, setStarSportTab] = useState<'PADEL' | 'TENNIS'>('PADEL');
   const [guestToClaim, setGuestToClaim] = useState<{ id: string; name: string } | null>(null);
@@ -923,8 +925,10 @@ export default function CommunityTabs({
                   return r.total_matches > 0 ? r.total_wins / r.total_matches : 0;
                 case 'wins':
                   return r.total_wins;
-                case 'diff':
-                  return r.points_for - r.points_against;
+                case 'wins':
+                  return r.total_wins;
+                case 'gold':
+                  return medalsMap[r.profile.id]?.gold || 0;
                 default:
                   return Number(r.elo_rating);
               }
@@ -1011,7 +1015,7 @@ export default function CommunityTabs({
                       <option value="cp">Community Points</option>
                       <option value="winrate">Win Rate</option>
                       <option value="wins">Wins</option>
-                      <option value="diff">Diff</option>
+                      <option value="gold">Gold Medals 🥇</option>
                     </select>
                   </div>
                 </div>
@@ -1037,7 +1041,9 @@ export default function CommunityTabs({
                             <th className="p-3 sm:p-4 text-center">CP</th>
                             <th className="p-3 sm:p-4 text-center">W-L-T</th>
                             <th className="p-3 sm:p-4 text-center">WR%</th>
-                            <th className="p-3 sm:p-4 text-center">Diff</th>
+                            <th className="p-2 sm:p-3 text-center text-sm" title="Gold Medals (1st place finishes)">🥇</th>
+                            <th className="p-2 sm:p-3 text-center text-sm" title="Silver Medals (2nd place finishes)">🥈</th>
+                            <th className="p-2 sm:p-3 text-center text-sm" title="Bronze Medals (3rd place finishes)">🥉</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
@@ -1048,8 +1054,8 @@ export default function CommunityTabs({
                               ? Math.round((r.total_wins / r.total_matches) * 100)
                               : 0;
 
-                          const pDiff = r.points_for - r.points_against;
                           const playerCp = Math.round(cpMap[r.profile.id] || 0);
+                          const medals = medalsMap[r.profile.id] || { gold: 0, silver: 0, bronze: 0 };
 
                           return (
                             <tr
@@ -1113,10 +1119,38 @@ export default function CommunityTabs({
                               <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
                                 {winRate}%
                               </td>
-                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs">
-                                <span className={pDiff > 0 ? 'text-emerald-600' : pDiff < 0 ? 'text-rose-600' : 'text-zinc-500'}>
-                                  {pDiff > 0 ? `+${pDiff}` : pDiff}
-                                </span>
+                              
+                              {/* 🥇 Gold Medals */}
+                              <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
+                                {medals.gold > 0 ? (
+                                  <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-black text-[11px] border border-amber-300 shadow-2xs">
+                                    {medals.gold}
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-300 font-normal text-xs">0</span>
+                                )}
+                              </td>
+
+                              {/* 🥈 Silver Medals */}
+                              <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
+                                {medals.silver > 0 ? (
+                                  <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-black text-[11px] border border-slate-300 shadow-2xs">
+                                    {medals.silver}
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-300 font-normal text-xs">0</span>
+                                )}
+                              </td>
+
+                              {/* 🥉 Bronze Medals */}
+                              <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
+                                {medals.bronze > 0 ? (
+                                  <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-orange-100/90 text-orange-900 font-black text-[11px] border border-orange-300 shadow-2xs">
+                                    {medals.bronze}
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-300 font-normal text-xs">0</span>
+                                )}
                               </td>
                             </tr>
                           );
