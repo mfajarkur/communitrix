@@ -156,14 +156,7 @@ export default async function CommunityDashboardPage({
     supabase
       .from('sessions')
       .select(`
-        id,
-        session_name,
-        sport,
-        format,
-        status,
-        created_at,
-        max_score_target,
-        bye_scoring_method,
+        *,
         session_players (
           id,
           profile_id,
