@@ -21,6 +21,13 @@ export function getDisplayName(profile?: {
   return toTitleCase(rawName);
 }
 
+export function getTwoWordName(name: string): string {
+  if (!name) return '';
+  const words = name.trim().split(/\s+/);
+  if (words.length <= 2) return name.trim();
+  return `${words[0]} ${words[1]}`;
+}
+
 export function getPlayerGender(profile?: {
   gender?: string | null;
   full_name?: string | null;

@@ -33,7 +33,7 @@ import {
 import AddGuestForm from './add-guest-form';
 import EditCommunityInfoButton from './edit-community-info-button';
 import ManagingMembersModal from './managing-members-modal';
-import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
+import { getDisplayName, getAvatarUrl, getTwoWordName } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
@@ -1074,7 +1074,7 @@ export default function CommunityTabs({
                                 )}
                               </td>
 
-                              <td className="p-3 sm:p-4 align-middle">
+                              <td className="p-3 sm:p-4 align-middle whitespace-nowrap">
                                 <Link
                                   href={`/c/${communitySlug}/players/${r.profile.id}`}
                                   className="flex items-center gap-3 hover:underline"
@@ -1084,8 +1084,8 @@ export default function CommunityTabs({
                                      alt={getDisplayName(r.profile)}
                                      className="h-10 w-10 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
                                    />
-                                  <p className="text-xs sm:text-sm font-extrabold text-[#111827] truncate max-w-[90px] sm:max-w-[180px] md:max-w-[260px] lg:max-w-none flex items-center gap-1">
-                                    <span>{getDisplayName(r.profile)}</span>
+                                  <p className="text-xs sm:text-sm font-extrabold text-[#111827] whitespace-nowrap flex items-center gap-1.5">
+                                    <span>{getTwoWordName(getDisplayName(r.profile))}</span>
                                     {isProfileVerified(r.profile) && <VerifiedBadge className="h-3.5 w-3.5" />}
                                     {r.is_provisional && (
                                       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 text-[8px] font-bold uppercase border border-orange-500/20">
