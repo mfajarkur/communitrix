@@ -48,7 +48,7 @@ type Props = {
 // (communities/quick-match/[id]/page.tsx), just sourced from community DB tables and
 // still reflecting this session's ELO-affecting results (ELO itself was already applied
 // live, per match, while the session was active).
-export default function SessionResults({ communitySlug, session, rounds, matches, standings }: Props) {
+export default function SessionResults({ communitySlug, session, rounds, matches, standings, sessionCp = [] }: Props) {
   const renderTeam = (players: MatchPlayer[], side: 'A' | 'B', isWinner: boolean) => (
     <div className={`flex-1 space-y-1.5 flex flex-col ${side === 'A' ? 'items-start' : 'items-end'}`}>
       {players.map((mp) => {
