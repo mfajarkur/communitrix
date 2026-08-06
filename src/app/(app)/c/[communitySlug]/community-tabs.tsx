@@ -845,14 +845,6 @@ export default function CommunityTabs({
                                   {isProfileVerified(p) && <VerifiedBadge className="h-3.5 w-3.5" />}
                                 </span>
                               </Link>
-                              {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
-                                <button
-                                  onClick={() => setPendingRemoveMember({ id: p.id, name: pName })}
-                                  className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
-                                >
-                                  Remove
-                                </button>
-                              )}
                             </div>
                           );
                         })}
@@ -892,14 +884,6 @@ export default function CommunityTabs({
                                   {isProfileVerified(p) && <VerifiedBadge className="h-3.5 w-3.5" />}
                                 </span>
                               </Link>
-                              {isAdmin && p.id !== callerProfile?.id && (
-                                <button
-                                  onClick={() => setPendingRemoveMember({ id: p.id, name: pName })}
-                                  className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
-                                >
-                                  Remove
-                                </button>
-                              )}
                             </div>
                           );
                         })}
