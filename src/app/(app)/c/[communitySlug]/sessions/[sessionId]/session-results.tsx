@@ -88,6 +88,53 @@ export default function SessionResults({ communitySlug, session, rounds, matches
     </div>
   );
 
+  const recapData = standings
+    .map((s) => {
+      const cpEntry = sessionCp.find((c) => c.profile_id === s.playerId);
+      const pointsAwarded = cpEntry?.points_awarded ?? 0;
+
+      const playerMatches = matches
+        .filter((m) => m.status === 'COMPLETED')
+        .map((m) => {
+          const mp = m.match_players.find((p) => p.profile_id === s.playerId || p.elo_profile_id === s.playerId);
+          return { match: m, mp };
+        })
+        .filter((entry) => entry.mp);
+
+      playerMatches.sort((a, b) => {
+        if (a.match.round_number !== b.match.round_number) return a.match.round_number - b.match.round_number;
+        return a.match.court_number - b.match.court_number;
+      });
+
+      let eloBefore = null;
+      let eloAfter = null;
+      let netEloChange = 0;
+
+      if (playerMatches.length > 0) {
+        const firstMp = playerMatches[0].mp!;
+        eloBefore = firstMp.elo_before;
+        const lastMp = playerMatches[playerMatches.length - 1].mp!;
+        eloAfter = lastMp.elo_after;
+        netEloChange = playerMatches.reduce((acc, curr) => acc + (curr.mp!.elo_delta || 0), 0);
+      }
+
+      const subCount = playerMatches.filter(pm => pm.mp!.elo_profile_id === s.playerId && pm.mp!.profile_id !== s.playerId).length;
+      const subbedOutCount = playerMatches.filter(pm => pm.mp!.profile_id === s.playerId && pm.mp!.elo_profile_id && pm.mp!.elo_profile_id !== s.playerId).length;
+
+      return {
+        playerId: s.playerId,
+        name: s.name,
+        avatarUrl: (s as any).avatarUrl,
+        pointsAwarded,
+        eloBefore,
+        eloAfter,
+        netEloChange,
+        subCount,
+        subbedOutCount,
+      };
+    })
+    .sort((a, b) => b.netEloChange - a.netEloChange);
+
   return (
     <div className="space-y-6">
       <Link
@@ -143,9 +190,9 @@ export default function SessionResults({ communitySlug, session, rounds, matches
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {standings.map((s) => (
-                <tr key={s.playerId} className="hover:bg-zinc-50 transition-colors">
-                  <td className="py-2 pl-4 font-black text-zinc-900">
-                    {s.rank === 1 ? <Crown className="h-4 w-4 text-amber-500 inline" /> : `#${s.rank}`}
+                <tr key={s.playerId} className="hover:bg-zinc-50/50 transition-colors">
+                  <td className="py-2 pl-4 font-black text-zinc-400">
+                    <span className="w-5 inline-block text-center">{s.rank === 1 ? <Crown className="h-4 w-4 text-amber-500 inline" /> : `#${s.rank}`}</span>
                   </td>
                   <td className="py-2 font-extrabold text-zinc-900">
                     <span className="block max-w-[70px] truncate">{s.name}</span>
@@ -247,107 +294,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
         )}
       </div>
 
-      {/* Recap Elo & CP Changes */}
-      <div className="space-y-4">
-        <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Session Rating & CP Recap</h2>
-        <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-zinc-50 border-b border-zinc-200">
-                <tr>
-                  <th className="py-3 px-4 font-extrabold text-zinc-500 uppercase tracking-wider text-[10px]">Player</th>
-                  <th className="py-3 px-4 text-center font-extrabold text-zinc-500 uppercase tracking-wider text-[10px]">Net Elo</th>
-                  <th className="py-3 px-4 text-center font-extrabold text-zinc-500 uppercase tracking-wider text-[10px]">Before</th>
-                  <th className="py-3 px-4 text-center font-extrabold text-zinc-500 uppercase tracking-wider text-[10px]">After</th>
-                  <th className="py-3 px-4 text-center font-extrabold text-zinc-500 uppercase tracking-wider text-[10px]">Earned CP</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {standings.map((s) => {
-                  const cpEntry = sessionCp.find((c) => c.profile_id === s.playerId);
-                  const pointsAwarded = cpEntry?.points_awarded ?? 0;
-
-                  // Find all matches this player participated in (either original or sub)
-                  const playerMatches = matches
-                    .filter((m) => m.status === 'COMPLETED')
-                    .map((m) => {
-                      const mp = m.match_players.find((p) => p.profile_id === s.playerId || p.elo_profile_id === s.playerId);
-                      return { match: m, mp };
-                    })
-                    .filter((entry) => entry.mp);
-
-                  playerMatches.sort((a, b) => {
-                    if (a.match.round_number !== b.match.round_number) return a.match.round_number - b.match.round_number;
-                    return a.match.court_number - b.match.court_number;
-                  });
-
-                  let eloBefore = null;
-                  let eloAfter = null;
-                  let netEloChange = 0;
-
-                  if (playerMatches.length > 0) {
-                    // Elo before their FIRST match
-                    const firstMp = playerMatches[0].mp!;
-                    eloBefore = firstMp.elo_before;
-
-                    // Elo after their LAST match
-                    const lastMp = playerMatches[playerMatches.length - 1].mp!;
-                    eloAfter = lastMp.elo_after;
-
-                    // Sum of all deltas
-                    netEloChange = playerMatches.reduce((acc, curr) => acc + (curr.mp!.elo_delta || 0), 0);
-                  }
-
-                  // Count how many matches they played as a SUBSTITUTE
-                  const subCount = playerMatches.filter(pm => pm.mp!.elo_profile_id === s.playerId && pm.mp!.profile_id !== s.playerId).length;
-
-                  // Count how many matches they were SUBBED OUT (original player, but didn't play)
-                  const subbedOutCount = playerMatches.filter(pm => pm.mp!.profile_id === s.playerId && pm.mp!.elo_profile_id && pm.mp!.elo_profile_id !== s.playerId).length;
-
-                  return (
-                    <tr key={s.playerId} className="hover:bg-zinc-50/50 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={getAvatarUrl({ id: s.playerId, avatar_url: (s as any).avatarUrl, full_name: s.name })}
-                            alt=""
-                            className="h-6 w-6 rounded-full object-cover border border-zinc-200 shrink-0"
-                          />
-                          <div className="flex flex-col">
-                            <span className="font-bold text-zinc-900 truncate max-w-[120px]">{s.name}</span>
-                            {subCount > 0 && <span className="text-[9px] text-zinc-400 font-medium">Subbed in {subCount}x</span>}
-                            {subbedOutCount > 0 && <span className="text-[9px] text-rose-400 font-medium">Missed {subbedOutCount}x (Penalty)</span>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center align-middle font-mono font-bold">
-                        {eloBefore !== null ? (
-                          <span className={netEloChange > 0 ? 'text-emerald-500' : netEloChange < 0 ? 'text-rose-500' : 'text-zinc-400'}>
-                            {netEloChange > 0 ? `+${netEloChange.toFixed(1)}` : netEloChange.toFixed(1)}
-                          </span>
-                        ) : <span className="text-zinc-300">-</span>}
-                      </td>
-                      <td className="py-3 px-4 text-center align-middle font-mono font-medium text-zinc-500 text-xs">
-                        {eloBefore !== null ? eloBefore.toFixed(1) : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-center align-middle font-mono font-extrabold text-zinc-700 text-xs">
-                        {eloAfter !== null ? eloAfter.toFixed(1) : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-center align-middle font-mono font-black">
-                        <span className={`inline-flex items-center justify-center min-w-[28px] px-2 py-1 rounded-md text-xs border ${
-                          pointsAwarded > 0 ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-zinc-100 text-zinc-500 border-zinc-200'
-                        }`}>
-                          {pointsAwarded > 0 ? `+${pointsAwarded}` : pointsAwarded}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      <RecapPrintSection recapData={recapData} />
     </div>
   );
 }
