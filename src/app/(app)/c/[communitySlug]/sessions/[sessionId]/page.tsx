@@ -106,7 +106,15 @@ export default async function SessionLiveBoardPage({
   // typed `any[]` here rather than fighting the inference for a read-only display list.
   const allMatches: any[] = matchesData || [];
 
-  // 5. Fetch session players who actually participate in standings: ACTIVE + WITHDRAWN (a
+  // 5. Fetch CP awarded for this session
+  const { data: cpData } = await supabase
+    .from('community_points')
+    .select('profile_id, points_awarded')
+    .eq('session_id', sessionId);
+
+  const sessionCp = cpData || [];
+
+  // 6. Fetch session players who actually participate in standings: ACTIVE + WITHDRAWN (a
   // player who played real, scored matches and then had to leave still keeps their results in
   // the final leaderboard/print poster) — only NO_SHOW is excluded, since they never played.
   const { data: sessionPlayers } = await supabase
@@ -171,6 +179,7 @@ export default async function SessionLiveBoardPage({
       return {
         playerId: p.profile_id,
         name: getDisplayName(p.profile),
+        avatarUrl: p.profile?.avatar_url,
         wins,
         losses,
         ties,
@@ -210,6 +219,7 @@ export default async function SessionLiveBoardPage({
         rounds={allRounds}
         matches={allMatches}
         standings={standings}
+        sessionCp={sessionCp}
       />
     );
   }
