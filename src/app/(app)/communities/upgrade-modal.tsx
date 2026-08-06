@@ -5,13 +5,12 @@ import { Sparkles, X } from 'lucide-react';
 
 type Props = {
   open: boolean;
-  kind: 'created' | 'joined' | null;
+  kind: 'created' | null;
   onClose: () => void;
 };
 
-const BODY: Record<'created' | 'joined', string> = {
+const BODY: Record<'created', string> = {
   created: 'Accounts can create up to 3 communities. Upgrade to Communitrix Plus for more.',
-  joined: 'Accounts can join up to 5 communities. Upgrade to Communitrix Plus for more.',
 };
 
 export default function UpgradeModal({ open, kind, onClose }: Props) {

@@ -23,12 +23,11 @@ export default function AddCommunityChooser({ usage }: { usage: CommunityUsage }
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
-  const [upgradeKind, setUpgradeKind] = useState<'created' | 'joined' | null>(null);
+  const [upgradeKind, setUpgradeKind] = useState<'created' | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
 
   const createAtLimit = usage.created >= 3;
-  const joinedAtLimit = usage.joined >= 5;
 
   useEffect(() => {
     if (mode !== 'find') return;
@@ -59,10 +58,6 @@ export default function AddCommunityChooser({ usage }: { usage: CommunityUsage }
   }, [query, mode]);
 
   const handleJoin = async (community: PublicCommunityResult) => {
-    if (joinedAtLimit) {
-      setUpgradeKind('joined');
-      return;
-    }
     setJoiningId(community.id);
     try {
       const res = await requestJoinCommunityByIdAction(community.id);
