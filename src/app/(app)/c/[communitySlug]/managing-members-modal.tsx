@@ -271,63 +271,155 @@ export default function ManagingMembersModal({
         )}
 
         {/* TAB 2: REMOVE MEMBER */}
-        {activeTab === 'remove' && (
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
-              <input
-                type="text"
-                placeholder="Search member to remove..."
-                value={removeSearch}
-                onChange={(e) => setRemoveSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-zinc-100 text-xs font-semibold rounded-xl border border-transparent focus:border-red-500 focus:bg-white focus:outline-none"
-              />
-            </div>
+        {activeTab === 'remove' && (() => {
+          const allSelected =
+            removableMembers.length > 0 &&
+            removableMembers.every((m) => m.profile && selectedRemoveIds.has(m.profile.id));
 
-            <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
-              {removableMembers.length === 0 ? (
-                <p className="text-xs text-zinc-400 py-6 text-center">No members found.</p>
-              ) : (
-                removableMembers.map((m) => {
-                  const p = m.profile;
-                  if (!p) return null;
-                  const pName = getDisplayName(p);
-                  const isProcessing = processingRemoveId === p.id;
+          const handleToggleSelectAll = () => {
+            if (allSelected) {
+              setSelectedRemoveIds(new Set());
+            } else {
+              const allIds = new Set(removableMembers.map((m) => m.profile.id).filter(Boolean));
+              setSelectedRemoveIds(allIds);
+            }
+          };
 
-                  return (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between p-2.5 rounded-2xl bg-zinc-50 border border-zinc-200/60"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <img
-                          src={getAvatarUrl(p)}
-                          alt={pName}
-                          className="h-8 w-8 rounded-full object-cover shrink-0 border border-zinc-200"
-                        />
-                        <div className="min-w-0">
-                          <p className="text-xs font-extrabold text-zinc-900 truncate flex items-center gap-1">
-                            <span>{pName}</span>
-                            {isProfileVerified(p) && <VerifiedBadge className="h-3.5 w-3.5" />}
-                          </p>
-                          <p className="text-[10px] text-zinc-400 font-medium capitalize">{m.role.toLowerCase()}</p>
-                        </div>
-                      </div>
+          const handleBatchRemove = async () => {
+            const count = selectedRemoveIds.size;
+            if (count === 0) return;
+            if (!confirm(`Are you sure you want to remove ${count} selected member${count > 1 ? 's' : ''} from this community?`)) return;
 
-                      <button
-                        onClick={() => handleRemoveMember(p.id, pName)}
-                        disabled={isProcessing}
-                        className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer border border-red-200 shrink-0"
-                      >
-                        {isProcessing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Remove'}
-                      </button>
-                    </div>
-                  );
-                })
+            setIsBatchRemoving(true);
+            const failures: string[] = [];
+            for (const targetProfileId of selectedRemoveIds) {
+              try {
+                const result = await removeMemberAction({ communityId, targetProfileId, communitySlug });
+                if (!result.ok) failures.push(result.message || 'Unknown error');
+              } catch (err: any) {
+                failures.push(err?.message || 'Unknown error');
+              }
+            }
+            setIsBatchRemoving(false);
+
+            if (failures.length > 0) {
+              alert(`Removed ${count - failures.length} of ${count} members.\n\nFailed:\n${failures.join('\n')}`);
+            }
+            setSelectedRemoveIds(new Set());
+            router.refresh();
+          };
+
+          return (
+            <div className="space-y-3">
+              {/* Controls Header: Search, Select All, and Batch Remove */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Search member to remove..."
+                    value={removeSearch}
+                    onChange={(e) => setRemoveSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-zinc-100 text-xs font-semibold rounded-xl border border-transparent focus:border-red-500 focus:bg-white focus:outline-none"
+                  />
+                </div>
+                {removableMembers.length > 0 && (
+                  <button
+                    onClick={handleToggleSelectAll}
+                    className="px-2.5 py-2 text-[11px] font-bold text-zinc-600 hover:text-zinc-900 border border-zinc-200 hover:bg-zinc-50 rounded-xl transition-all whitespace-nowrap cursor-pointer"
+                  >
+                    {allSelected ? 'Deselect All' : 'Select All'}
+                  </button>
+                )}
+              </div>
+
+              {selectedRemoveIds.size > 0 && (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-red-50 border border-red-200">
+                  <span className="text-xs font-extrabold text-red-900">
+                    {selectedRemoveIds.size} member{selectedRemoveIds.size > 1 ? 's' : ''} selected
+                  </span>
+                  <button
+                    onClick={handleBatchRemove}
+                    disabled={isBatchRemoving}
+                    className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    {isBatchRemoving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UserMinus className="h-3.5 w-3.5" />
+                    )}
+                    <span>Remove Selected ({selectedRemoveIds.size})</span>
+                  </button>
+                </div>
               )}
+
+              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                {removableMembers.length === 0 ? (
+                  <p className="text-xs text-zinc-400 py-6 text-center">No members found.</p>
+                ) : (
+                  removableMembers.map((m) => {
+                    const p = m.profile;
+                    if (!p) return null;
+                    const pName = getDisplayName(p);
+                    const isProcessing = processingRemoveId === p.id;
+                    const isSelected = selectedRemoveIds.has(p.id);
+
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedRemoveIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(p.id)) next.delete(p.id);
+                            else next.add(p.id);
+                            return next;
+                          });
+                        }}
+                        className={`flex items-center justify-between p-2.5 rounded-2xl border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-red-50/70 border-red-300 shadow-2xs'
+                            : 'bg-zinc-50 border-zinc-200/60 hover:bg-zinc-100/60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // handled by row click
+                            className="h-4 w-4 rounded text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
+                          />
+                          <img
+                            src={getAvatarUrl(p)}
+                            alt={pName}
+                            className="h-8 w-8 rounded-full object-cover shrink-0 border border-zinc-200"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-extrabold text-zinc-900 truncate flex items-center gap-1">
+                              <span>{pName}</span>
+                              {isProfileVerified(p) && <VerifiedBadge className="h-3.5 w-3.5" />}
+                            </p>
+                            <p className="text-[10px] text-zinc-400 font-medium capitalize">{m.role.toLowerCase()}</p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveMember(p.id, pName);
+                          }}
+                          disabled={isProcessing}
+                          className="px-2.5 py-1 rounded-xl bg-red-100/80 hover:bg-red-200 text-red-700 text-[11px] font-extrabold transition-all disabled:opacity-50 cursor-pointer border border-red-200 shrink-0"
+                        >
+                          {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Remove'}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB 3: MERGE ACCOUNTS */}
         {activeTab === 'merge' && (

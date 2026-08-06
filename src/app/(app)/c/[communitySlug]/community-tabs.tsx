@@ -762,57 +762,20 @@ export default function CommunityTabs({
                       <p className="text-xs text-zinc-500 mt-0.5">Admins and players in this community.</p>
                     </div>
                     {isAdmin && (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => setManagingMembersModalOpen(true)}
-                          className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-xs cursor-pointer"
-                        >
-                          <Shield className="h-3.5 w-3.5" />
-                          <span>Managing Members</span>
-                          {pendingJoinRequests.length > 0 && (
-                            <span className="h-4 w-4 rounded-full bg-white text-orange-600 font-black text-[9px] flex items-center justify-center">
-                              {pendingJoinRequests.length}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setMemberSelectionMode((v) => !v);
-                            setSelectedMemberIds(new Set());
-                          }}
-                          className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-full border transition-all cursor-pointer ${
-                            memberSelectionMode
-                              ? 'bg-zinc-900 text-white border-zinc-900'
-                              : 'text-zinc-600 border-zinc-200 hover:bg-zinc-50'
-                          }`}
-                        >
-                          {memberSelectionMode ? 'Cancel' : 'Select'}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setManagingMembersModalOpen(true)}
+                        className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-xs cursor-pointer"
+                      >
+                        <Shield className="h-3.5 w-3.5" />
+                        <span>Managing Members</span>
+                        {pendingJoinRequests.length > 0 && (
+                          <span className="h-4 w-4 rounded-full bg-white text-orange-600 font-black text-[9px] flex items-center justify-center">
+                            {pendingJoinRequests.length}
+                          </span>
+                        )}
+                      </button>
                     )}
                   </div>
-
-                  {memberSelectionMode && (
-                    <div className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4 pointer-events-none">
-                      <div className="pointer-events-auto flex items-center gap-3 bg-zinc-900 text-white rounded-full shadow-lg px-4 py-2.5 max-w-full">
-                        <span className="text-xs font-bold whitespace-nowrap">
-                          {selectedMemberIds.size} selected
-                        </span>
-                        <button
-                          onClick={() => setConfirmBatchRemoveOpen(true)}
-                          disabled={selectedMemberIds.size === 0 || isBatchRemoving}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap"
-                        >
-                          {isBatchRemoving ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <UserMinus className="h-3.5 w-3.5" />
-                          )}
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Search Bar */}
                   <div className="relative">
@@ -865,36 +828,17 @@ export default function CommunityTabs({
                             <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
                               <Link
                                 href={`/c/${communitySlug}/players/${p.id}`}
-                                onClick={(e) => {
-                                  if (memberSelectionMode && p.id !== callerProfile?.id) {
-                                    e.preventDefault();
-                                    toggleMemberSelected(p.id);
-                                  } else if (memberSelectionMode) {
-                                    e.preventDefault();
-                                  }
-                                }}
                                 className="flex flex-col items-center w-full"
                               >
                                 <div className="relative">
                                   <img
                                     src={getAvatarUrl(p)}
                                     alt={pName}
-                                    className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
-                                      memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
-                                    }`}
+                                    className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs"
                                   />
                                   <div className="absolute top-0 right-0 bg-blue-600 rounded-full p-1 text-white shadow-sm border-2 border-white">
                                     <Shield className="h-3 w-3 fill-current" />
                                   </div>
-                                  {memberSelectionMode && p.id !== callerProfile?.id && (
-                                    <div
-                                      className={`absolute top-0 left-0 h-5 w-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
-                                        selectedMemberIds.has(p.id) ? 'bg-orange-500' : 'bg-white/90'
-                                      }`}
-                                    >
-                                      {selectedMemberIds.has(p.id) && <CheckCircle className="h-3.5 w-3.5 text-white" />}
-                                    </div>
-                                  )}
                                 </div>
                                 <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline inline-flex items-center justify-center gap-0.5">
                                   <span>{pName}</span>
@@ -934,55 +878,21 @@ export default function CommunityTabs({
                             <div key={p.id} className="flex flex-col items-center group w-full text-center relative">
                               <Link
                                 href={`/c/${communitySlug}/players/${p.id}`}
-                                onClick={(e) => {
-                                  if (memberSelectionMode && p.id !== callerProfile?.id) {
-                                    e.preventDefault();
-                                    toggleMemberSelected(p.id);
-                                  } else if (memberSelectionMode) {
-                                    e.preventDefault();
-                                  }
-                                }}
                                 className="flex flex-col items-center w-full"
                               >
                                 <div className="relative">
                                   <img
                                     src={getAvatarUrl(p)}
                                     alt={pName}
-                                    className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
-                                      memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
-                                    }`}
+                                    className="h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 border-white shadow-xs"
                                   />
-                                  {memberSelectionMode && p.id !== callerProfile?.id && (
-                                    <div
-                                      className={`absolute top-0 left-0 h-5 w-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
-                                        selectedMemberIds.has(p.id) ? 'bg-orange-500' : 'bg-white/90'
-                                      }`}
-                                    >
-                                      {selectedMemberIds.has(p.id) && <CheckCircle className="h-3.5 w-3.5 text-white" />}
-                                    </div>
-                                  )}
                                 </div>
                                 <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline inline-flex items-center justify-center gap-0.5">
                                   <span>{pName}</span>
                                   {isProfileVerified(p) && <VerifiedBadge className="h-3.5 w-3.5" />}
                                 </span>
                               </Link>
-                              {!memberSelectionMode && (p.is_guest ? (
-                                myClaimedGuestIds.includes(p.id) ? (
-                                  <span className="text-[8px] font-extrabold uppercase bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-full mt-1">
-                                    Pending
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={() => setGuestToClaim({ id: p.id, name: pName })}
-                                    className="text-[8px] font-black uppercase bg-orange-500 text-white hover:bg-orange-600 px-2 py-0.5 rounded-full transition-all mt-1 cursor-pointer shadow-2xs"
-                                    title="Request to claim this guest profile"
-                                  >
-                                    Claim
-                                  </button>
-                                )
-                              ) : null)}
-                              {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
+                              {isAdmin && p.id !== callerProfile?.id && (
                                 <button
                                   onClick={() => setPendingRemoveMember({ id: p.id, name: pName })}
                                   className="text-[8px] font-black uppercase bg-red-50 text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded-full transition-all mt-1 cursor-pointer"
