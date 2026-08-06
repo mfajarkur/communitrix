@@ -135,6 +135,9 @@ export default async function CommunityDashboardPage({
         points_for,
         points_against,
         is_provisional,
+        gold_medals,
+        silver_medals,
+        bronze_medals,
         profile:profiles (
           id,
           full_name,
@@ -294,67 +297,12 @@ export default async function CommunityDashboardPage({
   });
 
   const medalsMap: Record<string, { gold: number; silver: number; bronze: number }> = {};
-  (sessions || []).forEach((session: any) => {
-    if (session.status !== 'COMPLETED') return;
-    const players = (session.session_players || []).filter(
-      (sp: any) => sp.status === 'ACTIVE' || sp.status === 'WITHDRAWN'
-    );
-    if (players.length === 0) return;
-
-    const N = session.max_score_target || 7;
-    const halfN = Math.round(N / 2);
-    const byeMethod = session.bye_scoring_method || 'HALF_N';
-    const maxRealMatchesPlayed = players.reduce(
-      (max: number, p: any) => Math.max(max, (p.session_wins || 0) + (p.session_losses || 0) + (p.session_draws || 0)),
-      0
-    );
-
-    const computed = players
-      .map((p: any) => {
-        const wins = p.session_wins || 0;
-        const losses = p.session_losses || 0;
-        const ties = p.session_draws || 0;
-        const realMatchesPlayed = wins + losses + ties;
-        const matchesBehind = maxRealMatchesPlayed - realMatchesPlayed;
-
-        const rawByeScore =
-          byeMethod === 'HALF_N' || realMatchesPlayed === 0
-            ? halfN
-            : Math.round((p.session_points_for || 0) / realMatchesPlayed);
-        const byeScore = Math.max(0, Math.min(N, rawByeScore));
-        const byePoints = matchesBehind > 0 ? matchesBehind * byeScore : 0;
-
-        const totalPoints = (p.session_points_for || 0) + byePoints;
-        const diff = totalPoints - (p.session_points_against || 0);
-
-        return {
-          profile_id: p.profile_id,
-          wins,
-          diff,
-          totalPoints,
-        };
-      })
-      .sort((a, b) => {
-        if (b.wins !== a.wins) return b.wins - a.wins;
-        if (b.diff !== a.diff) return b.diff - a.diff;
-        return b.totalPoints - a.totalPoints;
-      });
-
-    if (computed[0]?.profile_id) {
-      const pId = computed[0].profile_id;
-      if (!medalsMap[pId]) medalsMap[pId] = { gold: 0, silver: 0, bronze: 0 };
-      medalsMap[pId].gold += 1;
-    }
-    if (computed[1]?.profile_id) {
-      const pId = computed[1].profile_id;
-      if (!medalsMap[pId]) medalsMap[pId] = { gold: 0, silver: 0, bronze: 0 };
-      medalsMap[pId].silver += 1;
-    }
-    if (computed[2]?.profile_id) {
-      const pId = computed[2].profile_id;
-      if (!medalsMap[pId]) medalsMap[pId] = { gold: 0, silver: 0, bronze: 0 };
-      medalsMap[pId].bronze += 1;
-    }
+  rawRankings.forEach((r: any) => {
+    medalsMap[r.profile_id] = {
+      gold: r.gold_medals || 0,
+      silver: r.silver_medals || 0,
+      bronze: r.bronze_medals || 0,
+    };
   });
 
   const activeSessions = sessions || [];
