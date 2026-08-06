@@ -14,8 +14,9 @@ import {
   Shield,
   User,
 } from 'lucide-react';
-import { getDisplayName } from '@/lib/utils/profile';
+import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import ProfileEditor from './profile-editor';
+import { VerifiedBadge, isProfileVerified } from '@/components/ui/verified-badge';
 
 export default async function PlayerProfilePage({
   params,
@@ -159,22 +160,17 @@ export default async function PlayerProfilePage({
       {/* Profile Header Cards */}
       <div className="flex flex-row gap-4 items-center justify-between border-b border-zinc-100 pb-6">
         <div className="flex items-center gap-4 min-w-0">
-          {player.avatar_url ? (
-            <img
-              src={player.avatar_url}
-              alt={displayName}
-              className="h-16 w-16 rounded-2xl object-cover border border-zinc-100 shrink-0 shadow-sm"
-            />
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-650 font-extrabold text-2xl uppercase shrink-0">
-              {displayName.slice(0, 2)}
-            </div>
-          )}
+          <img
+            src={getAvatarUrl(player)}
+            alt={displayName}
+            className="h-16 w-16 rounded-2xl object-cover border border-zinc-100 shrink-0 shadow-sm"
+          />
           <div className="min-w-0">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <h2 className="text-lg font-extrabold tracking-tight text-zinc-900 leading-tight truncate">
+                <h2 className="text-lg font-extrabold tracking-tight text-zinc-900 leading-tight truncate flex items-center gap-1">
                   {displayName}
+                  {isProfileVerified(player) && <VerifiedBadge className="h-4 w-4" />}
                 </h2>
                 {memberRecord && (
                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0 ${
@@ -188,11 +184,6 @@ export default async function PlayerProfilePage({
                       <User className="h-2.5 w-2.5" />
                     )}
                     {memberRecord.role}
-                  </span>
-                )}
-                {player.is_guest && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 text-[9px] font-bold uppercase shrink-0">
-                    Guest
                   </span>
                 )}
               </div>

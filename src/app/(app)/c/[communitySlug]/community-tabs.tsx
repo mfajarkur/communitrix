@@ -38,6 +38,7 @@ import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/mem
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
 import { useActiveTab } from './active-tab-context';
 import ConfirmModal from '@/components/ui/confirm-modal';
+import { VerifiedBadge, isProfileVerified } from '@/components/ui/verified-badge';
 
 interface CommunityTabsProps {
   community?: any;
@@ -859,19 +860,13 @@ export default function CommunityTabs({
                                 className="flex flex-col items-center w-full"
                               >
                                 <div className="relative">
-                                  {p.avatar_url ? (
-                                    <img
-                                      src={p.avatar_url}
-                                      alt={pName}
-                                      className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
-                                        memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
-                                      }`}
-                                    />
-                                  ) : (
-                                    <div className="flex h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black text-base uppercase shadow-xs">
-                                      {pName.slice(0, 2)}
-                                    </div>
-                                  )}
+                                  <img
+                                    src={getAvatarUrl(p)}
+                                    alt={pName}
+                                    className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
+                                      memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
+                                    }`}
+                                  />
                                   <div className="absolute top-0 right-0 bg-blue-600 rounded-full p-1 text-white shadow-sm border-2 border-white">
                                     <Shield className="h-3 w-3 fill-current" />
                                   </div>
@@ -885,8 +880,9 @@ export default function CommunityTabs({
                                     </div>
                                   )}
                                 </div>
-                                <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
-                                  {pName}
+                                <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline inline-flex items-center justify-center gap-0.5">
+                                  <span>{pName}</span>
+                                  {isProfileVerified(p) && <VerifiedBadge className="h-3.5 w-3.5" />}
                                 </span>
                               </Link>
                               {!memberSelectionMode && isAdmin && p.id !== callerProfile?.id && (
@@ -933,19 +929,13 @@ export default function CommunityTabs({
                                 className="flex flex-col items-center w-full"
                               >
                                 <div className="relative">
-                                  {p.avatar_url ? (
-                                    <img
-                                      src={p.avatar_url}
-                                      alt={pName}
-                                      className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
-                                        memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
-                                      }`}
-                                    />
-                                  ) : (
-                                    <div className="flex h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] items-center justify-center rounded-full bg-zinc-200 text-zinc-700 font-extrabold text-base uppercase shadow-xs">
-                                      {pName.slice(0, 2)}
-                                    </div>
-                                  )}
+                                  <img
+                                    src={getAvatarUrl(p)}
+                                    alt={pName}
+                                    className={`h-[74px] w-[74px] sm:h-[92px] sm:w-[92px] rounded-full object-cover border-2 shadow-xs ${
+                                      memberSelectionMode && selectedMemberIds.has(p.id) ? 'border-orange-500' : 'border-white'
+                                    }`}
+                                  />
                                   {memberSelectionMode && p.id !== callerProfile?.id && (
                                     <div
                                       className={`absolute top-0 left-0 h-5 w-5 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
@@ -956,8 +946,9 @@ export default function CommunityTabs({
                                     </div>
                                   )}
                                 </div>
-                                <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline">
-                                  {pName}
+                                <span className="text-xs font-bold text-zinc-900 mt-2 line-clamp-2 leading-tight w-full px-0.5 group-hover:underline inline-flex items-center justify-center gap-0.5">
+                                  <span>{pName}</span>
+                                  {isProfileVerified(p) && <VerifiedBadge className="h-3.5 w-3.5" />}
                                 </span>
                               </Link>
                               {!memberSelectionMode && (p.is_guest ? (
@@ -1286,13 +1277,9 @@ export default function CommunityTabs({
                                      alt={getDisplayName(r.profile)}
                                      className="h-10 w-10 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
                                    />
-                                  <p className="text-xs sm:text-sm font-extrabold text-[#111827] truncate max-w-[90px] sm:max-w-[180px] md:max-w-[260px] lg:max-w-none flex items-center gap-1.5">
-                                    {getDisplayName(r.profile)}
-                                    {r.profile.is_guest && (
-                                      <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase">
-                                        Guest
-                                      </span>
-                                    )}
+                                  <p className="text-xs sm:text-sm font-extrabold text-[#111827] truncate max-w-[90px] sm:max-w-[180px] md:max-w-[260px] lg:max-w-none flex items-center gap-1">
+                                    <span>{getDisplayName(r.profile)}</span>
+                                    {isProfileVerified(r.profile) && <VerifiedBadge className="h-3.5 w-3.5" />}
                                     {r.is_provisional && (
                                       <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 text-[8px] font-bold uppercase border border-orange-500/20">
                                         <Star className="h-2 w-2 fill-current" />
