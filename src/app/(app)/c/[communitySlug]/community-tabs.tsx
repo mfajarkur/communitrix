@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import AddGuestForm from './add-guest-form';
 import EditCommunityInfoButton from './edit-community-info-button';
+import ManagingMembersModal from './managing-members-modal';
 import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
@@ -103,6 +104,7 @@ export default function CommunityTabs({
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [isBatchRemoving, setIsBatchRemoving] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [managingMembersModalOpen, setManagingMembersModalOpen] = useState(false);
   const [targetRoleToAdd, setTargetRoleToAdd] = useState<'ADMIN' | null>(null);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const router = useRouter();
@@ -760,19 +762,33 @@ export default function CommunityTabs({
                       <p className="text-xs text-zinc-500 mt-0.5">Admins and players in this community.</p>
                     </div>
                     {isAdmin && (
-                      <button
-                        onClick={() => {
-                          setMemberSelectionMode((v) => !v);
-                          setSelectedMemberIds(new Set());
-                        }}
-                        className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-full border transition-all cursor-pointer ${
-                          memberSelectionMode
-                            ? 'bg-zinc-900 text-white border-zinc-900'
-                            : 'text-zinc-600 border-zinc-200 hover:bg-zinc-50'
-                        }`}
-                      >
-                        {memberSelectionMode ? 'Cancel' : 'Select'}
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => setManagingMembersModalOpen(true)}
+                          className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-xs cursor-pointer"
+                        >
+                          <Shield className="h-3.5 w-3.5" />
+                          <span>Managing Members</span>
+                          {pendingJoinRequests.length > 0 && (
+                            <span className="h-4 w-4 rounded-full bg-white text-orange-600 font-black text-[9px] flex items-center justify-center">
+                              {pendingJoinRequests.length}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMemberSelectionMode((v) => !v);
+                            setSelectedMemberIds(new Set());
+                          }}
+                          className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-full border transition-all cursor-pointer ${
+                            memberSelectionMode
+                              ? 'bg-zinc-900 text-white border-zinc-900'
+                              : 'text-zinc-600 border-zinc-200 hover:bg-zinc-50'
+                          }`}
+                        >
+                          {memberSelectionMode ? 'Cancel' : 'Select'}
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -983,111 +999,8 @@ export default function CommunityTabs({
 
                 </div>
 
-                {/* Admin Side Panel: Pending Claims & Add Guest */}
+                {/* Admin Side Panel: Add Guest */}
                 <div className="space-y-6">
-                  {isAdmin && pendingClaims.length > 0 && (
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
-                      <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
-                        <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
-                          <CheckCircle className="h-4 w-4 text-amber-600" />
-                          Pending Claims ({pendingClaims.length})
-                        </h3>
-                      </div>
-
-                      <div className="space-y-3">
-                        {pendingClaims.map((req) => {
-                          const guestName = getDisplayName(req.guest_profile);
-                          const reqName = getDisplayName(req.requester_profile);
-                          const username = req.requester_profile?.username ? `@${req.requester_profile.username}` : '';
-                          const isProcessingThis = resolvingId === req.id;
-
-                          return (
-                            <div
-                              key={req.id}
-                              className="p-3.5 rounded-xl bg-white border border-amber-200/80 space-y-3 shadow-xs"
-                            >
-                              <div className="text-xs text-gray-800 space-y-1 font-sans">
-                                <p className="font-bold">
-                                  {reqName} <span className="text-gray-400 font-normal">{username}</span>
-                                </p>
-                                <p className="text-gray-500 font-light text-[11px]">
-                                  Requests to claim guest: <span className="font-extrabold text-orange-600">{guestName}</span>
-                                </p>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleResolve(req.id, 'APPROVE')}
-                                  disabled={isProcessingThis}
-                                  className="flex-1 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  {isProcessingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Approve'}
-                                </button>
-                                <button
-                                  onClick={() => handleResolve(req.id, 'REJECT')}
-                                  disabled={isProcessingThis}
-                                  className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {isAdmin && pendingJoinRequests.length > 0 && (
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3.5">
-                      <div className="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
-                        <h3 className="font-black text-xs uppercase tracking-widest text-amber-800 flex items-center gap-1.5 font-sans">
-                          <UserPlus className="h-4 w-4 text-amber-600" />
-                          Pending Join Requests ({pendingJoinRequests.length})
-                        </h3>
-                      </div>
-
-                      <div className="space-y-3">
-                        {pendingJoinRequests.map((req) => {
-                          const reqName = getDisplayName(req.profile);
-                          const username = req.profile?.username ? `@${req.profile.username}` : '';
-                          const isProcessingThis = resolvingJoinId === req.id;
-
-                          return (
-                            <div
-                              key={req.id}
-                              className="p-3.5 rounded-xl bg-white border border-amber-200/80 space-y-3 shadow-xs"
-                            >
-                              <div className="text-xs text-gray-800 space-y-1 font-sans">
-                                <p className="font-bold">
-                                  {reqName} <span className="text-gray-400 font-normal">{username}</span>
-                                </p>
-                                <p className="text-gray-500 font-light text-[11px]">Wants to join this community</p>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleResolveJoin(req.id, 'APPROVE')}
-                                  disabled={isProcessingThis}
-                                  className="flex-1 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  {isProcessingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Approve'}
-                                </button>
-                                <button
-                                  onClick={() => handleResolveJoin(req.id, 'REJECT')}
-                                  disabled={isProcessingThis}
-                                  className="flex-1 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
                   {isHostOrAdmin ? (
                     <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm space-y-4">
                       <div>
@@ -1470,6 +1383,16 @@ export default function CommunityTabs({
           </div>
         </div>
       )}
+
+      <ManagingMembersModal
+        isOpen={managingMembersModalOpen}
+        onClose={() => setManagingMembersModalOpen(false)}
+        communityId={communityId}
+        communitySlug={communitySlug}
+        members={members}
+        pendingJoinRequests={pendingJoinRequests}
+        callerProfileId={callerProfile?.id}
+      />
 
       <ConfirmModal
         open={pendingRemoveMember !== null}

@@ -40,3 +40,29 @@ export async function resolveClaimAction(requestId: string, action: 'APPROVE' | 
     return { error: err?.message || 'Only administrators can resolve claim requests.' };
   }
 }
+
+export async function adminMergeGuestAccountAction(input: {
+  guestProfileId: string;
+  targetProfileId: string;
+  communityId: string;
+  communitySlug: string;
+}) {
+  try {
+    await requireCommunityAdmin(input.communityId);
+    const supabase = await createClient();
+
+    const { error } = await supabase.rpc('claim_guest_profile', {
+      p_guest_profile_id: input.guestProfileId,
+      p_target_profile_id: input.targetProfileId,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath(`/c/${input.communitySlug}`);
+    return { success: true };
+  } catch (err: any) {
+    return { error: err?.message || 'Only administrators can merge player accounts.' };
+  }
+}
