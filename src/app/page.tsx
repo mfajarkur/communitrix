@@ -11,7 +11,7 @@ export default async function Home({
 
   // Forward OAuth code to the proper callback handler if it lands on root
   if (params.code) {
-    const next = params.next ?? '/communities';
+    const next = params.next ?? '/c';
     redirect(`/auth/callback?code=${params.code}&next=${next}`);
   }
 
@@ -20,7 +20,7 @@ export default async function Home({
 
   // Redirect to app if already authenticated
   if (user) {
-    redirect('/communities');
+    redirect('/c');
   }
 
   return (

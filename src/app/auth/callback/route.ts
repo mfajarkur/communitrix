@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   // if "next" is in param, redirect there after sign in
-  const next = searchParams.get('next') ?? '/communities';
+  const next = searchParams.get('next') ?? '/c';
 
   if (code) {
     const supabase = await createClient();

@@ -70,7 +70,7 @@ function UnifiedAuthCardContent() {
     if (result.error) {
       setError(result.error);
     } else {
-      router.push('/communities');
+      router.push('/c');
       router.refresh();
     }
   };
