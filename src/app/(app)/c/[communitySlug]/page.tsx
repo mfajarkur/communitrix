@@ -295,7 +295,7 @@ export default async function CommunityDashboardPage({
 
   const medalsMap: Record<string, { gold: number; silver: number; bronze: number }> = {};
   (sessions || []).forEach((session: any) => {
-    if (session.status !== 'ENDED') return;
+    if (session.status !== 'COMPLETED') return;
     const players = (session.session_players || []).filter(
       (sp: any) => sp.status === 'ACTIVE' || sp.status === 'WITHDRAWN'
     );
