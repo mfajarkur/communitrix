@@ -464,32 +464,6 @@ export default function CommunityTabs({
                 );
               })()}
 
-              {/* Quick Action Navigation Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => handleTabChange('sessions')}
-                  className="p-4 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-left transition-all shadow-md cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between">
-                    <Calendar className="h-6 w-6 text-white/90" />
-                    <ChevronRight className="h-4 w-4 text-white/80 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                  <h4 className="text-sm font-extrabold mt-3">Game Sessions</h4>
-                  <p className="text-[11px] text-white/80 font-medium">Create or view sessions</p>
-                </button>
-
-                <button
-                  onClick={() => handleTabChange('members')}
-                  className="p-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white text-left transition-all shadow-md cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between">
-                    <Users className="h-6 w-6 text-orange-400" />
-                    <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                  <h4 className="text-sm font-extrabold mt-3">Community Members</h4>
-                  <p className="text-[11px] text-zinc-400 font-medium">View admins & players</p>
-                </button>
-              </div>
             </div>
           )}
 
