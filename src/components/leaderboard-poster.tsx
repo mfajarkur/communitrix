@@ -130,8 +130,8 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 from-20% via-zinc-200/40 to-transparent pointer-events-none" />
-                  <span className="text-6xl sm:text-7xl font-black text-zinc-600 drop-shadow-md relative z-10 leading-none">2</span>
-                  <span className="text-[9px] uppercase tracking-wider font-black text-zinc-700 relative z-10 mt-1">SILVER</span>
+                  <span className="text-[10px] uppercase tracking-widest font-black text-zinc-600 relative z-20 mb-1">SILVER</span>
+                  <span className="absolute -bottom-4 sm:-bottom-5 text-[110px] sm:text-[130px] font-black text-white/50 z-10 leading-none tracking-tighter">2</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
                   <p className="text-sm sm:text-base font-black text-zinc-900 text-center truncate max-w-[80px]">
@@ -155,8 +155,8 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-orange-600 from-20% via-orange-500/40 to-transparent pointer-events-none" />
-                  <span className="text-6xl sm:text-7xl font-black text-white drop-shadow-lg relative z-10 leading-none">1</span>
-                  <span className="text-[10px] uppercase tracking-wider font-black text-orange-100 relative z-10 mt-1">GOLD</span>
+                  <span className="text-[11px] uppercase tracking-widest font-black text-orange-100 relative z-20 mb-1">GOLD</span>
+                  <span className="absolute -bottom-4 sm:-bottom-5 text-[110px] sm:text-[130px] font-black text-white/30 z-10 leading-none tracking-tighter">1</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
                   <p className="text-sm sm:text-base font-black text-zinc-900 text-center truncate max-w-[100px]">
@@ -180,8 +180,8 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-orange-200 from-20% via-orange-100/40 to-transparent pointer-events-none" />
-                  <span className="text-6xl sm:text-7xl font-black text-orange-700 drop-shadow-md relative z-10 leading-none">3</span>
-                  <span className="text-[8px] uppercase tracking-wider font-black text-orange-800 relative z-10 mt-1">BRONZE</span>
+                  <span className="text-[9px] uppercase tracking-widest font-black text-orange-700 relative z-20 mb-1">BRONZE</span>
+                  <span className="absolute -bottom-4 sm:-bottom-5 text-[110px] sm:text-[130px] font-black text-white/50 z-10 leading-none tracking-tighter">3</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
                   <p className="text-sm sm:text-base font-black text-zinc-900 text-center truncate max-w-[80px]">
@@ -215,9 +215,9 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   <tbody className="divide-y divide-zinc-50">
                     {standings.map((s) => (
                       <tr key={s.playerId ?? s.name} className={`transition-colors ${
-                        s.rank === 1 ? 'bg-orange-50 hover:bg-orange-100/50' :
-                        s.rank === 2 ? 'bg-zinc-50 hover:bg-zinc-100/50' :
-                        s.rank === 3 ? 'bg-orange-50/40 hover:bg-orange-50/80' :
+                        s.rank === 1 ? 'bg-orange-50/90 hover:bg-orange-100/80' :
+                        s.rank === 2 ? 'bg-orange-50/60 hover:bg-orange-100/50' :
+                        s.rank === 3 ? 'bg-orange-50/30 hover:bg-orange-100/30' :
                         'hover:bg-zinc-50/50'
                       }`}>
                         <td className="py-2.5 pl-1 font-black text-[11px] text-zinc-500 w-8">
