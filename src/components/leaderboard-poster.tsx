@@ -130,7 +130,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 from-20% via-zinc-200/40 to-transparent pointer-events-none" />
-                  <span className="text-5xl sm:text-6xl font-black text-zinc-600 drop-shadow-md relative z-10 leading-none">2</span>
+                  <span className="text-6xl sm:text-7xl font-black text-zinc-600 drop-shadow-md relative z-10 leading-none">2</span>
                   <span className="text-[9px] uppercase tracking-wider font-black text-zinc-700 relative z-10 mt-1">SILVER</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
@@ -180,7 +180,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-orange-200 from-20% via-orange-100/40 to-transparent pointer-events-none" />
-                  <span className="text-4xl sm:text-5xl font-black text-orange-700 drop-shadow-md relative z-10 leading-none">3</span>
+                  <span className="text-6xl sm:text-7xl font-black text-orange-700 drop-shadow-md relative z-10 leading-none">3</span>
                   <span className="text-[8px] uppercase tracking-wider font-black text-orange-800 relative z-10 mt-1">BRONZE</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
@@ -214,7 +214,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   </thead>
                   <tbody className="divide-y divide-zinc-50">
                     {standings.map((s) => (
-                      <tr key={s.playerId ?? s.name} className="hover:bg-zinc-50/50 transition-colors">
+                      <tr key={s.playerId ?? s.name} className={`transition-colors ${
+                        s.rank === 1 ? 'bg-orange-50 hover:bg-orange-100/50' :
+                        s.rank === 2 ? 'bg-zinc-50 hover:bg-zinc-100/50' :
+                        s.rank === 3 ? 'bg-orange-50/40 hover:bg-orange-50/80' :
+                        'hover:bg-zinc-50/50'
+                      }`}>
                         <td className="py-2.5 pl-1 font-black text-[11px] text-zinc-500 w-8">
                           {s.rank === 1 ? (
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 text-orange-600 font-black text-[10px] shadow-sm">
