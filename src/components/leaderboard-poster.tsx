@@ -53,7 +53,6 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
 
       const blob = await toBlob(node, {
         cacheBust: true,
-        backgroundColor: '#ffffff',
         imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
         width: targetWidth,
         height: targetHeight,
@@ -89,7 +88,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       <div className="overflow-x-auto w-full pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
         <div
           id="podium-download-area"
-          className="w-full max-w-[420px] mx-auto bg-white text-zinc-900 p-5 sm:p-6 rounded-3xl border border-zinc-200 relative shadow-2xl overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50"
+          className="w-full max-w-[420px] mx-auto bg-white text-zinc-900 p-5 sm:p-6 border border-zinc-200 relative shadow-2xl overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50"
         >
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
           <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
