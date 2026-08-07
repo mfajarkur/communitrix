@@ -74,7 +74,7 @@ export default function CommunityMetrics({
           </div>
           <div className="relative z-10 flex items-center gap-2 text-zinc-400 mb-2">
             <Crown className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase tracking-wider">Highest Elo</span>
+            <span className="text-[10px] font-black uppercase tracking-wider">All Time High Elo</span>
           </div>
           <div className="relative z-10 text-3xl font-black tracking-tighter text-emerald-600">
             {highestElo > 0 ? highestElo.toFixed(0) : '-'}
