@@ -319,9 +319,9 @@ export default function CommunityTabs({
                     return wrB - wrA;
                   })[0];
                   const mostMatches = [...activePlayers].sort((a, b) => Number(b.total_matches || 0) - Number(a.total_matches || 0))[0];
-                  const mostImproved = [...activePlayers].sort((a, b) => (Number(b.elo_rating) - 1000) - (Number(a.elo_rating) - 1000))[0];
+                  const mostGoldMedals = [...activePlayers].sort((a, b) => Number(b.gold_medals || 0) - Number(a.gold_medals || 0))[0];
 
-                  return { topElo, mostWins, topCp, topWinRate, mostMatches, mostImproved };
+                  return { topElo, mostWins, topCp, topWinRate, mostMatches, mostGoldMedals };
                 };
 
                 const padelStars = getCommunityStars(rankingsBySport.PADEL || rankings);
@@ -367,15 +367,10 @@ export default function CommunityTabs({
                     value: `${activeSportStars.mostMatches?.total_matches || 0}`,
                   },
                   {
-                    key: 'mostImproved',
-                    badge: 'Most Improved',
-                    player: activeSportStars.mostImproved,
-                    value: `+${Math.max(
-                      1,
-                      Math.round(
-                        Number(activeSportStars.mostImproved?.elo_rating || 1000) - 1000
-                      )
-                    )}`,
+                    key: 'mostGoldMedals',
+                    badge: 'Most Gold Medals',
+                    player: activeSportStars.mostGoldMedals,
+                    value: `${activeSportStars.mostGoldMedals?.gold_medals || 0}`,
                   },
                 ];
 
