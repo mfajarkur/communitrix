@@ -134,12 +134,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   </p>
                   <p className="text-[10px] text-zinc-500 font-bold">{secondPlace.totalPoints} pts</p>
                 </div>
-                <div className="w-full h-32 sm:h-40 bg-gradient-to-t from-zinc-200 to-zinc-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-zinc-200/80 shadow-inner relative overflow-hidden">
+                <div className="w-full h-40 sm:h-48 bg-gradient-to-t from-zinc-200 to-zinc-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-zinc-200/80 shadow-inner relative overflow-hidden">
                   <img
                     src={secondPlace.avatarUrl || '/default-avatar.png'}
                     alt={secondPlace.name}
-                    style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)' }}
-                    className="absolute inset-0 w-full h-full object-cover brightness-105 saturate-0"
+                    crossOrigin="anonymous"
+                    className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-0"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 via-zinc-200/60 to-transparent pointer-events-none" />
                   <span className="text-3xl sm:text-4xl font-black text-zinc-500 drop-shadow-sm relative z-10">2</span>
@@ -157,12 +157,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   </p>
                   <p className="text-[11px] text-amber-600 font-black">{firstPlace.totalPoints} pts</p>
                 </div>
-                <div className="w-full h-40 sm:h-48 bg-gradient-to-t from-orange-600 to-orange-400 rounded-t-2xl flex flex-col items-center justify-end pb-5 border border-orange-400 shadow-xl shadow-orange-500/20 text-white relative overflow-hidden">
+                <div className="w-full h-48 sm:h-56 bg-gradient-to-t from-orange-600 to-orange-400 rounded-t-2xl flex flex-col items-center justify-end pb-5 border border-orange-400 shadow-xl shadow-orange-500/20 text-white relative overflow-hidden">
                   <img
                     src={firstPlace.avatarUrl || '/default-avatar.png'}
                     alt={firstPlace.name}
-                    style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)' }}
-                    className="absolute inset-0 w-full h-full object-cover brightness-105"
+                    crossOrigin="anonymous"
+                    className="absolute inset-0 w-full h-full object-cover object-top brightness-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-orange-600 via-orange-500/60 to-transparent pointer-events-none" />
                   <span className="text-4xl sm:text-5xl font-black text-white drop-shadow-md relative z-10">1</span>
@@ -179,12 +179,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   </p>
                   <p className="text-[10px] text-zinc-500 font-bold">{thirdPlace.totalPoints} pts</p>
                 </div>
-                <div className="w-full h-24 sm:h-32 bg-gradient-to-t from-orange-200 to-orange-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-orange-200/80 shadow-inner relative overflow-hidden">
+                <div className="w-full h-32 sm:h-40 bg-gradient-to-t from-orange-200 to-orange-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-orange-200/80 shadow-inner relative overflow-hidden">
                   <img
                     src={thirdPlace.avatarUrl || '/default-avatar.png'}
                     alt={thirdPlace.name}
-                    style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)' }}
-                    className="absolute inset-0 w-full h-full object-cover brightness-105 saturate-50"
+                    crossOrigin="anonymous"
+                    className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-50"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-orange-200 via-orange-100/60 to-transparent pointer-events-none" />
                   <span className="text-2xl sm:text-3xl font-black text-orange-700 drop-shadow-sm relative z-10">3</span>
