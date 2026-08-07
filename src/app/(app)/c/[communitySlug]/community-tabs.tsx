@@ -368,7 +368,7 @@ export default function CommunityTabs({
                   },
                   {
                     key: 'mostGoldMedals',
-                    badge: 'Most Gold Medals',
+                    badge: 'Most Golds',
                     player: activeSportStars.mostGoldMedals,
                     value: `${activeSportStars.mostGoldMedals?.gold_medals || 0}`,
                   },
@@ -453,7 +453,7 @@ export default function CommunityTabs({
                             </p>
                             <div className="absolute inset-x-0 bottom-2.5 px-0.5 text-center z-10">
                               <p
-                                className={`text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight line-clamp-1 ${
+                                className={`text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tight leading-tight ${
                                   isOrangeTheme ? 'text-orange-100' : 'text-white/75'
                                 }`}
                               >
