@@ -16,6 +16,7 @@ export type PosterStanding = {
   byePoints?: number;
   byesCount?: number;
   byeIsPlaceholder?: boolean;
+  avatarUrl?: string | null;
 };
 
 type Props = {
@@ -128,17 +129,21 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
             {secondPlace && (
               <div className="flex flex-col items-center flex-1">
                 <div className="relative mb-2.5 flex flex-col items-center">
-                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-3 border-zinc-300 bg-white flex items-center justify-center text-sm sm:text-base font-bold text-zinc-600 uppercase shadow-md shrink-0">
-                    {secondPlace.name.slice(0, 2)}
-                  </div>
                   <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[80px] sm:max-w-[100px]">
                     {secondPlace.name}
                   </p>
                   <p className="text-[10px] text-zinc-500 font-bold">{secondPlace.totalPoints} pts</p>
                 </div>
-                <div className="w-full h-24 sm:h-32 bg-gradient-to-b from-zinc-200 via-zinc-100 to-zinc-50 rounded-t-xl flex flex-col items-center justify-center border border-zinc-200/80 shadow-inner">
-                  <span className="text-3xl sm:text-4xl font-black text-zinc-400 drop-shadow-sm">2</span>
-                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-zinc-500">Silver</span>
+                <div className="w-full h-32 sm:h-40 bg-gradient-to-t from-zinc-200 to-zinc-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-zinc-200/80 shadow-inner relative overflow-hidden">
+                  <img
+                    src={secondPlace.avatarUrl || '/default-avatar.png'}
+                    alt={secondPlace.name}
+                    style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)' }}
+                    className="absolute inset-0 w-full h-full object-cover brightness-105 saturate-0"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 via-zinc-200/60 to-transparent pointer-events-none" />
+                  <span className="text-3xl sm:text-4xl font-black text-zinc-500 drop-shadow-sm relative z-10">2</span>
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-zinc-600 relative z-10">Silver</span>
                 </div>
               </div>
             )}
@@ -146,18 +151,22 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
             {firstPlace && (
               <div className="flex flex-col items-center flex-1 z-10">
                 <div className="relative mb-2.5 flex flex-col items-center">
-                  <Crown className="h-6 w-6 text-amber-500 absolute -top-5 transform -rotate-12" />
-                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-4 border-amber-400 bg-white flex items-center justify-center text-base sm:text-lg font-black text-amber-500 uppercase shadow-xl shadow-amber-500/20 shrink-0">
-                    {firstPlace.name.slice(0, 2)}
-                  </div>
+                  <Crown className="h-6 w-6 text-amber-500 absolute -top-8 transform -rotate-12 drop-shadow-sm" />
                   <p className="text-xs sm:text-sm font-extrabold text-zinc-900 mt-2 text-center truncate max-w-[90px] sm:max-w-[120px]">
                     {firstPlace.name}
                   </p>
                   <p className="text-[11px] text-amber-600 font-black">{firstPlace.totalPoints} pts</p>
                 </div>
-                <div className="w-full h-32 sm:h-40 bg-gradient-to-b from-orange-400 via-orange-500 to-orange-600 rounded-t-2xl flex flex-col items-center justify-center border border-orange-400 shadow-xl shadow-orange-500/20 text-white">
-                  <span className="text-4xl sm:text-5xl font-black text-white drop-shadow-md">1</span>
-                  <span className="text-[10px] uppercase tracking-wider font-black text-orange-100">Champion</span>
+                <div className="w-full h-40 sm:h-48 bg-gradient-to-t from-orange-600 to-orange-400 rounded-t-2xl flex flex-col items-center justify-end pb-5 border border-orange-400 shadow-xl shadow-orange-500/20 text-white relative overflow-hidden">
+                  <img
+                    src={firstPlace.avatarUrl || '/default-avatar.png'}
+                    alt={firstPlace.name}
+                    style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)' }}
+                    className="absolute inset-0 w-full h-full object-cover brightness-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-orange-600 via-orange-500/60 to-transparent pointer-events-none" />
+                  <span className="text-4xl sm:text-5xl font-black text-white drop-shadow-md relative z-10">1</span>
+                  <span className="text-[10px] uppercase tracking-wider font-black text-orange-100 relative z-10">Champion</span>
                 </div>
               </div>
             )}
@@ -165,17 +174,21 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
             {thirdPlace && (
               <div className="flex flex-col items-center flex-1">
                 <div className="relative mb-2.5 flex flex-col items-center">
-                  <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-full border-3 border-orange-800 bg-white flex items-center justify-center text-xs sm:text-sm font-bold text-orange-800 uppercase shadow-sm shrink-0">
-                    {thirdPlace.name.slice(0, 2)}
-                  </div>
                   <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[80px] sm:max-w-[100px]">
                     {thirdPlace.name}
                   </p>
                   <p className="text-[10px] text-zinc-500 font-bold">{thirdPlace.totalPoints} pts</p>
                 </div>
-                <div className="w-full h-18 sm:h-24 bg-gradient-to-b from-orange-200 via-orange-100 to-orange-50 rounded-t-xl flex flex-col items-center justify-center border border-orange-200/80 shadow-inner">
-                  <span className="text-2xl sm:text-3xl font-black text-orange-700 drop-shadow-sm">3</span>
-                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-orange-800">Bronze</span>
+                <div className="w-full h-24 sm:h-32 bg-gradient-to-t from-orange-200 to-orange-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-orange-200/80 shadow-inner relative overflow-hidden">
+                  <img
+                    src={thirdPlace.avatarUrl || '/default-avatar.png'}
+                    alt={thirdPlace.name}
+                    style={{ maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)', WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 98%)' }}
+                    className="absolute inset-0 w-full h-full object-cover brightness-105 saturate-50"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-orange-200 via-orange-100/60 to-transparent pointer-events-none" />
+                  <span className="text-2xl sm:text-3xl font-black text-orange-700 drop-shadow-sm relative z-10">3</span>
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-orange-800 relative z-10">Bronze</span>
                 </div>
               </div>
             )}
