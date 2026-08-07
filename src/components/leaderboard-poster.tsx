@@ -48,7 +48,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const targetWidth = 640;
+      const targetWidth = 420;
       const targetHeight = node.offsetHeight;
 
       const blob = await toBlob(node, {
@@ -92,7 +92,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       <div className="overflow-x-auto w-full pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
         <div
           id="podium-download-area"
-          className="w-[640px] shrink-0 mx-auto bg-white text-zinc-900 p-6 sm:p-8 rounded-3xl border border-zinc-200 relative shadow-2xl overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50"
+          className="w-[420px] shrink-0 mx-auto bg-white text-zinc-900 p-5 sm:p-6 rounded-3xl border border-zinc-200 relative shadow-2xl overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50"
         >
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
           <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
@@ -125,11 +125,11 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
             </p>
           </div>
 
-          <div className="flex justify-center items-end gap-3 sm:gap-6 pt-12 pb-6 max-w-md mx-auto relative border-b border-zinc-200 z-10">
+          <div className="flex justify-center items-end gap-2 sm:gap-4 pt-12 pb-6 max-w-sm mx-auto relative border-b border-zinc-200 z-10">
             {secondPlace && (
               <div className="flex flex-col items-center flex-1">
                 <div className="relative mb-2.5 flex flex-col items-center">
-                  <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[80px] sm:max-w-[100px]">
+                  <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[70px]">
                     {secondPlace.name}
                   </p>
                   <p className="text-[10px] text-zinc-500 font-bold">{secondPlace.totalPoints} pts</p>
@@ -152,7 +152,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
               <div className="flex flex-col items-center flex-1 z-10">
                 <div className="relative mb-2.5 flex flex-col items-center">
                   <Crown className="h-6 w-6 text-amber-500 absolute -top-8 transform -rotate-12 drop-shadow-sm" />
-                  <p className="text-xs sm:text-sm font-extrabold text-zinc-900 mt-2 text-center truncate max-w-[90px] sm:max-w-[120px]">
+                  <p className="text-xs sm:text-sm font-extrabold text-zinc-900 mt-2 text-center truncate max-w-[80px]">
                     {firstPlace.name}
                   </p>
                   <p className="text-[11px] text-amber-600 font-black">{firstPlace.totalPoints} pts</p>
@@ -174,7 +174,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
             {thirdPlace && (
               <div className="flex flex-col items-center flex-1">
                 <div className="relative mb-2.5 flex flex-col items-center">
-                  <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[80px] sm:max-w-[100px]">
+                  <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[70px]">
                     {thirdPlace.name}
                   </p>
                   <p className="text-[10px] text-zinc-500 font-bold">{thirdPlace.totalPoints} pts</p>
@@ -199,56 +199,56 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
               Complete Standings
             </h3>
             <div className="rounded-2xl border border-zinc-200 bg-white shadow-md overflow-hidden">
-              <div className="overflow-x-auto p-4 sm:p-6 scrollbar-thin scrollbar-thumb-zinc-200">
+              <div className="overflow-x-auto p-3 sm:p-4 scrollbar-thin scrollbar-thumb-zinc-200">
                 <table className="w-full text-left text-xs font-sans text-zinc-900">
                   <thead>
-                    <tr className="border-b border-zinc-100 text-zinc-400 font-black uppercase text-[10px] tracking-wider">
-                      <th className="pb-3 pl-2 w-12 sm:w-16">Rank</th>
-                      <th className="pb-3 w-auto">Player</th>
-                      <th className="pb-3 text-center w-16 sm:w-20">Matches</th>
-                      <th className="pb-3 text-center w-20 sm:w-24">W-L-T</th>
-                      <th className="pb-3 text-center w-16 sm:w-20">Diff</th>
-                      <th className="pb-3 text-right pr-2 w-16 sm:w-20">Points</th>
+                    <tr className="border-b border-zinc-100 text-zinc-400 font-black uppercase text-[9px] tracking-wider">
+                      <th className="pb-2 pl-1 w-8">Rank</th>
+                      <th className="pb-2 w-auto">Player</th>
+                      <th className="pb-2 text-center w-8">P</th>
+                      <th className="pb-2 text-center w-12">W-L-T</th>
+                      <th className="pb-2 text-center w-10">Diff</th>
+                      <th className="pb-2 text-right pr-1 w-10">Pts</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50">
                     {standings.map((s) => (
                       <tr key={s.playerId ?? s.name} className="hover:bg-zinc-50/50 transition-colors">
-                        <td className="py-3 pl-2 font-black text-sm text-zinc-500 w-12 sm:w-16">
+                        <td className="py-2.5 pl-1 font-black text-[11px] text-zinc-500 w-8">
                           {s.rank === 1 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-orange-600 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 text-orange-600 font-black text-[10px] shadow-sm">
                               1
                             </span>
                           ) : s.rank === 2 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 font-black text-[10px] shadow-sm">
                               2
                             </span>
                           ) : s.rank === 3 ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-50 text-orange-800 font-black text-xs shadow-sm">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-50 text-orange-800 font-black text-[10px] shadow-sm">
                               3
                             </span>
                           ) : (
                             <span className="text-zinc-400 font-bold">#{s.rank}</span>
                           )}
                         </td>
-                        <td className="py-3 w-auto">
-                          <div className="flex items-center gap-2.5">
-                            <div className="h-8 w-8 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase shrink-0">
+                        <td className="py-2.5 w-auto">
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-600 uppercase shrink-0">
                               {s.name.slice(0, 2)}
                             </div>
                             <div>
-                              <p className="font-extrabold text-zinc-900 truncate max-w-[120px] sm:max-w-none">{s.name}</p>
+                              <p className="font-extrabold text-zinc-900 truncate max-w-[80px]">{s.name}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 text-center font-bold text-zinc-600 w-16 sm:w-20">
+                        <td className="py-2.5 text-center font-bold text-zinc-600 w-8">
                           {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
                         </td>
-                        <td className="py-3 text-center font-mono font-black text-zinc-700 w-20 sm:w-24">
+                        <td className="py-2.5 text-center font-mono font-black text-zinc-700 w-12 text-[10px]">
                           {s.wins}-{s.losses}-{s.ties}
                         </td>
-                        <td className="py-3 text-center font-mono font-bold w-16 sm:w-20">
-                          <span className={`px-2 py-0.5 rounded-md text-xs font-black ${
+                        <td className="py-2.5 text-center font-mono font-bold w-10">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
                             (s.diff ?? 0) > 0
                               ? 'bg-emerald-100 text-emerald-700 shadow-sm'
                               : (s.diff ?? 0) < 0
@@ -258,7 +258,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                             {(s.diff ?? 0) > 0 ? `+${s.diff}` : s.diff ?? 0}
                           </span>
                         </td>
-                        <td className="py-3 text-right pr-2 font-black text-sm text-orange-600 w-16 sm:w-20">
+                        <td className="py-2.5 text-right pr-1 font-black text-[11px] text-orange-600 w-10">
                           {s.totalPoints}
                         </td>
                       </tr>
