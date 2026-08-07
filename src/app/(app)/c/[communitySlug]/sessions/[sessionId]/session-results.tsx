@@ -326,9 +326,9 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                   <td className="py-2 pl-4">
                     <div className="flex items-center gap-2">
                       <img
-                        src={s.avatarUrl || '/default-avatar.png'}
+                        src={getAvatarUrl({ id: s.playerId, avatar_url: s.avatarUrl, full_name: s.name })}
                         alt=""
-                        className="h-6 w-6 rounded-full object-cover border border-zinc-200 print:hidden"
+                        className="h-6 w-6 rounded-full object-cover border border-zinc-200 print:hidden shrink-0"
                       />
                       <div className="flex flex-col">
                         <span className="font-extrabold text-zinc-900 max-w-[120px] truncate">{s.name}</span>
