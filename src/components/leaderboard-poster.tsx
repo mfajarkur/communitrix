@@ -54,6 +54,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       const blob = await toBlob(node, {
         cacheBust: true,
         backgroundColor: '#ffffff',
+        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
         width: targetWidth,
         height: targetHeight,
         style: {
@@ -138,7 +139,6 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   <img
                     src={secondPlace.avatarUrl || '/default-avatar.png'}
                     alt={secondPlace.name}
-                    crossOrigin="anonymous"
                     className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-0"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 via-zinc-200/60 to-transparent pointer-events-none" />
@@ -161,7 +161,6 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   <img
                     src={firstPlace.avatarUrl || '/default-avatar.png'}
                     alt={firstPlace.name}
-                    crossOrigin="anonymous"
                     className="absolute inset-0 w-full h-full object-cover object-top brightness-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-orange-600 via-orange-500/60 to-transparent pointer-events-none" />
@@ -183,7 +182,6 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   <img
                     src={thirdPlace.avatarUrl || '/default-avatar.png'}
                     alt={thirdPlace.name}
-                    crossOrigin="anonymous"
                     className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-50"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-orange-200 via-orange-100/60 to-transparent pointer-events-none" />
