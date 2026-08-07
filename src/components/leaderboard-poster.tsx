@@ -121,67 +121,66 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
             </p>
           </div>
 
-          <div className="flex justify-center items-end gap-2 sm:gap-4 pt-12 pb-6 max-w-sm mx-auto relative border-b border-zinc-200 z-10">
+          <div className="flex justify-center items-end gap-2 sm:gap-4 pt-4 pb-6 max-w-sm mx-auto relative border-b border-zinc-200 z-10">
             {secondPlace && (
               <div className="flex flex-col items-center flex-1">
-                <div className="relative mb-2.5 flex flex-col items-center">
-                  <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[70px]">
-                    {secondPlace.name}
-                  </p>
-                  <p className="text-[10px] text-zinc-500 font-bold">{secondPlace.totalPoints} pts</p>
-                </div>
-                <div className="w-full h-40 sm:h-48 bg-gradient-to-t from-zinc-200 to-zinc-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-zinc-200/80 shadow-inner relative overflow-hidden">
+                <div className="w-full h-44 sm:h-52 bg-gradient-to-t from-zinc-200 to-zinc-50 flex flex-col items-center justify-end pb-5 border border-zinc-200/80 shadow-inner relative overflow-hidden">
                   <img
                     src={secondPlace.avatarUrl || '/default-avatar.png'}
                     alt={secondPlace.name}
                     className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-0"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 via-zinc-200/60 to-transparent pointer-events-none" />
-                  <span className="text-3xl sm:text-4xl font-black text-zinc-500 drop-shadow-sm relative z-10">2</span>
-                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-zinc-600 relative z-10">Silver</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 from-20% via-zinc-200/40 to-transparent pointer-events-none" />
+                  <span className="text-5xl sm:text-6xl font-black text-zinc-600 drop-shadow-md relative z-10 leading-none">2</span>
+                  <span className="text-[9px] uppercase tracking-wider font-black text-zinc-700 relative z-10 mt-1">SILVER</span>
+                </div>
+                <div className="mt-3 flex flex-col items-center">
+                  <p className="text-sm font-black text-zinc-900 text-center truncate max-w-[80px]">
+                    {secondPlace.name.split(' ')[0]}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 font-black">{secondPlace.totalPoints} pts</p>
                 </div>
               </div>
             )}
 
             {firstPlace && (
               <div className="flex flex-col items-center flex-1 z-10">
-                <div className="relative mb-2.5 flex flex-col items-center">
-                  <Crown className="h-6 w-6 text-amber-500 absolute -top-8 transform -rotate-12 drop-shadow-sm" />
-                  <p className="text-xs sm:text-sm font-extrabold text-zinc-900 mt-2 text-center truncate max-w-[80px]">
-                    {firstPlace.name}
-                  </p>
-                  <p className="text-[11px] text-amber-600 font-black">{firstPlace.totalPoints} pts</p>
-                </div>
-                <div className="w-full h-48 sm:h-56 bg-gradient-to-t from-orange-600 to-orange-400 rounded-t-2xl flex flex-col items-center justify-end pb-5 border border-orange-400 shadow-xl shadow-orange-500/20 text-white relative overflow-hidden">
+                <div className="w-full h-56 sm:h-64 bg-gradient-to-t from-orange-600 to-orange-400 flex flex-col items-center justify-end pb-6 border border-orange-400 shadow-xl shadow-orange-500/20 text-white relative overflow-hidden">
                   <img
                     src={firstPlace.avatarUrl || '/default-avatar.png'}
                     alt={firstPlace.name}
                     className="absolute inset-0 w-full h-full object-cover object-top brightness-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-orange-600 via-orange-500/60 to-transparent pointer-events-none" />
-                  <span className="text-4xl sm:text-5xl font-black text-white drop-shadow-md relative z-10">1</span>
-                  <span className="text-[10px] uppercase tracking-wider font-black text-orange-100 relative z-10">Champion</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-orange-600 from-20% via-orange-500/40 to-transparent pointer-events-none" />
+                  <span className="text-6xl sm:text-7xl font-black text-white drop-shadow-lg relative z-10 leading-none">1</span>
+                  <span className="text-[10px] uppercase tracking-wider font-black text-orange-100 relative z-10 mt-1">GOLD</span>
+                </div>
+                <div className="mt-3 flex flex-col items-center">
+                  <p className="text-base sm:text-lg font-black text-zinc-900 text-center truncate max-w-[100px]">
+                    {firstPlace.name.split(' ')[0]}
+                  </p>
+                  <p className="text-xs text-orange-600 font-black">{firstPlace.totalPoints} pts</p>
                 </div>
               </div>
             )}
 
             {thirdPlace && (
               <div className="flex flex-col items-center flex-1">
-                <div className="relative mb-2.5 flex flex-col items-center">
-                  <p className="text-[11px] font-bold text-zinc-800 mt-2 text-center truncate max-w-[70px]">
-                    {thirdPlace.name}
-                  </p>
-                  <p className="text-[10px] text-zinc-500 font-bold">{thirdPlace.totalPoints} pts</p>
-                </div>
-                <div className="w-full h-32 sm:h-40 bg-gradient-to-t from-orange-200 to-orange-50 rounded-t-xl flex flex-col items-center justify-end pb-4 border border-orange-200/80 shadow-inner relative overflow-hidden">
+                <div className="w-full h-36 sm:h-44 bg-gradient-to-t from-orange-200 to-orange-50 flex flex-col items-center justify-end pb-4 border border-orange-200/80 shadow-inner relative overflow-hidden">
                   <img
                     src={thirdPlace.avatarUrl || '/default-avatar.png'}
                     alt={thirdPlace.name}
                     className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-50"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-orange-200 via-orange-100/60 to-transparent pointer-events-none" />
-                  <span className="text-2xl sm:text-3xl font-black text-orange-700 drop-shadow-sm relative z-10">3</span>
-                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-orange-800 relative z-10">Bronze</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-orange-200 from-20% via-orange-100/40 to-transparent pointer-events-none" />
+                  <span className="text-4xl sm:text-5xl font-black text-orange-700 drop-shadow-md relative z-10 leading-none">3</span>
+                  <span className="text-[8px] uppercase tracking-wider font-black text-orange-800 relative z-10 mt-1">BRONZE</span>
+                </div>
+                <div className="mt-3 flex flex-col items-center">
+                  <p className="text-xs sm:text-sm font-black text-zinc-900 text-center truncate max-w-[80px]">
+                    {thirdPlace.name.split(' ')[0]}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 font-black">{thirdPlace.totalPoints} pts</p>
                 </div>
               </div>
             )}
