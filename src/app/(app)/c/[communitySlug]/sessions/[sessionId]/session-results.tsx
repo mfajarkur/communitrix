@@ -62,7 +62,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
           >
             <div className="relative shrink-0">
               <img
-                src={getAvatarUrl({ id: isSubbed ? mp.elo_profile_id! : mp.profile_id, avatar_url: actualProfile.avatar_url, full_name: actualProfile.full_name })}
+                src={getAvatarUrl({ id: isSubbed ? mp.elo_profile_id! : mp.profile_id, avatar_url: actualProfile?.avatar_url, full_name: actualProfile?.full_name })}
                 alt=""
                 className="h-7 w-7 rounded-full object-cover border border-zinc-200"
               />
@@ -96,7 +96,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
       const playerMatches = matches
         .filter((m) => m.status === 'COMPLETED')
         .map((m) => {
-          const mp = m.match_players.find((p) => p.profile_id === s.playerId || p.elo_profile_id === s.playerId);
+          const mp = (m.match_players || []).find((p) => p.profile_id === s.playerId || p.elo_profile_id === s.playerId);
           return { match: m, mp };
         })
         .filter((entry) => entry.mp);
@@ -250,8 +250,8 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                 .filter((m) => m.round_number === round.round_number)
                 .sort((a, b) => a.court_number - b.court_number)
                 .map((m) => {
-                  const teamA = m.match_players.filter((mp) => mp.team === 'A');
-                  const teamB = m.match_players.filter((mp) => mp.team === 'B');
+                  const teamA = (m.match_players || []).filter((mp) => mp.team === 'A');
+                  const teamB = (m.match_players || []).filter((mp) => mp.team === 'B');
                   const isCompleted = m.status === 'COMPLETED';
                   return (
                     <div
