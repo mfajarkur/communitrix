@@ -109,16 +109,13 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
             </div>
           </div>
 
-          <div className="text-center space-y-2 relative z-10 py-2">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-orange-100 text-orange-500 animate-celebrate shadow-sm">
-              <Trophy className="h-8 w-8" />
+          <div className="text-center relative z-10">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-500 animate-celebrate shadow-sm mb-2">
+              <Trophy className="h-6 w-6" />
             </div>
             <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-wider bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 bg-clip-text text-transparent">
-              Final Match Standings
+              Final Leaderboard
             </h2>
-            <p className="text-xs text-zinc-500 max-w-sm mx-auto font-medium leading-relaxed">
-              Match session completed! Here are the champions and final player rankings.
-            </p>
           </div>
 
           <div className="flex justify-center items-end gap-2 sm:gap-4 pt-4 pb-6 max-w-sm mx-auto relative border-b border-zinc-200 z-10">
