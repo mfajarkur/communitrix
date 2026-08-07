@@ -80,7 +80,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
               </span>
               {mp.elo_delta !== undefined && mp.elo_delta !== null && (
                 <span className={`text-[10px] font-black ${mp.elo_delta > 0 ? 'text-emerald-500' : mp.elo_delta < 0 ? 'text-rose-500' : 'text-zinc-400'}`}>
-                  {mp.elo_delta > 0 ? `+${mp.elo_delta}` : mp.elo_delta}
+                  {mp.elo_delta > 0 ? `+${mp.elo_delta.toFixed(2)}` : mp.elo_delta === 0 ? '0.00' : mp.elo_delta.toFixed(2)}
                 </span>
               )}
             </div>
@@ -361,7 +361,7 @@ export default function SessionResults({ communitySlug, session, rounds, matches
                           : 'text-zinc-500'
                       }
                     >
-                      {s.netEloChange > 0 ? `+${s.netEloChange}` : s.netEloChange}
+                      {s.netEloChange > 0 ? `+${s.netEloChange.toFixed(2)}` : s.netEloChange === 0 ? '0.00' : s.netEloChange.toFixed(2)}
                     </span>
                   </td>
                 </tr>
