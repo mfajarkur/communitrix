@@ -209,7 +209,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                       <th className="pb-2 text-center w-8">P</th>
                       <th className="pb-2 text-center w-12">W-L-T</th>
                       <th className="pb-2 text-center w-10">Diff</th>
-                      <th className="pb-2 text-right pr-1 w-10">Pts</th>
+                      <th className="pb-2 text-right pr-1 w-12">Pts</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50">
@@ -264,8 +264,15 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                             {(s.diff ?? 0) > 0 ? `+${s.diff}` : s.diff ?? 0}
                           </span>
                         </td>
-                        <td className="py-2.5 text-right pr-1 font-black text-[11px] text-orange-600 w-10">
-                          {s.totalPoints}
+                        <td className="py-2.5 text-right pr-1 font-black text-[11px] text-orange-600 w-12 align-middle">
+                          <div className="flex flex-col items-end justify-center leading-none">
+                            <span>{s.totalPoints}</span>
+                            {(s.byePoints || 0) > 0 && (
+                              <span className="text-[7px] text-orange-400 font-bold uppercase mt-0.5">
+                                +{s.byePoints} BYE
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
