@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowLeft, Trophy, Users, Crown } from 'lucide-react';
 import { getDisplayName, getAvatarUrl } from '@/lib/utils/profile';
@@ -294,7 +296,80 @@ export default function SessionResults({ communitySlug, session, rounds, matches
         )}
       </div>
 
-      <RecapPrintSection recapData={recapData} />
+      <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-emerald-500" />
+            <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">Session Rating & CP Recap</h2>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            Print Recap
+          </button>
+        </div>
+        <div className="overflow-x-auto print:overflow-visible">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-zinc-100 text-zinc-400 font-black uppercase text-[10px] tracking-wider">
+                <th className="py-2 pl-4">Player</th>
+                <th className="py-2 text-center w-16">CP</th>
+                <th className="py-2 text-center w-20">Elo Before</th>
+                <th className="py-2 text-center w-20">Elo After</th>
+                <th className="py-2 text-right pr-4 w-20">Net Change</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {recapData.map((s) => (
+                <tr key={s.playerId} className="hover:bg-zinc-50/50 transition-colors">
+                  <td className="py-2 pl-4">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={s.avatarUrl || '/default-avatar.png'}
+                        alt=""
+                        className="h-6 w-6 rounded-full object-cover border border-zinc-200 print:hidden"
+                      />
+                      <div className="flex flex-col">
+                        <span className="font-extrabold text-zinc-900 max-w-[120px] truncate">{s.name}</span>
+                        {(s.subCount > 0 || s.subbedOutCount > 0) && (
+                          <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider print:hidden">
+                            {s.subCount > 0 && `Subbed in x${s.subCount}`}
+                            {s.subCount > 0 && s.subbedOutCount > 0 && ' · '}
+                            {s.subbedOutCount > 0 && `Subbed out x${s.subbedOutCount}`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-2 text-center font-black text-amber-500">
+                    +{s.pointsAwarded}
+                  </td>
+                  <td className="py-2 text-center font-mono font-bold text-zinc-500">
+                    {s.eloBefore !== null ? Math.round(s.eloBefore) : '-'}
+                  </td>
+                  <td className="py-2 text-center font-mono font-bold text-zinc-700">
+                    {s.eloAfter !== null ? Math.round(s.eloAfter) : '-'}
+                  </td>
+                  <td className="py-2 text-right pr-4 font-mono font-black">
+                    <span
+                      className={
+                        s.netEloChange > 0
+                          ? 'text-emerald-600'
+                          : s.netEloChange < 0
+                          ? 'text-rose-600'
+                          : 'text-zinc-500'
+                      }
+                    >
+                      {s.netEloChange > 0 ? `+${s.netEloChange}` : s.netEloChange}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
