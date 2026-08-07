@@ -117,26 +117,6 @@ export default function CommunityCarousel({
             {role === 'ADMIN' ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
             {role}
           </span>
-
-          {/* Member/session/match counts — published by community-tabs.tsx via context (see
-              active-tab-context.tsx), kept small and quiet so the header stays clean rather than
-              turning into another stats block. */}
-          {stats && (
-            <div className="flex items-center gap-2.5 text-[9px] font-bold text-white/70 mt-1">
-              <span className="inline-flex items-center gap-1">
-                <Users className="h-2.5 w-2.5" />
-                {stats.memberCount}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Calendar className="h-2.5 w-2.5" />
-                {stats.sessionsCount}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Flame className="h-2.5 w-2.5" />
-                {stats.matchesCount}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 

@@ -30,9 +30,12 @@ import {
   UserMinus,
   UserPlus,
 } from 'lucide-react';
+import GuestClaimRequestsPanel from './guest-claim-requests-panel';
 import AddGuestForm from './add-guest-form';
 import EditCommunityInfoButton from './edit-community-info-button';
+import JoinRequestsPanel from './join-requests-panel';
 import ManagingMembersModal from './managing-members-modal';
+import CommunityMetrics from './community-metrics';
 import { getDisplayName, getAvatarUrl, getTwoWordName } from '@/lib/utils/profile';
 import { requestClaimAction, resolveClaimAction } from '@/server/actions/claim.actions';
 import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/member.actions';
@@ -61,6 +64,10 @@ interface CommunityTabsProps {
   myClaimedGuestIds?: string[];
   callerProfile?: any;
   pendingJoinRequests?: any[];
+  totalSessionsCount?: number;
+  highestElo?: number;
+  totalMedals?: number;
+  totalCp?: number;
 }
 
 export default function CommunityTabs({
@@ -83,6 +90,10 @@ export default function CommunityTabs({
   myClaimedGuestIds = [],
   callerProfile,
   pendingJoinRequests = [],
+  totalSessionsCount = 0,
+  highestElo = 0,
+  totalMedals = 0,
+  totalCp = 0,
 }: CommunityTabsProps) {
   const { activeTab, setActiveTab: handleTabChange, setStats } = useActiveTab();
 
@@ -468,6 +479,15 @@ export default function CommunityTabs({
                   </div>
                 );
               })()}
+
+              <CommunityMetrics
+                memberCount={memberCount}
+                totalSessionsCount={totalSessionsCount}
+                totalMatchesCount={totalMatchesCount}
+                highestElo={highestElo}
+                totalMedals={totalMedals}
+                totalCp={totalCp}
+              />
 
             </div>
           )}

@@ -291,18 +291,24 @@ export default async function CommunityDashboardPage({
     TENNIS: tennisLeaderboard,
   };
 
+  let totalCp = 0;
   const cpMap: Record<string, number> = {};
   (cpData || []).forEach((row: any) => {
-    cpMap[row.profile_id] = (cpMap[row.profile_id] || 0) + Number(row.points_awarded || 0);
+    const pts = Number(row.points_awarded || 0);
+    cpMap[row.profile_id] = (cpMap[row.profile_id] || 0) + pts;
+    totalCp += pts;
   });
 
+  let highestElo = 0;
+  let totalMedals = 0;
   const medalsMap: Record<string, { gold: number; silver: number; bronze: number }> = {};
   rawRankings.forEach((r: any) => {
-    medalsMap[r.profile_id] = {
-      gold: r.gold_medals || 0,
-      silver: r.silver_medals || 0,
-      bronze: r.bronze_medals || 0,
-    };
+    if (r.elo_peak > highestElo) highestElo = r.elo_peak;
+    const gold = r.gold_medals || 0;
+    const silver = r.silver_medals || 0;
+    const bronze = r.bronze_medals || 0;
+    totalMedals += gold + silver + bronze;
+    medalsMap[r.profile_id] = { gold, silver, bronze };
   });
 
   const activeSessions = sessions || [];
@@ -323,6 +329,10 @@ export default async function CommunityDashboardPage({
         memberCount={activeMembers.length}
         activeSessionsCount={activeSessionsCount || 0}
         totalMatchesCount={totalMatchesCount || 0}
+        totalSessionsCount={activeSessions.length}
+        totalCp={totalCp}
+        highestElo={highestElo}
+        totalMedals={totalMedals}
         sessions={activeSessions}
         members={activeMembers}
         rankings={padelLeaderboard}
