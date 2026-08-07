@@ -135,10 +135,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   <span className="text-[9px] uppercase tracking-wider font-black text-zinc-700 relative z-10 mt-1">SILVER</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
-                  <p className="text-sm font-black text-zinc-900 text-center truncate max-w-[80px]">
+                  <p className="text-sm sm:text-base font-black text-zinc-900 text-center truncate max-w-[80px]">
                     {secondPlace.name.split(' ')[0]}
                   </p>
-                  <p className="text-[11px] text-zinc-500 font-black">{secondPlace.totalPoints} pts</p>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-500 font-black mt-0.5">
+                    {secondPlace.wins}-{secondPlace.losses}-{secondPlace.ties} • {secondPlace.totalPoints} pts
+                  </p>
                 </div>
               </div>
             )}
@@ -156,10 +158,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   <span className="text-[10px] uppercase tracking-wider font-black text-orange-100 relative z-10 mt-1">GOLD</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
-                  <p className="text-base sm:text-lg font-black text-zinc-900 text-center truncate max-w-[100px]">
+                  <p className="text-sm sm:text-base font-black text-zinc-900 text-center truncate max-w-[100px]">
                     {firstPlace.name.split(' ')[0]}
                   </p>
-                  <p className="text-xs text-orange-600 font-black">{firstPlace.totalPoints} pts</p>
+                  <p className="text-[10px] sm:text-[11px] text-orange-600 font-black mt-0.5">
+                    {firstPlace.wins}-{firstPlace.losses}-{firstPlace.ties} • {firstPlace.totalPoints} pts
+                  </p>
                 </div>
               </div>
             )}
@@ -177,10 +181,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                   <span className="text-[8px] uppercase tracking-wider font-black text-orange-800 relative z-10 mt-1">BRONZE</span>
                 </div>
                 <div className="mt-3 flex flex-col items-center">
-                  <p className="text-xs sm:text-sm font-black text-zinc-900 text-center truncate max-w-[80px]">
+                  <p className="text-sm sm:text-base font-black text-zinc-900 text-center truncate max-w-[80px]">
                     {thirdPlace.name.split(' ')[0]}
                   </p>
-                  <p className="text-[11px] text-zinc-500 font-black">{thirdPlace.totalPoints} pts</p>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-500 font-black mt-0.5">
+                    {thirdPlace.wins}-{thirdPlace.losses}-{thirdPlace.ties} • {thirdPlace.totalPoints} pts
+                  </p>
                 </div>
               </div>
             )}
