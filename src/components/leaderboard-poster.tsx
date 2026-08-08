@@ -48,6 +48,11 @@ type Props = {
 // history recap page, where it doubles as a "print / save this leaderboard" view.
 export default function LeaderboardPoster({ activityName, gameType, sport, standings }: Props) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isIosOrSafari, setIsIosOrSafari] = useState(false);
+
+  useEffect(() => {
+    setIsIosOrSafari(/iPad|iPhone|iPod/.test(navigator.userAgent) || /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
+  }, []);
 
   const firstPlace = standings.find((s) => s.rank === 1) || standings[0];
   const secondPlace = standings.find((s) => s.rank === 2) || standings[1];
@@ -168,8 +173,9 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
   return (
     <div className="space-y-4 font-sans">
       <div className="overflow-x-auto w-full pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
-        <div
+          <div
           id="podium-download-area"
+          data-safari-capture={isIosOrSafari && isDownloading}
           className="w-full max-w-[420px] mx-auto bg-white text-zinc-900 p-5 sm:p-6 border border-zinc-200 relative shadow-2xl overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50"
         >
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
@@ -401,6 +407,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-0">
         <div
           id="ig-story-download-area"
+          data-safari-capture={isIosOrSafari && isDownloadingIG}
           className="w-[432px] h-[768px] bg-white text-zinc-900 relative overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50 flex flex-col font-sans"
         >
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
