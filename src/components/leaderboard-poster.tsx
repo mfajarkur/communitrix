@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy, Crown, Download, Loader2, Zap } from 'lucide-react';
 
 const InstagramIcon = ({ className }: { className?: string }) => (
