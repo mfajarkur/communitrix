@@ -332,8 +332,6 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
         </div>
       </div>
 
-      </div>
-
       <div className="flex gap-2 w-full">
         <button
           type="button"
