@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Crown, Download, Loader2, Zap } from 'lucide-react';
+import { Trophy, Crown, Download, Loader2, Zap, Instagram } from 'lucide-react';
 
 export type PosterStanding = {
   rank: number;
@@ -80,6 +80,44 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       alert('Failed to export standings as image. Please take a screenshot or try again.');
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const [isDownloadingIG, setIsDownloadingIG] = useState(false);
+
+  const handleDownloadIGStory = async () => {
+    setIsDownloadingIG(true);
+    try {
+      const node = document.getElementById('ig-story-download-area');
+      if (!node) throw new Error('IG Story node not found');
+
+      const blob = await toBlob(node, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        pixelRatio: 2.5, // 432x768 * 2.5 = 1080x1920
+        style: {
+          margin: '0px',
+          transform: 'none',
+        },
+      });
+
+      if (!blob) throw new Error('Generated image blob is null');
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `communitrix-${activityName.toLowerCase().replace(/\s+/g, '-')}-ig-story.png`;
+      link.href = url;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download IG story', err);
+      alert('Failed to export IG Story. Please try again.');
+    } finally {
+      setIsDownloadingIG(false);
     }
   };
 
@@ -294,15 +332,183 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={handleDownloadImage}
-        disabled={isDownloading}
-        className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:bg-orange-550/70 text-white text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
-      >
-        {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        <span>{isDownloading ? 'Exporting Image...' : '📥 Download as Image'}</span>
-      </button>
+      </div>
+
+      <div className="flex gap-2 w-full">
+        <button
+          type="button"
+          onClick={handleDownloadImage}
+          disabled={isDownloading || isDownloadingIG}
+          className="flex-1 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-900/70 text-white text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+        >
+          {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          <span>{isDownloading ? 'Exporting...' : 'Save Poster'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleDownloadIGStory}
+          disabled={isDownloading || isDownloadingIG}
+          className="flex-1 py-3.5 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 disabled:opacity-70 text-white text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+        >
+          {isDownloadingIG ? <Loader2 className="h-4 w-4 animate-spin" /> : <Instagram className="h-4 w-4" />}
+          <span>{isDownloadingIG ? 'Creating Story...' : 'IG Story'}</span>
+        </button>
+      </div>
+
+      {/* Hidden IG Story Render Node (432x768, scales up to 1080x1920 with 2.5 pixelRatio) */}
+      <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-0">
+        <div
+          id="ig-story-download-area"
+          className="w-[432px] h-[768px] bg-white text-zinc-900 relative overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50 flex flex-col font-sans"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
+          <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-orange-600/10 blur-3xl pointer-events-none" />
+
+          {/* IG Header */}
+          <div className="flex flex-col items-center pt-8 pb-3 shrink-0 relative z-10 text-center space-y-1.5 border-b border-zinc-200/50 mx-6">
+            <span className="text-[9px] font-black uppercase tracking-widest text-orange-600 block">
+              COMMUNITRIX
+            </span>
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-500 shadow-sm mt-1">
+              <Trophy className="h-5 w-5" />
+            </div>
+            <h2 className="text-xl font-black uppercase tracking-wider bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 bg-clip-text text-transparent">
+              Final Leaderboard
+            </h2>
+            <span className="text-[9px] font-bold text-zinc-600">{activityName} • {gameType} ({sport})</span>
+          </div>
+
+          {/* IG Podiums - Made slightly shorter to fit story height better */}
+          <div className="flex justify-center items-end gap-2 pt-4 pb-2 px-6 mx-auto relative border-b border-zinc-200/50 z-10 w-full shrink-0">
+            {secondPlace && (
+              <div className="flex flex-col items-center flex-1">
+                <div className="w-full h-36 bg-gradient-to-t from-zinc-200 to-zinc-50 flex flex-col items-center justify-start pt-2 border border-zinc-200/80 shadow-inner relative overflow-hidden">
+                  {secondPlace.avatarUrl && (
+                    <img src={secondPlace.avatarUrl} alt={secondPlace.name} className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-0" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-200 from-20% via-zinc-200/40 to-transparent pointer-events-none" />
+                  <span className="text-[8px] uppercase tracking-widest font-black text-zinc-600 relative z-20 bg-zinc-200/60 backdrop-blur-sm px-2 py-0.5 rounded-full">SILVER</span>
+                  <span className="absolute -bottom-3 text-[90px] font-black text-white/50 z-10 leading-none tracking-tighter">2</span>
+                </div>
+                <div className="mt-2 flex flex-col items-center">
+                  <p className="text-xs font-black text-zinc-900 text-center truncate max-w-[80px]">
+                    {secondPlace.name.split(' ')[0]}
+                  </p>
+                  <p className="text-[9px] text-zinc-500 font-black mt-0.5">{secondPlace.totalPoints} pts</p>
+                </div>
+              </div>
+            )}
+
+            {firstPlace && (
+              <div className="flex flex-col items-center flex-1 z-10">
+                <div className="w-full h-44 bg-gradient-to-t from-orange-600 to-orange-400 flex flex-col items-center justify-start pt-2 border border-orange-400 shadow-xl shadow-orange-500/20 text-white relative overflow-hidden">
+                  {firstPlace.avatarUrl && (
+                    <img src={firstPlace.avatarUrl} alt={firstPlace.name} className="absolute inset-0 w-full h-full object-cover object-top brightness-105" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-orange-600 from-20% via-orange-500/40 to-transparent pointer-events-none" />
+                  <span className="text-[9px] uppercase tracking-widest font-black text-orange-100 relative z-20 bg-orange-600/60 backdrop-blur-sm px-2 py-0.5 rounded-full">GOLD</span>
+                  <span className="absolute -bottom-3 text-[110px] font-black text-white/30 z-10 leading-none tracking-tighter">1</span>
+                </div>
+                <div className="mt-2 flex flex-col items-center">
+                  <p className="text-sm font-black text-zinc-900 text-center truncate max-w-[90px]">
+                    {firstPlace.name.split(' ')[0]}
+                  </p>
+                  <p className="text-[10px] text-orange-600 font-black mt-0.5">{firstPlace.totalPoints} pts</p>
+                </div>
+              </div>
+            )}
+
+            {thirdPlace && (
+              <div className="flex flex-col items-center flex-1">
+                <div className="w-full h-32 bg-gradient-to-t from-orange-200 to-orange-50 flex flex-col items-center justify-start pt-2 border border-orange-200/80 shadow-inner relative overflow-hidden">
+                  {thirdPlace.avatarUrl && (
+                    <img src={thirdPlace.avatarUrl} alt={thirdPlace.name} className="absolute inset-0 w-full h-full object-cover object-top brightness-105 saturate-50" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-orange-200 from-20% via-orange-100/40 to-transparent pointer-events-none" />
+                  <span className="text-[8px] uppercase tracking-widest font-black text-orange-700 relative z-20 bg-orange-200/60 backdrop-blur-sm px-2 py-0.5 rounded-full">BRONZE</span>
+                  <span className="absolute -bottom-3 text-[90px] font-black text-white/50 z-10 leading-none tracking-tighter">3</span>
+                </div>
+                <div className="mt-2 flex flex-col items-center">
+                  <p className="text-xs font-black text-zinc-900 text-center truncate max-w-[80px]">
+                    {thirdPlace.name.split(' ')[0]}
+                  </p>
+                  <p className="text-[9px] text-zinc-500 font-black mt-0.5">{thirdPlace.totalPoints} pts</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* IG Table */}
+          <div className="flex-1 relative z-10 px-6 py-3 overflow-hidden flex flex-col max-h-full">
+            <h3 className="text-[9px] font-black uppercase tracking-wider text-zinc-400 mb-1.5 pl-1">
+              Complete Standings
+            </h3>
+            <div className="rounded-xl border border-zinc-200 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden flex-1 flex flex-col">
+              <div className="flex-1 overflow-hidden p-1.5">
+                <table className="w-full text-left font-sans text-zinc-900">
+                  <thead>
+                    <tr className="border-b border-zinc-100 text-zinc-400 font-black uppercase text-[8px] tracking-widest">
+                      <th className="pb-1.5 pl-1 w-6">#</th>
+                      <th className="pb-1.5 w-auto">Player</th>
+                      <th className="pb-1.5 text-center w-6">P</th>
+                      <th className="pb-1.5 text-center w-10">W-L-T</th>
+                      <th className="pb-1.5 text-right pr-1 w-8">Pts</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-50">
+                    {standings.slice(0, 15).map((s) => (
+                      <tr key={s.playerId ?? s.name} className={`
+                        ${s.rank === 1 ? 'bg-orange-50/90' : s.rank === 2 ? 'bg-orange-50/60' : s.rank === 3 ? 'bg-orange-50/30' : ''}
+                      `}>
+                        <td className="py-1.5 pl-1 font-black text-[9px] text-zinc-500">
+                          {s.rank <= 3 ? (
+                            <span className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[8px] shadow-sm font-black ${
+                              s.rank === 1 ? 'bg-orange-100 text-orange-600' : s.rank === 2 ? 'bg-zinc-100 text-zinc-600' : 'bg-orange-50 text-orange-800'
+                            }`}>
+                              {s.rank}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400">#{s.rank}</span>
+                          )}
+                        </td>
+                        <td className="py-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-4 w-4 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[7px] font-bold text-zinc-600 uppercase shrink-0">
+                              {s.name.slice(0, 2)}
+                            </div>
+                            <p className="font-extrabold text-[10px] text-zinc-900 truncate max-w-[80px]">{s.name.split(' ')[0]}</p>
+                          </div>
+                        </td>
+                        <td className="py-1.5 text-center font-bold text-zinc-600 text-[9px]">
+                          {s.realMatchesPlayed !== undefined ? s.realMatchesPlayed : (s.wins + s.losses + s.ties)}
+                        </td>
+                        <td className="py-1.5 text-center font-mono font-black text-zinc-700 text-[8px]">
+                          {s.wins}-{s.losses}-{s.ties}
+                        </td>
+                        <td className="py-1.5 text-right pr-1 font-black text-[10px] text-orange-600 leading-none">
+                          <div className="flex flex-col items-end justify-center">
+                            <span>{s.totalPoints}</span>
+                            {(s.byePoints || 0) > 0 && <span className="text-[6px] text-orange-400 uppercase mt-0.5">+{s.byePoints} BYE</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          {/* IG Footer */}
+          <div className="py-2.5 shrink-0 relative z-10 text-center bg-white/70 backdrop-blur-sm border-t border-zinc-200">
+            <span className="text-[7px] font-black tracking-widest text-zinc-400 uppercase flex items-center justify-center gap-1">
+              <Zap className="h-2 w-2 text-orange-500" />
+              Powered by communitrix.id
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
