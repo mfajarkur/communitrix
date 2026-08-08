@@ -1422,37 +1422,89 @@ export default function CommunityTabs({
               </button>
             </div>
             
-            <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
+            <div className="space-y-4 text-xs text-zinc-600 leading-relaxed overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
               {infoModal === 'ELO' ? (
                 <>
-                  <p>
-                    <strong>Elo Rating</strong> adalah sistem perhitungan performa berbasis kemampuan (<em>skill-based</em>) dari setiap pemain. Sistem ini akan memprediksi probabilitas kemenangan sebelum pertandingan dimulai.
+                  <p className="text-sm">
+                    <strong>Elo Rating</strong> adalah sistem matematika dinamis pengukur murni <em>skill</em> pemain. Sistem ini menghitung probabilitas kemenangan secara akurat berdasarkan <strong>Selisih (Gap) Elo</strong>, sehingga tidak ada pemain hebat yang bisa memanen poin dari pemula.
                   </p>
-                  <p>
-                    Jika Anda mengalahkan pemain atau tim dengan peringkat Elo yang jauh lebih tinggi dari Anda, Anda akan mendapatkan tambahan poin Elo yang lebih besar. Sebaliknya, mengalahkan pemain dengan peringkat lebih rendah hanya akan memberikan sedikit poin tambahan.
-                  </p>
-                  <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100/60 text-xs space-y-2 mt-2 shadow-2xs">
-                    <p className="font-bold text-orange-800 uppercase tracking-wider text-[10px]">Cara Kerja Pertandingan</p>
-                    <ul className="space-y-1.5 text-orange-700/90 font-medium">
-                      <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500" />Menang: <span className="text-green-600 font-bold">+ Poin Elo</span></li>
-                      <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-red-500" />Kalah: <span className="text-red-600 font-bold">- Poin Elo</span></li>
-                      <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />Seri: <span className="text-zinc-600 font-bold">Tetap / Berubah sedikit menyesuaikan lawan</span></li>
+                  
+                  <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200/60 shadow-inner space-y-3">
+                    <p className="font-black text-zinc-800 uppercase tracking-widest text-[10px]">Formula Inti Communitrix</p>
+                    <code className="block bg-zinc-800 text-green-400 p-2.5 rounded-lg font-mono text-[11px] text-center shadow-2xs">
+                      Δ = K_eff × MoV × (W - E)
+                    </code>
+                    
+                    <ul className="space-y-2.5 text-[11px] text-zinc-700">
+                      <li>
+                        <strong className="text-orange-600">Δ (Delta)</strong>: Poin final yang akan ditambahkan/dikurangi dari Elo Anda saat ini.
+                      </li>
+                      <li>
+                        <strong className="text-orange-600">W (Outcome)</strong>: Hasil aktual di lapangan. <span className="font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">1.0</span> untuk menang, <span className="font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">0.0</span> untuk kalah, <span className="font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">0.5</span> untuk seri.
+                      </li>
+                      <li>
+                        <strong className="text-orange-600">E (Expected Score)</strong>: Ekspektasi sistem (probabilitas kemenangan) sebelum Anda bermain. Dihitung dari perbandingan <em>Effective Rating</em> tim Anda melawan tim musuh. Jika Anda unggul telak secara teori, nilai <span className="font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">E</span> Anda mendekati <span className="font-mono bg-zinc-100 px-1 py-0.5 rounded text-zinc-600">1.0</span> (Wajib menang).
+                      </li>
+                      <li>
+                        <strong className="text-orange-600">MoV (Margin of Victory)</strong>: Pengali (Multiplier). Kemenangan telak (skor 21-5) akan memberikan bonus poin jauh lebih besar dibanding kemenangan tipis (21-19).
+                      </li>
+                      <li>
+                        <strong className="text-orange-600">K_eff (Effective K-Factor)</strong>: Tingkat volatilitas (seberapa drastis poin Anda bisa berubah). Di Communitrix, ini adalah gabungan dari <span className="font-bold">K-Base</span> dan <span className="font-bold">Format Damping</span>.
+                      </li>
                     </ul>
+                  </div>
+
+                  <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100/60 shadow-2xs space-y-3">
+                    <p className="font-black text-orange-800 uppercase tracking-widest text-[10px]">Aturan Lanjutan (Advanced Rules)</p>
+                    
+                    <div className="space-y-1">
+                      <p className="font-bold text-orange-700 text-[11px]">1. The Carry Rule (Pembagian Poin Tidak Rata)</p>
+                      <p className="text-[10px] text-orange-800/80 leading-relaxed">
+                        Jika Anda bermain Ganda (Doubles) dengan rekan yang memiliki Elo jauh lebih rendah, pembagian poin akhir tidak akan 50:50. Pemain dengan poin lebih rendah akan <strong>mendapat lebih banyak poin (hingga 60%)</strong> jika menang, dan <strong>kehilangan lebih sedikit poin (serendah 35%)</strong> jika kalah, karena mereka harus menanggung beban "diincar" oleh lawan sepanjang pertandingan.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="font-bold text-orange-700 text-[11px]">2. K-Factor & Unrank Volatility</p>
+                      <p className="text-[10px] text-orange-800/80 leading-relaxed">
+                        Pemain reguler memiliki <span className="font-mono bg-orange-100 text-orange-900 px-1 py-0.5 rounded text-[9px]">K=24</span>. Namun, pemain baru (<span className="italic">Unrank</span>, dibawah 5 pertandingan) memiliki <span className="font-mono bg-orange-100 text-orange-900 px-1 py-0.5 rounded text-[9px]">K=48</span> (dua kali lipat volatilitas) agar sistem bisa memindahkan mereka ke posisi peringkat yang sebenarnya dengan jauh lebih cepat.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="font-bold text-orange-700 text-[11px]">3. Effective Team Rating (Nerf)</p>
+                      <p className="text-[10px] text-orange-800/80 leading-relaxed">
+                        Dalam pertandingan Ganda, jika pemain <strong>Elo 2000</strong> berpasangan dengan pemain <strong>Elo 1000</strong>, peringkat kekuatan tim mereka <strong>TIDAK sekadar rata-ratanya (1500)</strong>. Adanya celah kekuatan membuat mereka dihukum (nerf) penalti sebesar <strong>25% dari selisih Elo (Gap) mereka</strong>, karena tim musuh berpotensi mem-<em>bully</em> pemain yang lebih lemah.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="font-bold text-orange-700 text-[11px]">4. Format Damping</p>
+                      <p className="text-[10px] text-orange-800/80 leading-relaxed">
+                        Sistem turnamen panjang seperti Mexicano akan mengerem (damping) poin kemenangan dari setiap putaran, sehingga fluktuasi total harian tidak merusak sistem peringkat.
+                      </p>
+                    </div>
                   </div>
                 </>
               ) : (
                 <>
-                  <p>
-                    <strong>Community Points (CP)</strong> adalah sistem poin keaktifan (<em>activity-based</em>) yang diakumulasikan sepanjang musim berjalan. CP menunjukkan seberapa rajin dan berprestasi seorang pemain di dalam komunitas.
+                  <p className="text-sm">
+                    <strong>Community Points (CP)</strong> adalah sistem poin keaktifan (<em>activity-based</em>). Berbeda dengan Elo yang mengukur <em>skill</em>, CP mengukur <strong>loyalitas, kehadiran, dan apresiasi prestasi</strong> dalam komunitas.
+                  </p>
+                  <p className="text-sm">
+                    Sistem ini juga menerapkan hukuman (<em>punishment</em>) tegas jika Anda meninggalkan pertandingan yang sedang berjalan dan menggunakan joki/pemain substitusi.
                   </p>
                   <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/60 text-xs space-y-2 mt-2 shadow-2xs">
-                    <p className="font-bold text-amber-800 uppercase tracking-wider text-[10px]">Perolehan Poin CP</p>
+                    <p className="font-bold text-amber-800 uppercase tracking-wider text-[10px]">Aturan Baku Perolehan CP</p>
                     <ul className="space-y-1.5 text-amber-700/90 font-medium">
-                      <li className="flex items-center justify-between"><span>Kehadiran per sesi</span> <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100 shadow-2xs">+2 CP</span></li>
-                      <li className="flex items-center justify-between"><span>Juara 1 🥇</span> <span className="text-amber-600 font-bold bg-amber-100/50 px-2 py-0.5 rounded border border-amber-200/50 shadow-2xs">+5 CP</span></li>
-                      <li className="flex items-center justify-between"><span>Juara 2 🥈</span> <span className="text-slate-500 font-bold bg-slate-100/50 px-2 py-0.5 rounded border border-slate-200/50 shadow-2xs">+3 CP</span></li>
-                      <li className="flex items-center justify-between"><span>Juara 3 🥉</span> <span className="text-orange-600 font-bold bg-orange-100/50 px-2 py-0.5 rounded border border-orange-200/50 shadow-2xs">+1 CP</span></li>
+                      <li className="flex items-center justify-between"><span>Hadir penuh 1 sesi aktif</span> <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100 shadow-2xs">+5 CP</span></li>
+                      <li className="flex items-center justify-between"><span>Bonus Juara 1 🥇</span> <span className="text-amber-600 font-bold bg-amber-100/50 px-2 py-0.5 rounded border border-amber-200/50 shadow-2xs">+3 CP</span></li>
+                      <li className="flex items-center justify-between"><span>Bonus Juara 2 🥈</span> <span className="text-slate-500 font-bold bg-slate-100/50 px-2 py-0.5 rounded border border-slate-200/50 shadow-2xs">+2 CP</span></li>
+                      <li className="flex items-center justify-between"><span>Bonus Juara 3 🥉</span> <span className="text-orange-600 font-bold bg-orange-100/50 px-2 py-0.5 rounded border border-orange-200/50 shadow-2xs">+1 CP</span></li>
+                      <div className="w-full h-px bg-amber-200/50 my-1" />
+                      <li className="flex items-center justify-between text-red-700"><span>Pakai Joki/Substitusi (Per match)</span> <span className="text-red-700 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200/50 shadow-2xs">-3 CP</span></li>
                     </ul>
+                    <p className="text-[9px] text-amber-600/80 italic mt-2">*Catatan: Jika poin substitusi membuat net CP Anda minus, Anda didiskualifikasi dari bonus piala.</p>
                   </div>
                 </>
               )}
