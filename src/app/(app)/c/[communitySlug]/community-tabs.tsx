@@ -29,6 +29,7 @@ import {
   Clock,
   UserMinus,
   UserPlus,
+  HelpCircle,
 } from 'lucide-react';
 import GuestClaimRequestsPanel from './guest-claim-requests-panel';
 import AddGuestForm from './add-guest-form';
@@ -96,6 +97,7 @@ export default function CommunityTabs({
   totalCp = 0,
 }: CommunityTabsProps) {
   const { activeTab, setActiveTab: handleTabChange, setStats } = useActiveTab();
+  const [infoModal, setInfoModal] = useState<'ELO' | 'CP' | null>(null);
 
   // Publishes these counts up to community-carousel.tsx's header via the shared context — the
   // header doesn't run its own stats query (see active-tab-context.tsx's comment).
@@ -1052,8 +1054,22 @@ export default function CommunityTabs({
                           <tr className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                             <th className="p-3 sm:p-4 w-12 text-center">Rank</th>
                             <th className="p-3 sm:p-4">Name</th>
-                            <th className="p-3 sm:p-4 text-center">Elo</th>
-                            <th className="p-3 sm:p-4 text-center">CP</th>
+                            <th className="p-3 sm:p-4 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                Elo
+                                <button onClick={() => setInfoModal('ELO')} className="text-zinc-400 hover:text-orange-500 transition-colors cursor-pointer">
+                                  <HelpCircle className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </th>
+                            <th className="p-3 sm:p-4 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                CP
+                                <button onClick={() => setInfoModal('CP')} className="text-zinc-400 hover:text-amber-500 transition-colors cursor-pointer">
+                                  <HelpCircle className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </th>
                             <th className="p-3 sm:p-4 text-center">W-L-T</th>
                             <th className="p-3 sm:p-4 text-center">WR%</th>
                             <th className="p-2 sm:p-3 text-center text-sm" title="Gold Medals (1st place finishes)">🥇</th>
@@ -1385,6 +1401,72 @@ export default function CommunityTabs({
         onConfirm={handleBatchRemove}
         onCancel={() => setConfirmBatchRemoveOpen(false)}
       />
+
+      {/* Info Modal */}
+      {infoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-5 border border-zinc-100 text-[#111827]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 font-sans flex items-center gap-2">
+                {infoModal === 'ELO' ? (
+                  <><Activity className="h-4 w-4 text-orange-500" /> Elo Rating</>
+                ) : (
+                  <><Star className="h-4 w-4 text-amber-500" /> Community Points (CP)</>
+                )}
+              </h3>
+              <button
+                onClick={() => setInfoModal(null)}
+                className="p-1 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4 text-sm text-zinc-600 leading-relaxed">
+              {infoModal === 'ELO' ? (
+                <>
+                  <p>
+                    <strong>Elo Rating</strong> adalah sistem perhitungan performa berbasis kemampuan (<em>skill-based</em>) dari setiap pemain. Sistem ini akan memprediksi probabilitas kemenangan sebelum pertandingan dimulai.
+                  </p>
+                  <p>
+                    Jika Anda mengalahkan pemain atau tim dengan peringkat Elo yang jauh lebih tinggi dari Anda, Anda akan mendapatkan tambahan poin Elo yang lebih besar. Sebaliknya, mengalahkan pemain dengan peringkat lebih rendah hanya akan memberikan sedikit poin tambahan.
+                  </p>
+                  <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100/60 text-xs space-y-2 mt-2 shadow-2xs">
+                    <p className="font-bold text-orange-800 uppercase tracking-wider text-[10px]">Cara Kerja Pertandingan</p>
+                    <ul className="space-y-1.5 text-orange-700/90 font-medium">
+                      <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500" />Menang: <span className="text-green-600 font-bold">+ Poin Elo</span></li>
+                      <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-red-500" />Kalah: <span className="text-red-600 font-bold">- Poin Elo</span></li>
+                      <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-zinc-400" />Seri: <span className="text-zinc-600 font-bold">Tetap / Berubah sedikit menyesuaikan lawan</span></li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>
+                    <strong>Community Points (CP)</strong> adalah sistem poin keaktifan (<em>activity-based</em>) yang diakumulasikan sepanjang musim berjalan. CP menunjukkan seberapa rajin dan berprestasi seorang pemain di dalam komunitas.
+                  </p>
+                  <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/60 text-xs space-y-2 mt-2 shadow-2xs">
+                    <p className="font-bold text-amber-800 uppercase tracking-wider text-[10px]">Perolehan Poin CP</p>
+                    <ul className="space-y-1.5 text-amber-700/90 font-medium">
+                      <li className="flex items-center justify-between"><span>Kehadiran per sesi</span> <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100 shadow-2xs">+2 CP</span></li>
+                      <li className="flex items-center justify-between"><span>Juara 1 🥇</span> <span className="text-amber-600 font-bold bg-amber-100/50 px-2 py-0.5 rounded border border-amber-200/50 shadow-2xs">+5 CP</span></li>
+                      <li className="flex items-center justify-between"><span>Juara 2 🥈</span> <span className="text-slate-500 font-bold bg-slate-100/50 px-2 py-0.5 rounded border border-slate-200/50 shadow-2xs">+3 CP</span></li>
+                      <li className="flex items-center justify-between"><span>Juara 3 🥉</span> <span className="text-orange-600 font-bold bg-orange-100/50 px-2 py-0.5 rounded border border-orange-200/50 shadow-2xs">+1 CP</span></li>
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={() => setInfoModal(null)}
+              className="w-full py-2.5 rounded-xl font-bold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors shadow-sm cursor-pointer text-sm"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
