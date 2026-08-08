@@ -31,6 +31,7 @@ import {
   UserPlus,
   HelpCircle,
   Printer,
+  Image as ImageIcon,
 } from 'lucide-react';
 import GuestClaimRequestsPanel from './guest-claim-requests-panel';
 import AddGuestForm from './add-guest-form';
@@ -44,6 +45,7 @@ import { updateMemberRoleAction, removeMemberAction } from '@/server/actions/mem
 import { resolveJoinRequestAction } from '@/server/actions/join-request.actions';
 import { useActiveTab } from './active-tab-context';
 import ConfirmModal from '@/components/ui/confirm-modal';
+import LeaderboardPoster, { type PosterStanding } from '@/components/leaderboard-poster';
 import { VerifiedBadge, isProfileVerified } from '@/components/ui/verified-badge';
 
 interface CommunityTabsProps {
@@ -99,6 +101,7 @@ export default function CommunityTabs({
 }: CommunityTabsProps) {
   const { activeTab, setActiveTab: handleTabChange, setStats } = useActiveTab();
   const [infoModal, setInfoModal] = useState<'ELO' | 'CP' | null>(null);
+  const [showPosterModal, setShowPosterModal] = useState(false);
 
   // Publishes these counts up to community-carousel.tsx's header via the shared context — the
   // header doesn't run its own stats query (see active-tab-context.tsx's comment).
@@ -1042,9 +1045,16 @@ export default function CommunityTabs({
                     </select>
                     
                     <button
+                      onClick={() => setShowPosterModal(true)}
+                      className="print:hidden h-8 w-8 ml-2 flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-lg transition-colors cursor-pointer"
+                      title="Download Leaderboard Poster"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </button>
+                    <button
                       onClick={() => window.print()}
                       className="print:hidden h-8 w-8 ml-2 flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-lg transition-colors cursor-pointer"
-                      title="Print Leaderboard"
+                      title="Print Leaderboard (Document)"
                     >
                       <Printer className="h-4 w-4" />
                     </button>
@@ -1546,6 +1556,41 @@ export default function CommunityTabs({
             >
               Mengerti
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Poster Download Modal */}
+      {showPosterModal && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="w-full max-w-[420px] flex justify-between items-center mb-4">
+            <h3 className="text-white font-black uppercase tracking-widest text-sm">Export Leaderboard</h3>
+            <button
+              onClick={() => setShowPosterModal(false)}
+              className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="w-full max-w-[420px] max-h-[80vh] overflow-y-auto custom-scrollbar rounded-2xl shadow-2xl bg-black">
+            <LeaderboardPoster
+              activityName={`${community.name} Leaderboard`}
+              gameType={leaderboardSortBy === 'elo' ? 'Ranked by Elo Rating' : 'Ranked by CP'}
+              sport={selectedLeaderboardSport}
+              hideDiff={true}
+              standings={rankedPlayers.slice(0, 10).map((r: any, idx: number) => ({
+                rank: idx + 1,
+                playerId: r.profile.id,
+                name: getDisplayName(r.profile),
+                totalPoints: leaderboardSortBy === 'elo' ? Math.round(Number(r.elo_rating)) : Math.round(cpMap[r.profile.id] || 0),
+                wins: r.total_wins || 0,
+                losses: r.total_losses || 0,
+                ties: r.total_draws || 0,
+                realMatchesPlayed: r.total_matches || 0,
+                avatarUrl: getAvatarUrl(r.profile),
+              }))}
+            />
           </div>
         </div>
       )}
