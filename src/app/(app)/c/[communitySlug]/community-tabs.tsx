@@ -1075,6 +1075,7 @@ export default function CommunityTabs({
                                 </button>
                               </div>
                             </th>
+                            <th className="p-3 sm:p-4 text-center" title="Total Matches Played">M</th>
                             <th className="p-3 sm:p-4 text-center">W-L-T</th>
                             <th className="p-3 sm:p-4 text-center">WR%</th>
                             <th className="p-2 sm:p-3 text-center text-sm" title="Gold Medals (1st place finishes)">🥇</th>
@@ -1153,6 +1154,9 @@ export default function CommunityTabs({
                                     </span>
                                   </td>
 
+                                  <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                                    {r.total_matches}
+                                  </td>
                                   <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
                                     {r.total_wins}-{r.total_losses}-{r.total_draws}
                                   </td>
