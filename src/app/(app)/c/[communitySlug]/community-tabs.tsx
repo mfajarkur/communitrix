@@ -315,11 +315,14 @@ export default function CommunityTabs({
                   const topElo = [...activePlayers].sort((a, b) => Number(b.elo_rating) - Number(a.elo_rating))[0];
                   const mostWins = [...activePlayers].sort((a, b) => Number(b.total_wins || 0) - Number(a.total_wins || 0))[0];
                   const topCp = [...activePlayers].sort((a, b) => (cpMap[b.profile?.id] || 0) - (cpMap[a.profile?.id] || 0))[0];
-                  const topWinRate = [...activePlayers].sort((a, b) => {
-                    const wrA = a.total_matches > 0 ? a.total_wins / a.total_matches : 0;
-                    const wrB = b.total_matches > 0 ? b.total_wins / b.total_matches : 0;
-                    return wrB - wrA;
-                  })[0];
+                  const topWinRatePlayers = [...activePlayers].filter(p => Number(p.total_matches || 0) >= 5);
+                  const topWinRate = topWinRatePlayers.length > 0 
+                    ? topWinRatePlayers.sort((a, b) => {
+                        const wrA = a.total_matches > 0 ? a.total_wins / a.total_matches : 0;
+                        const wrB = b.total_matches > 0 ? b.total_wins / b.total_matches : 0;
+                        return wrB - wrA;
+                      })[0]
+                    : null;
                   const mostMatches = [...activePlayers].sort((a, b) => Number(b.total_matches || 0) - Number(a.total_matches || 0))[0];
                   const mostGoldMedals = [...activePlayers].sort((a, b) => Number(b.gold_medals || 0) - Number(a.gold_medals || 0))[0];
 
@@ -363,10 +366,12 @@ export default function CommunityTabs({
                     value: `${Math.round(cpMap[activeSportStars.topCp?.profile?.id] || 0)}`,
                   },
                   {
-                    key: 'mostMatches',
-                    badge: 'Most Sessions',
-                    player: activeSportStars.mostMatches,
-                    value: `${activeSportStars.mostMatches?.total_matches || 0}`,
+                    key: 'topWinRate',
+                    badge: 'Highest Win %',
+                    player: activeSportStars.topWinRate,
+                    value: activeSportStars.topWinRate && activeSportStars.topWinRate.total_matches > 0
+                      ? `${Math.round((activeSportStars.topWinRate.total_wins / activeSportStars.topWinRate.total_matches) * 100)}%`
+                      : '0%',
                   },
                   {
                     key: 'mostGoldMedals',
