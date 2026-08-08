@@ -53,6 +53,30 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
   const secondPlace = standings.find((s) => s.rank === 2) || standings[1];
   const thirdPlace = standings.find((s) => s.rank === 3) || standings[2];
 
+  const exportAndShare = async (blob: Blob, filename: string) => {
+    const file = new File([blob], filename, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Communitrix Leaderboard',
+        });
+        return;
+      } catch (error) {
+        if ((error as Error).name === 'AbortError') return;
+        console.warn('Share failed, falling back to download', error);
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownloadImage = async () => {
     setIsDownloading(true);
     try {
@@ -68,7 +92,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       const targetWidth = node.offsetWidth;
       const targetHeight = node.offsetHeight;
 
-      const blob = await toBlob(node, {
+      const options = {
         cacheBust: true,
         imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
         width: targetWidth,
@@ -77,21 +101,22 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
           margin: '0px',
           transform: 'none',
         },
-      });
+      };
+
+      // iOS Safari hack: render twice to fix ghosting/glitches
+      const isIosOrSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) || /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isIosOrSafari) {
+        await toBlob(node, options);
+      }
+      
+      const blob = await toBlob(node, options);
 
       if (!blob) {
         throw new Error('Generated image blob is null');
       }
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = `communitrix-${activityName.toLowerCase().replace(/\s+/g, '-')}-results.png`;
-      link.href = url;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const filename = `communitrix-${activityName.toLowerCase().replace(/\s+/g, '-')}-results.png`;
+      await exportAndShare(blob, filename);
     } catch (err) {
       console.error('Failed to download image', err);
       alert('Failed to export standings as image. Please take a screenshot or try again.');
@@ -109,7 +134,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       const node = document.getElementById('ig-story-download-area');
       if (!node) throw new Error('IG Story node not found');
 
-      const blob = await toBlob(node, {
+      const options = {
         cacheBust: true,
         backgroundColor: '#ffffff',
         imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
@@ -118,19 +143,20 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
           margin: '0px',
           transform: 'none',
         },
-      });
+      };
+
+      // iOS Safari hack: render twice to fix ghosting/glitches
+      const isIosOrSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) || /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isIosOrSafari) {
+        await toBlob(node, options);
+      }
+      
+      const blob = await toBlob(node, options);
 
       if (!blob) throw new Error('Generated image blob is null');
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = `communitrix-${activityName.toLowerCase().replace(/\s+/g, '-')}-ig-story.png`;
-      link.href = url;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const filename = `communitrix-${activityName.toLowerCase().replace(/\s+/g, '-')}-ig-story.png`;
+      await exportAndShare(blob, filename);
     } catch (err) {
       console.error('Failed to download IG story', err);
       alert('Failed to export IG Story. Please try again.');
