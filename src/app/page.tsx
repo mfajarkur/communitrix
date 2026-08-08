@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import UnifiedAuthCard from './(auth)/unified-auth-card';
+import { APP_VERSION } from '@/lib/version';
 
 export default async function Home({
   searchParams,
@@ -22,6 +23,8 @@ export default async function Home({
   if (user) {
     redirect('/c');
   }
+
+  const year = new Date().getFullYear();
 
   return (
     <div className="relative flex-1 flex flex-col items-center justify-center p-6 select-none overflow-hidden bg-orange-900 w-full">
@@ -72,7 +75,7 @@ export default async function Home({
           Contact Us
         </a>
         <span className="mx-2 opacity-70">•</span>
-        <span className="opacity-90">Version 1.0 © 2026 Communitrix</span>
+        <span className="opacity-90">communitrix.id © {year} • version {APP_VERSION}</span>
       </div>
     </div>
   );
