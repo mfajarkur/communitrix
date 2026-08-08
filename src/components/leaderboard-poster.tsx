@@ -105,6 +105,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
   const handleDownloadIGStory = async () => {
     setIsDownloadingIG(true);
     try {
+      const { toBlob } = await import('html-to-image');
       const node = document.getElementById('ig-story-download-area');
       if (!node) throw new Error('IG Story node not found');
 
