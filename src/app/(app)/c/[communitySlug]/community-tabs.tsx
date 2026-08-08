@@ -1220,7 +1220,13 @@ export default function CommunityTabs({
                         </tbody>
                     </table>
                     
-                    <div className="mt-6 mb-2 text-center px-4">
+                    <div className="mt-6 mb-2 flex flex-col items-center gap-3 px-4">
+                      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] text-zinc-500 font-medium bg-zinc-50/50 px-4 py-2 rounded-xl border border-zinc-100">
+                        <span className="font-bold text-zinc-700 mr-1 uppercase tracking-widest text-[9px]">Legend</span>
+                        <span className="flex items-center gap-1"><span className="font-bold text-zinc-800">M</span> = Matches</span>
+                        <span className="flex items-center gap-1"><span className="font-bold text-zinc-800">W-L-T</span> = Win-Loss-Tie</span>
+                        <span className="flex items-center gap-1"><span className="font-bold text-zinc-800">WR%</span> = Win Rate</span>
+                      </div>
                       <p className="text-[11px] text-zinc-500 bg-zinc-50/80 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-200 shadow-2xs">
                         <span className="font-bold text-zinc-700">Note:</span> Unranked players require a minimum of 5 matches to enter the ranked leaderboard.
                       </p>
