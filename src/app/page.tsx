@@ -67,7 +67,7 @@ export default async function Home({
       {/* Text directly at the very bottom edge of the page, floating over background */}
       <div className="absolute bottom-4 left-0 right-0 z-10 text-center text-xs font-normal text-white drop-shadow-md select-none font-sans px-4">
         <a
-          href="https://instagram.com/communitrix.id"
+          href="https://wa.me/6285121902567"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-orange-300 hover:underline transition-colors font-bold text-white"
