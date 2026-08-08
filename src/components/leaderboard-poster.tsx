@@ -495,7 +495,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
               {/* Call to action */}
               <div className="bg-orange-50 px-3 py-2 text-center border-t border-orange-100/50">
                 <span className="text-[8px] font-black text-orange-600 uppercase tracking-widest">
-                  View full standings on communitrix app
+                  View full standings at communitrix.id
                 </span>
               </div>
             </div>
