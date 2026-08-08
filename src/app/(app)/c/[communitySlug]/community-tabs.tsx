@@ -674,7 +674,7 @@ export default function CommunityTabs({
                                 key={s.id}
                                 href={`/c/${communitySlug}/sessions/${s.id}`}
                                 onClick={() => setLoadingSessionId(s.id)}
-                                className={`group rounded-2xl border transition-all flex flex-row items-stretch cursor-pointer select-none active:scale-[0.98] ${
+                                className={`group overflow-hidden rounded-2xl border transition-all flex flex-row items-stretch cursor-pointer select-none active:scale-[0.98] ${
                                   isLoadingThis
                                     ? 'border-orange-500 ring-2 ring-orange-400/40 bg-orange-50/40 shadow-inner'
                                     : 'border-orange-100 bg-white hover:shadow-md hover:border-orange-300'
