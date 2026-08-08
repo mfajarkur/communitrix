@@ -1062,115 +1062,137 @@ export default function CommunityTabs({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                          {currentLeaderboard.map((r: any, idx) => {
-                          const rank = idx + 1;
-                          const winRate =
-                            r.total_matches > 0
-                              ? Math.round((r.total_wins / r.total_matches) * 100)
-                              : 0;
+                          {(() => {
+                            const rankedPlayers = currentLeaderboard.filter((r: any) => !r.is_provisional);
+                            const unrankedPlayers = currentLeaderboard.filter((r: any) => r.is_provisional);
 
-                          const playerCp = Math.round(cpMap[r.profile.id] || 0);
-                          const medals = medalsMap[r.profile.id] || { gold: 0, silver: 0, bronze: 0 };
+                            const renderRow = (r: any, idx: number, isUnranked: boolean) => {
+                              const rank = isUnranked ? '-' : idx + 1;
+                              const winRate =
+                                r.total_matches > 0
+                                  ? Math.round((r.total_wins / r.total_matches) * 100)
+                                  : 0;
 
-                          return (
-                            <tr
-                              key={r.id}
-                              className="group hover:bg-zinc-50/40 transition-all text-xs sm:text-sm text-[#111827]"
-                            >
-                              <td className="p-3 sm:p-4 text-center align-middle font-extrabold">
-                                {rank === 1 ? (
-                                  <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-xs font-black border border-orange-500/20 shadow-2xs">
-                                    🏆
-                                  </span>
-                                ) : rank === 2 ? (
-                                  <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-xs font-black border border-zinc-200 shadow-2xs">
-                                    🥈
-                                  </span>
-                                ) : rank === 3 ? (
-                                  <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-xs font-black border border-orange-500/10 shadow-2xs">
-                                    🥉
-                                  </span>
-                                ) : (
-                                  <span className="text-[11px] font-bold text-zinc-400">#{rank}</span>
-                                )}
-                              </td>
+                              const playerCp = Math.round(cpMap[r.profile.id] || 0);
+                              const medals = medalsMap[r.profile.id] || { gold: 0, silver: 0, bronze: 0 };
 
-                              <td className="p-3 sm:p-4 align-middle whitespace-nowrap">
-                                <Link
-                                  href={`/c/${communitySlug}/players/${r.profile.id}`}
-                                  className="flex items-center gap-3 hover:underline"
+                              return (
+                                <tr
+                                  key={r.id}
+                                  className="group hover:bg-zinc-50/40 transition-all text-xs sm:text-sm text-[#111827]"
                                 >
-                                  <img
-                                     src={getAvatarUrl(r.profile)}
-                                     alt={getDisplayName(r.profile)}
-                                     className="h-10 w-10 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
-                                   />
-                                  <p className="text-xs sm:text-sm font-extrabold text-[#111827] whitespace-nowrap flex items-center gap-1.5">
-                                    <span>{getTwoWordName(getDisplayName(r.profile))}</span>
-                                    {isProfileVerified(r.profile) && <VerifiedBadge className="h-3.5 w-3.5" />}
-                                    {r.is_provisional && (
-                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 text-[8px] font-bold uppercase border border-orange-500/20">
-                                        <Star className="h-2 w-2 fill-current" />
-                                        Prov
+                                  <td className="p-3 sm:p-4 text-center align-middle font-extrabold">
+                                    {rank === 1 ? (
+                                      <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-orange-500/10 text-orange-650 text-xs font-black border border-orange-500/20 shadow-2xs">
+                                        🏆
                                       </span>
+                                    ) : rank === 2 ? (
+                                      <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 text-xs font-black border border-zinc-200 shadow-2xs">
+                                        🥈
+                                      </span>
+                                    ) : rank === 3 ? (
+                                      <span className="inline-flex h-5.5 w-5.5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-orange-500/[0.04] text-orange-600 text-xs font-black border border-orange-500/10 shadow-2xs">
+                                        🥉
+                                      </span>
+                                    ) : (
+                                      <span className="text-[11px] font-bold text-zinc-400">{isUnranked ? rank : `#${rank}`}</span>
                                     )}
-                                  </p>
-                                </Link>
-                              </td>
+                                  </td>
 
-                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-black text-xs sm:text-sm text-orange-600">
-                                {Number(r.elo_rating).toFixed(0)}
-                              </td>
+                                  <td className="p-3 sm:p-4 align-middle whitespace-nowrap">
+                                    <Link
+                                      href={`/c/${communitySlug}/players/${r.profile.id}`}
+                                      className="flex items-center gap-3 hover:underline"
+                                    >
+                                      <img
+                                         src={getAvatarUrl(r.profile)}
+                                         alt={getDisplayName(r.profile)}
+                                         className="h-10 w-10 shrink-0 rounded-full object-cover border border-zinc-100 shadow-2xs"
+                                       />
+                                      <p className="text-xs sm:text-sm font-extrabold text-[#111827] whitespace-nowrap flex items-center gap-1.5">
+                                        <span>{getTwoWordName(getDisplayName(r.profile))}</span>
+                                        {isProfileVerified(r.profile) && <VerifiedBadge className="h-3.5 w-3.5" />}
+                                        {r.is_provisional && (
+                                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-500 text-[8px] font-bold uppercase border border-zinc-200">
+                                            <Star className="h-2 w-2 fill-current" />
+                                            Unrank
+                                          </span>
+                                        )}
+                                      </p>
+                                    </Link>
+                                  </td>
 
-                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs">
-                                <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
-                                  {playerCp}
-                                </span>
-                              </td>
+                                  <td className="p-3 sm:p-4 text-center align-middle font-mono font-black text-xs sm:text-sm text-orange-600">
+                                    {Number(r.elo_rating).toFixed(0)}
+                                  </td>
 
-                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
-                                {r.total_wins}-{r.total_losses}-{r.total_draws}
-                              </td>
-                              <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
-                                {winRate}%
-                              </td>
-                              
-                              {/* 🥇 Gold Medals */}
-                              <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
-                                {medals.gold > 0 ? (
-                                  <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-black text-[11px] border border-amber-300 shadow-2xs">
-                                    {medals.gold}
-                                  </span>
-                                ) : (
-                                  <span className="text-zinc-300 font-normal text-xs">0</span>
+                                  <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs">
+                                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md font-black text-[11px] shadow-2xs">
+                                      {playerCp}
+                                    </span>
+                                  </td>
+
+                                  <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                                    {r.total_wins}-{r.total_losses}-{r.total_draws}
+                                  </td>
+                                  <td className="p-3 sm:p-4 text-center align-middle font-mono font-bold text-xs text-zinc-700">
+                                    {winRate}%
+                                  </td>
+                                  
+                                  {/* 🥇 Gold Medals */}
+                                  <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
+                                    {medals.gold > 0 ? (
+                                      <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-black text-[11px] border border-amber-300 shadow-2xs">
+                                        {medals.gold}
+                                      </span>
+                                    ) : (
+                                      <span className="text-zinc-300 font-normal text-xs">0</span>
+                                    )}
+                                  </td>
+
+                                  {/* 🥈 Silver Medals */}
+                                  <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
+                                    {medals.silver > 0 ? (
+                                      <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-black text-[11px] border border-slate-300 shadow-2xs">
+                                        {medals.silver}
+                                      </span>
+                                    ) : (
+                                      <span className="text-zinc-300 font-normal text-xs">0</span>
+                                    )}
+                                  </td>
+
+                                  {/* 🥉 Bronze Medals */}
+                                  <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
+                                    {medals.bronze > 0 ? (
+                                      <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-orange-100/90 text-orange-900 font-black text-[11px] border border-orange-300 shadow-2xs">
+                                        {medals.bronze}
+                                      </span>
+                                    ) : (
+                                      <span className="text-zinc-300 font-normal text-xs">0</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            };
+
+                            return (
+                              <>
+                                {rankedPlayers.map((r: any, idx: number) => renderRow(r, idx, false))}
+                                
+                                {unrankedPlayers.length > 0 && (
+                                  <>
+                                    <tr>
+                                      <td colSpan={9} className="bg-zinc-100/80 px-4 py-2.5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center border-t border-b border-zinc-200">
+                                        Unranked Players
+                                      </td>
+                                    </tr>
+                                    {unrankedPlayers.map((r: any, idx: number) => renderRow(r, idx, true))}
+                                  </>
                                 )}
-                              </td>
-
-                              {/* 🥈 Silver Medals */}
-                              <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
-                                {medals.silver > 0 ? (
-                                  <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-black text-[11px] border border-slate-300 shadow-2xs">
-                                    {medals.silver}
-                                  </span>
-                                ) : (
-                                  <span className="text-zinc-300 font-normal text-xs">0</span>
-                                )}
-                              </td>
-
-                              {/* 🥉 Bronze Medals */}
-                              <td className="p-2 sm:p-3 text-center align-middle font-mono font-extrabold text-xs">
-                                {medals.bronze > 0 ? (
-                                  <span className="inline-flex items-center justify-center min-w-[22px] px-1.5 py-0.5 rounded-full bg-orange-100/90 text-orange-900 font-black text-[11px] border border-orange-300 shadow-2xs">
-                                    {medals.bronze}
-                                  </span>
-                                ) : (
-                                  <span className="text-zinc-300 font-normal text-xs">0</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
+                              </>
+                            );
+                          })()}
+                        </tbody>
                     </table>
                   </div>
                 )}

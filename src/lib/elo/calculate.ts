@@ -165,7 +165,7 @@ export function calculateElo(input: EloMatchInput): EloMatchResult {
   // 7. Calculate individual K_eff and find the mean
   const allPlayers = [...teamA, ...teamB];
   const playerKEffs = allPlayers.map(p => {
-    const isProvisional = p.totalMatchesPlayed < 10;
+    const isProvisional = p.totalMatchesPlayed < 5;
     const kBaseVal = isProvisional ? K_PROVISIONAL : K_BASE;
     return kBaseVal * formatDamping;
   });
@@ -187,7 +187,7 @@ export function calculateElo(input: EloMatchInput): EloMatchResult {
   const GAP_REFERENCE = 150;
 
   const buildDelta = (p: PlayerInput, pDelta: number): PlayerDelta => {
-    const isProvisional = p.totalMatchesPlayed < 10;
+    const isProvisional = p.totalMatchesPlayed < 5;
     const kFactor = (isProvisional ? K_PROVISIONAL : K_BASE) * formatDamping;
     const ratingAfter = Math.round((p.ratingBefore + pDelta) * 100) / 100;
     return { id: p.id, ratingBefore: p.ratingBefore, delta: pDelta, ratingAfter, kFactor };
