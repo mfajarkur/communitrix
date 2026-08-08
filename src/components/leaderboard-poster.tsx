@@ -396,9 +396,9 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
           </div>
 
           {/* Combined Podiums & Table for IG Story */}
-          <div className="flex-1 relative z-10 px-6 py-4 overflow-hidden flex flex-col max-h-full">
-            <div className="rounded-2xl border border-zinc-200 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden flex-1 flex flex-col">
-              <div className="flex-1 overflow-hidden p-2">
+          <div className="flex-1 relative z-10 px-6 py-4 flex flex-col justify-center max-h-full">
+            <div className="rounded-2xl border border-zinc-200 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden flex flex-col shrink-0">
+              <div className="p-2">
                 <table className="w-full text-left font-sans text-zinc-900 border-collapse">
                   <thead>
                     <tr className="border-b-2 border-zinc-200 text-zinc-400 font-black uppercase text-[10px] tracking-widest">
@@ -410,7 +410,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100/60">
-                    {standings.map((s) => (
+                    {standings.slice(0, 10).map((s) => (
                       <tr key={s.playerId ?? s.name} className={`
                         ${s.rank === 1 ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white' : 
                           s.rank === 2 ? 'bg-gradient-to-r from-zinc-200 to-zinc-100 text-zinc-900' : 
@@ -481,6 +481,22 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                     ))}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Ranks 11-20 compact list */}
+              {standings.length > 10 && (
+                <div className="bg-zinc-50/80 border-t border-zinc-100 px-3 py-2.5 text-[9px] text-zinc-500 font-medium leading-relaxed">
+                  <span className="font-black text-zinc-700 mr-1.5">Other Ranks:</span>
+                  {standings.slice(10, 20).map(s => `#${s.rank} ${s.name.split(' ')[0]} (${s.totalPoints}pt)`).join(' • ')}
+                  {standings.length > 20 && <span className="ml-1 font-bold text-zinc-400">...and {standings.length - 20} more</span>}
+                </div>
+              )}
+              
+              {/* Call to action */}
+              <div className="bg-orange-50 px-3 py-2 text-center border-t border-orange-100/50">
+                <span className="text-[8px] font-black text-orange-600 uppercase tracking-widest">
+                  View full standings on communitrix app
+                </span>
               </div>
             </div>
           </div>
