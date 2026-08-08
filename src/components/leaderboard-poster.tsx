@@ -177,12 +177,11 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       <div className="overflow-x-auto w-full pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
           <div
           id="podium-download-area"
-          data-safari-capture={isIosOrSafari && isDownloading}
-          className="w-full max-w-[420px] mx-auto bg-white text-zinc-900 p-5 sm:p-6 border border-zinc-200 relative shadow-2xl overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50"
+          className={`w-full max-w-[420px] mx-auto bg-white text-zinc-900 p-5 sm:p-6 border border-zinc-200 relative overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50 ${isDownloading ? '' : 'shadow-2xl'}`}
         >
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
-          <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-orange-600/10 blur-3xl pointer-events-none" />
+          <div className={`absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/20 pointer-events-none ${isDownloading ? 'hidden' : 'blur-3xl'}`} />
+          <div className={`absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-orange-600/10 pointer-events-none ${isDownloading ? 'hidden' : 'blur-3xl'}`} />
 
           <div className="flex justify-between items-center border-b border-zinc-200 pb-4 mb-6 shrink-0 relative z-10">
             <div>
@@ -200,10 +199,10 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
           </div>
 
           <div className="text-center relative z-10">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-500 animate-celebrate shadow-sm mb-2">
+            <div className={`inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-500 mb-2 ${isDownloading ? '' : 'animate-celebrate shadow-sm'}`}>
               <Trophy className="h-6 w-6" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-wider bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h2 className={`text-2xl sm:text-3xl font-black uppercase tracking-wider ${isDownloading ? 'text-orange-600' : 'bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 bg-clip-text text-transparent'}`}>
               Final Leaderboard
             </h2>
           </div>
@@ -211,7 +210,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
           <div className="flex justify-center items-end gap-2 sm:gap-4 pt-4 pb-6 max-w-sm mx-auto relative border-b border-zinc-200 z-10">
             {secondPlace && (
               <div className="flex flex-col items-center flex-1">
-                <div className="w-full h-44 sm:h-52 bg-gradient-to-t from-zinc-200 to-zinc-50 flex flex-col items-center justify-end pb-5 border border-zinc-200/80 shadow-inner relative overflow-hidden">
+                <div className={`w-full h-44 sm:h-52 bg-gradient-to-t from-zinc-200 to-zinc-50 flex flex-col items-center justify-end pb-5 border border-zinc-200/80 relative overflow-hidden ${isDownloading ? '' : 'shadow-inner'}`}>
                   {secondPlace.avatarUrl && (
                     <img
                       src={secondPlace.avatarUrl}
@@ -236,7 +235,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
 
             {firstPlace && (
               <div className="flex flex-col items-center flex-1 z-10">
-                <div className="w-full h-56 sm:h-64 bg-gradient-to-t from-orange-600 to-orange-400 flex flex-col items-center justify-end pb-6 border border-orange-400 shadow-xl shadow-orange-500/20 text-white relative overflow-hidden">
+                <div className={`w-full h-56 sm:h-64 bg-gradient-to-t from-orange-600 to-orange-400 flex flex-col items-center justify-end pb-6 border border-orange-400 text-white relative overflow-hidden ${isDownloading ? '' : 'shadow-xl shadow-orange-500/20'}`}>
                   {firstPlace.avatarUrl && (
                     <img
                       src={firstPlace.avatarUrl}
@@ -261,7 +260,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
 
             {thirdPlace && (
               <div className="flex flex-col items-center flex-1">
-                <div className="w-full h-36 sm:h-44 bg-gradient-to-t from-orange-200 to-orange-50 flex flex-col items-center justify-end pb-4 border border-orange-200/80 shadow-inner relative overflow-hidden">
+                <div className={`w-full h-40 sm:h-48 bg-gradient-to-t from-orange-200 to-orange-50 flex flex-col items-center justify-end pb-4 border border-orange-200/80 relative overflow-hidden ${isDownloading ? '' : 'shadow-inner'}`}>
                   {thirdPlace.avatarUrl && (
                     <img
                       src={thirdPlace.avatarUrl}
@@ -346,9 +345,9 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                         <td className="py-2.5 text-center font-mono font-bold w-10">
                           <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
                             (s.diff ?? 0) > 0
-                              ? 'bg-emerald-100 text-emerald-700 shadow-sm'
+                              ? `bg-emerald-100 text-emerald-700 ${isDownloading ? '' : 'shadow-sm'}`
                               : (s.diff ?? 0) < 0
-                              ? 'bg-rose-100 text-rose-700 shadow-sm'
+                              ? `bg-rose-100 text-rose-700 ${isDownloading ? '' : 'shadow-sm'}`
                               : 'text-zinc-500 bg-zinc-100'
                           }`}>
                             {(s.diff ?? 0) > 0 ? `+${s.diff}` : s.diff ?? 0}
@@ -409,22 +408,21 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
       <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-0">
         <div
           id="ig-story-download-area"
-          data-safari-capture={isIosOrSafari && isDownloadingIG}
           className="w-[432px] h-[768px] bg-white text-zinc-900 relative overflow-hidden bg-gradient-to-br from-white via-orange-50 to-zinc-50 flex flex-col font-sans"
         >
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
-          <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-orange-600/10 blur-3xl pointer-events-none" />
+          <div className={`absolute -top-40 -left-40 h-80 w-80 rounded-full bg-orange-500/20 pointer-events-none ${isDownloadingIG ? 'hidden' : 'blur-3xl'}`} />
+          <div className={`absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-orange-600/10 pointer-events-none ${isDownloadingIG ? 'hidden' : 'blur-3xl'}`} />
 
           {/* IG Header */}
           <div className="flex flex-col items-center pt-8 pb-4 shrink-0 relative z-10 text-center space-y-2 border-b border-zinc-200/50 mx-6">
             <span className="text-[11px] font-black uppercase tracking-widest text-orange-600 block">
               COMMUNITRIX
             </span>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-500 shadow-sm mt-1">
+            <div className={`inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-500 mt-1 ${isDownloadingIG ? '' : 'shadow-sm'}`}>
               <Trophy className="h-6 w-6" />
             </div>
-            <h2 className="text-[26px] leading-none font-black uppercase tracking-wider bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 bg-clip-text text-transparent">
+            <h2 className={`text-[26px] leading-none font-black uppercase tracking-wider ${isDownloadingIG ? 'text-orange-600' : 'bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 bg-clip-text text-transparent'}`}>
               Final Leaderboard
             </h2>
             <span className="text-[11px] font-bold text-zinc-600 pt-1 block">{activityName} • {gameType} ({sport})</span>
@@ -432,7 +430,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
 
           {/* Combined Podiums & Table for IG Story */}
           <div className="flex-1 relative z-10 px-6 py-4 flex flex-col justify-center max-h-full">
-            <div className="rounded-2xl border border-zinc-200 bg-white/90 backdrop-blur-sm shadow-xl overflow-hidden flex flex-col shrink-0">
+            <div className={`rounded-2xl border border-zinc-200 bg-white/90 backdrop-blur-sm overflow-hidden flex flex-col shrink-0 ${isDownloadingIG ? '' : 'shadow-xl'}`}>
               <div className="p-2">
                 <table className="w-full text-left font-sans text-zinc-900 border-collapse">
                   <thead>
@@ -451,11 +449,12 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                           s.rank === 2 ? 'bg-gradient-to-r from-zinc-200 to-zinc-100 text-zinc-900' : 
                           s.rank === 3 ? 'bg-gradient-to-r from-orange-200 to-orange-100 text-zinc-900' : 
                           'bg-transparent'}
+                        ${isDownloadingIG ? '' : (s.rank <= 3 ? 'shadow-sm' : '')}
                       `}>
                         {/* Rank */}
                         <td className={`py-1.5 pl-2 font-black text-[12px] align-middle ${s.rank === 1 ? 'text-white' : s.rank <= 3 ? 'text-zinc-700' : 'text-zinc-400'}`}>
                           {s.rank <= 3 ? (
-                            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] shadow-sm font-black ${
+                            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black ${isDownloadingIG ? '' : 'shadow-sm'} ${
                               s.rank === 1 ? 'bg-white text-orange-600' : 
                               s.rank === 2 ? 'bg-white text-zinc-600' : 
                               'bg-white text-orange-800'
@@ -471,7 +470,7 @@ export default function LeaderboardPoster({ activityName, gameType, sport, stand
                         <td className="py-1.5 align-middle">
                           <div className="flex items-center gap-2">
                             {s.rank <= 3 ? (
-                              <div className="relative h-7 w-7 rounded-full overflow-hidden shadow-sm shrink-0 bg-zinc-100">
+                              <div className={`relative h-7 w-7 rounded-full overflow-hidden shrink-0 bg-zinc-100 ${isDownloadingIG ? '' : 'shadow-sm'}`}>
                                 {s.avatarUrl ? (
                                   <img src={s.avatarUrl} alt={s.name} className="absolute inset-0 w-full h-full object-cover" />
                                 ) : (
