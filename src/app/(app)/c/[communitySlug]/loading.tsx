@@ -1,16 +1,21 @@
-// Shown instantly while switching communities (or landing on one fresh) — this route is
-// `force-dynamic` (page.tsx's data always refetches, never cached), so without this Next.js
-// would otherwise hold the previous screen frozen until the new page's data arrives, reading as
-// a stall rather than a switch. Only skeletons the content area: the nav above (layout.tsx's
-// CommunityNav) is a sibling of this Suspense boundary, not inside it, so it stays mounted and
-// visible the whole time — this only needs to stand in for what's actually reloading.
+import { Loader2 } from 'lucide-react';
+
 export default function CommunityLoading() {
   return (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-28 rounded-2xl bg-zinc-100" />
-      <div className="grid grid-cols-2 gap-3">
-        <div className="h-24 rounded-2xl bg-zinc-100" />
-        <div className="h-24 rounded-2xl bg-zinc-100" />
+    <div className="fixed inset-0 z-[9999] w-full flex flex-col items-center justify-center bg-zinc-50 overflow-hidden">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
+      
+      <div className="flex flex-col items-center animate-pulse space-y-4 relative z-10">
+        <div className="relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-xl rounded-full" />
+          <span className="relative text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-500 drop-shadow-sm">
+            Communitrix
+          </span>
+        </div>
+        <Loader2 className="h-6 w-6 text-orange-500 animate-spin" />
+        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+          Getting things ready...
+        </span>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { Loader2 } from 'lucide-react';
 
 export default function GlobalLoading() {
   return (
-    <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-zinc-50 relative overflow-hidden">
+    <div className="fixed inset-0 z-[9999] w-full flex flex-col items-center justify-center bg-zinc-50 overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
       
       <div className="flex flex-col items-center animate-pulse space-y-4 relative z-10">
