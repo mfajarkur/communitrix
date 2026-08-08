@@ -1194,6 +1194,12 @@ export default function CommunityTabs({
                           })()}
                         </tbody>
                     </table>
+                    
+                    <div className="mt-6 mb-2 text-center px-4">
+                      <p className="text-[11px] text-zinc-500 bg-zinc-50/80 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-200 shadow-2xs">
+                        <span className="font-bold text-zinc-700">Note:</span> Unranked players require a minimum of 5 matches to enter the ranked leaderboard.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
