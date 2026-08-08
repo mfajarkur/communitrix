@@ -30,6 +30,7 @@ import {
   UserMinus,
   UserPlus,
   HelpCircle,
+  Printer,
 } from 'lucide-react';
 import GuestClaimRequestsPanel from './guest-claim-requests-panel';
 import AddGuestForm from './add-guest-form';
@@ -1039,7 +1040,21 @@ export default function CommunityTabs({
                       <option value="wins">Wins</option>
                       <option value="gold">Gold Medals 🥇</option>
                     </select>
+                    
+                    <button
+                      onClick={() => window.print()}
+                      className="print:hidden h-8 w-8 ml-2 flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-lg transition-colors cursor-pointer"
+                      title="Print Leaderboard"
+                    >
+                      <Printer className="h-4 w-4" />
+                    </button>
                   </div>
+                </div>
+
+                {/* Print-only Timestamp & Header */}
+                <div className="hidden print:block text-center mb-6 border-b border-zinc-200 pb-4">
+                  <h2 className="text-2xl font-black text-zinc-900 uppercase tracking-widest">{community.name} Leaderboard</h2>
+                  <p className="text-sm font-bold text-zinc-600 mt-1">Sport: {selectedLeaderboardSport} • Generated on {new Date().toLocaleString()}</p>
                 </div>
 
                 <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50 shadow-sm">

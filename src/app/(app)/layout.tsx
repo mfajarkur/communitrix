@@ -24,13 +24,17 @@ export default async function AppLayout({
           community-tabs.tsx's own sticky Home/Sessions/Members/Rank strip) — nothing is pinned
           to the bottom of the screen anymore, so page content has no bottom clearance to reserve. */}
       <div className="h-dvh overflow-hidden flex flex-col bg-white w-full text-[#111827]">
-        <StatusRibbonBar />
-        <TopNav />
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <main className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full max-w-7xl mx-auto flex flex-col min-h-0">
+        <div className="print:hidden">
+          <StatusRibbonBar />
+          <TopNav />
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto print:overflow-visible">
+          <main className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full max-w-7xl mx-auto flex flex-col min-h-0 print:m-0 print:p-0">
             {children}
           </main>
-          <Footer />
+          <div className="print:hidden">
+            <Footer />
+          </div>
         </div>
       </div>
     </StatusRibbonProvider>
